@@ -56,3 +56,18 @@ export const loginUser = async (req, res, next) => {
 
 	sendTokenResponse(user, 200, res, user);
 };
+
+// @desc    Logout user / clear cookie
+// @route   GET /api/v1/auth/logout
+// @access  Private
+export const logoutUser = (req, res, next) => {
+	res.cookie('token', 'none', {
+		expires: new Date(Date.now() + 10 * 1000), // Expire in 10 seconds
+		httpOnly: true,
+	});
+
+	res.status(200).json({
+		success: true,
+		data: 'User logged out successfully'
+	});
+};
