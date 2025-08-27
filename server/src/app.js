@@ -6,8 +6,8 @@ import cookieParser from 'cookie-parser';
 
 // Local imports
 import { connectDb } from './config/db.js';
-// import errorHandler from './middleware/errorHandler.js';
-// import routes from './routes/index.js';
+import errorHandler from './middleware/errorHandler.middleware.js';
+import routes from './routes/index.js';
 
 // Load env vars
 config({ path: '.env' });
@@ -31,9 +31,9 @@ app.use(cookieParser());
 // app.use(express.static(join(__dirname, 'public')));
 
 // Mount routers
-// app.use('/api/v1/', routes);
+app.use('/api/v1/', routes);
 
 // // Error handler
-// app.use(errorHandler);
+app.use(errorHandler);
 
 export default app;
