@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import jsonwebtoken from 'jsonwebtoken';
 
 const userSchema = new mongoose.Schema(
 	{
