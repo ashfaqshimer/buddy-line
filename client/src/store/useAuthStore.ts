@@ -32,9 +32,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 	checkAuth: async () => {
 		try {
 			const res = await getLoggedInUser();
-
 			set({ authUser: res.data });
-		} catch (error) {
+		} catch (err) {
 			set({ authUser: null });
 		} finally {
 			set({ isCheckingAuth: false });

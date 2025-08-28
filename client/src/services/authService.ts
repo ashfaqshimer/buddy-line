@@ -45,7 +45,7 @@ export const logoutUser = async () => {
 export const getLoggedInUser = async () => {
 	try {
 		const response = await api.get(`${AUTH_URL}/me`);
-		return response.data.user;
+		return response.data;
 	} catch (err: unknown) {
 		throw new Error(extractErrorMessage(err, 'Error getting logged in user'));
 	}
