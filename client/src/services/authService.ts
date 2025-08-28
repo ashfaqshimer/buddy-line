@@ -1,7 +1,7 @@
 import api from './axiosInstance';
 import { extractErrorMessage } from '../utils/errorHandler';
 
-interface LoginDetails {
+export interface LoginDetails {
 	email: string;
 	password: string;
 }
