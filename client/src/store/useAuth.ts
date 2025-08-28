@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import toast from 'react-hot-toast';
-import { registerUser, type RegisterFormData } from '../services/authService';
+import {
+	getLoggedInUser,
+	registerUser,
+	type RegisterFormData,
+} from '../services/authService';
 
 export const useAuthStore = create((set, get) => ({
 	authUser: null,
@@ -11,6 +15,18 @@ export const useAuthStore = create((set, get) => ({
 	onlineUsers: [],
 	socket: null,
 
+	checkAuth: async () => {
+		try {
+			const res = await getLoggedInUser();
+
+			set({ authUser: res.data });
+		} catch (error) {
+			console.log('Error in checkAuth:', error);
+			set({ authUser: null });
+		} finally {
+			set({ isCheckingAuth: false });
+		}
+	},
 	register: async (data: RegisterFormData) => {
 		set({ isSigningUp: true });
 		try {

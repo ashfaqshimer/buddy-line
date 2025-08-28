@@ -43,7 +43,7 @@ export const getMessages = async (req, res, next) => {
 // @route   POST /api/v1/messages/send/:id
 // @access  Private
 export const sendMessage = async (req, res, next) => {
-	const { text, image } = req.body ?? {};
+	const { text, image } = req.body;
 	if (!text && !image)
 		return next(new ErrorResponse("Please provide a 'text' or 'image'."));
 	const { id: receiverId } = req.params;
