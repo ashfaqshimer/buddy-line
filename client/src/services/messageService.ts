@@ -6,7 +6,7 @@ const MESSAGE_URL = '/api/v1/messages';
 export const getSidebarUsers = async () => {
 	try {
 		const response = await api.get(`${MESSAGE_URL}/users`);
-		return response;
+		return response.data;
 	} catch (err: unknown) {
 		throw new Error(extractErrorMessage(err, 'Error logging in'));
 	}
@@ -15,7 +15,7 @@ export const getSidebarUsers = async () => {
 export const getUserMessages = async (userId: string) => {
 	try {
 		const response = await api.get(`${MESSAGE_URL}/${userId}`);
-		return response;
+		return response.data;
 	} catch (err: unknown) {
 		throw new Error(extractErrorMessage(err, 'Error getting messages'));
 	}
@@ -31,7 +31,7 @@ export const sendMessage = async (messageData: {
 			`${MESSAGE_URL}/send/${userId}`,
 			messageText
 		);
-		return response;
+		return response.data;
 	} catch (err: unknown) {
 		throw new Error(extractErrorMessage(err, 'Error sending message'));
 	}

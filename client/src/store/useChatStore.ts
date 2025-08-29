@@ -13,6 +13,12 @@ interface ChatState {
 	selectedUser: User | null;
 	isUsersLoading: boolean;
 	isMessagesLoading: boolean;
+	getUsers: () => Promise<void>;
+	getMessages: (userId: string) => Promise<void>;
+	sendMessage: (message: string) => Promise<void>;
+	// subscribeToMessages: () => void;
+	// unsubscribeFromMessages: () => void;
+	setSelectedUser: (user: User) => void;
 }
 
 export const useChatStore = create<ChatState>()((set, get) => ({

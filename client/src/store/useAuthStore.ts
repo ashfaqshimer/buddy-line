@@ -7,9 +7,10 @@ import {
 	type RegisterFormData,
 	type LoginDetails,
 } from '../services/authService';
+import type { User } from '../constants/types';
 
 interface AuthState {
-	authUser: Record<string, any> | null;
+	authUser: User | null;
 	isSigningUp: boolean;
 	isLoggingIn: boolean;
 	isUpdatingProfile: boolean;
@@ -18,6 +19,7 @@ interface AuthState {
 	// socket: SocketIOClient.Socket | null;
 	checkAuth: () => Promise<void>;
 	register: (data: RegisterFormData) => void;
+	login: (data: LoginDetails) => void;
 }
 
 export const useAuthStore = create<AuthState>()((set, get) => ({
@@ -60,7 +62,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 			set({ authUser: res.data });
 			toast.success('Logged In Successfully');
 		} catch (err) {
-			const message = err instanceof Error ? err.message : 'Failed to login';
+			const message =
+				err instanceof Error ? err.message : 'Failed to login';
 			toast.error(message);
 		} finally {
 			set({ isLoggingIn: false });

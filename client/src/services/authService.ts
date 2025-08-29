@@ -18,7 +18,7 @@ const AUTH_URL = '/api/v1/auth';
 export const loginUser = async (loginDetails: LoginDetails) => {
 	try {
 		const response = await api.post(`${AUTH_URL}/login`, loginDetails);
-		return response;
+		return response.data;
 	} catch (err: unknown) {
 		throw new Error(extractErrorMessage(err, 'Error logging in'));
 	}
@@ -27,7 +27,7 @@ export const loginUser = async (loginDetails: LoginDetails) => {
 export const registerUser = async (formData: RegisterFormData) => {
 	try {
 		const response = await api.post(`${AUTH_URL}/register`, formData);
-		return response;
+		return response.data;
 	} catch (err: unknown) {
 		throw new Error(extractErrorMessage(err, 'Error creating user'));
 	}
@@ -36,7 +36,7 @@ export const registerUser = async (formData: RegisterFormData) => {
 export const logoutUser = async () => {
 	try {
 		const response = await api.get(`${AUTH_URL}/logout`);
-		return response;
+		return response.data;
 	} catch (err: unknown) {
 		throw new Error(extractErrorMessage(err, 'Error logging out'));
 	}
