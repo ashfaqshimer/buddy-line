@@ -25,7 +25,7 @@ const SettingsPage = () => {
 				</div>
 
 				<div className='grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2'>
-					{THEMES.map((t: string) => (
+					{THEMES.map((t) => (
 						<button
 							key={t}
 							className={`
@@ -66,8 +66,12 @@ const SettingsPage = () => {
 											J
 										</div>
 										<div>
-											<h3 className='font-medium text-sm'>John Doe</h3>
-											<p className='text-xs text-base-content/70'>Online</p>
+											<h3 className='font-medium text-sm'>
+												John Doe
+											</h3>
+											<p className='text-xs text-base-content/70'>
+												Online
+											</p>
 										</div>
 									</div>
 								</div>
@@ -78,26 +82,33 @@ const SettingsPage = () => {
 										<div
 											key={message.id}
 											className={`flex ${
-												message.isSent ? 'justify-end' : 'justify-start'
+												message.isSent
+													? 'justify-end'
+													: 'justify-start'
 											}`}
 										>
 											<div
 												className={`
                           max-w-[80%] rounded-xl p-3 shadow-sm
                           ${
-														message.isSent
-															? 'bg-primary text-primary-content'
-															: 'bg-base-200'
-													}
+								message.isSent
+									? 'bg-primary text-primary-content'
+									: 'bg-base-200'
+							}
                         `}
 											>
-												<p className='text-sm'>{message.content}</p>
+												<p className='text-sm'>
+													{message.content}
+												</p>
 												<p
-													className={`text-[10px] mt-1.5 ${
-														message.isSent
-															? 'text-primary-content/70'
-															: 'text-base-content/70'
-													}`}
+													className={`
+                            text-[10px] mt-1.5
+                            ${
+								message.isSent
+									? 'text-primary-content/70'
+									: 'text-base-content/70'
+							}
+                          `}
 												>
 													12:00 PM
 												</p>
