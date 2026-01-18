@@ -1,4 +1,27 @@
-# Firebase service account keys and other secrets
-infra/firebase-service-account.json
+.DS_Store
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Dependencies
+node_modules/
+
+# pnpm store (if configured to be local)
+.pnpm-store/
+
+# Build output
+dist/
+coverage/
+
+# Env / secrets
 .env
 .env.*
+
+# Local tooling
+.cursor/

@@ -1,12 +1,21 @@
-# Buddy Line Monorepo
+# BuddyLine
 
-This monorepo contains the full-stack Buddy Line chat app.
+Monorepo scaffold for **BuddyLine** (Vue 3 + Vite + TypeScript).
+
+## Development
+
+- Install dependencies:
+
+```bash
+pnpm install
+```
+
+- Run the web app:
+
+```bash
+pnpm dev
+```
 
 ## Structure
-- frontend/ — Vue 3 + Vite + TypeScript + Tailwind + Shadcn
-- backend/ — Node.js + Express + TypeScript
-- shared/ — Shared TypeScript types/interfaces
-- infra/ — Firebase, GCP, and deployment configs
 
-## Getting Started
-Setup and usage instructions will be added as the project scaffolding progresses.
+- `apps/web/`: Vue app (Vite + TS)

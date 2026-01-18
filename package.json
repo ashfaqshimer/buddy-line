@@ -1,0 +1,12 @@
+{
+  "name": "buddy-line",
+  "private": true,
+  "version": "0.0.0",
+  "description": "BuddyLine monorepo (Vue + Firebase/Firestore).",
+  "scripts": {
+    "dev": "pnpm -C apps/web dev",
+    "build": "pnpm -C apps/web build",
+    "preview": "pnpm -C apps/web preview",
+    "typecheck": "pnpm -C apps/web typecheck"
+  }
+}
