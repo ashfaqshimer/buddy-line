@@ -11,5 +11,9 @@
   "scripts": {
     "lint": "eslint src",
     "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@buddy-line/eslint-config": "workspace:*",
+    "eslint": "^9.39.4"
   }
 }

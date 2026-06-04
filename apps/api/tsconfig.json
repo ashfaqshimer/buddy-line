@@ -3,7 +3,11 @@
   "extends": "../../packages/tsconfig/node.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    // Make Jest's ambient globals available to `tsc --noEmit` (typecheck) and
+    // the editor. The production build uses tsconfig.build.json, which excludes
+    // test files entirely.
+    "types": ["node", "jest"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
