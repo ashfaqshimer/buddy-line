@@ -8,6 +8,7 @@ import {
   incrementPlayCount,
   GameRecord,
 } from '@/lib/games-db';
+import { getAppGames, setAppGameVisibility, AppGame } from '@/lib/app-games';
 import { auth, isRootUser } from '@/lib/auth';
 import { headers } from 'next/headers';
 
@@ -141,5 +142,69 @@ export async function recordGamePlay(gameId: string): Promise<number> {
   } catch (error) {
     console.error('Failed to record play count:', error);
     return 0;
+  }
+}
+
+export async function getAppGamesAction(): Promise<{
+  success: boolean;
+  games: AppGame[];
+  isAdmin: boolean;
+  error?: string;
+}> {
+  try {
+    let isAdmin = false;
+    try {
+      const session = await auth.api.getSession({
+        headers: await headers(),
+      });
+      if (session?.user) {
+        const userObj = session.user as { role?: string; email?: string; username?: string };
+        isAdmin = userObj.role === 'admin' || isRootUser(userObj);
+      }
+    } catch {
+      isAdmin = false;
+    }
+
+    const games = await getAppGames(isAdmin);
+    return { success: true, games, isAdmin };
+  } catch (error) {
+    console.error('Failed to get app games:', error);
+    return { success: false, games: [], isAdmin: false, error: 'Failed to retrieve app games.' };
+  }
+}
+
+export async function toggleAppGameVisibilityAction(
+  gameId: string,
+  isHidden: boolean
+): Promise<{ success: boolean; game?: AppGame; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: 'Authentication required.' };
+    }
+
+    const userObj = session.user as { role?: string; email?: string; username?: string };
+    const isAdmin = userObj.role === 'admin' || isRootUser(userObj);
+
+    if (!isAdmin) {
+      return {
+        success: false,
+        error: 'Permission denied: Only Administrators and Root users can hide or release games.',
+      };
+    }
+
+    const updated = await setAppGameVisibility(gameId, isHidden);
+    if (!updated) {
+      return { success: false, error: 'App game not found.' };
+    }
+
+    return { success: true, game: updated };
+  } catch (error: unknown) {
+    console.error('Failed to update app game visibility:', error);
+    const msg = error instanceof Error ? error.message : 'Failed to update game visibility.';
+    return { success: false, error: msg };
   }
 }

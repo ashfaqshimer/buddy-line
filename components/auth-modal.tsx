@@ -217,12 +217,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. root@buddyline.com"
+                  placeholder="e.g. you@example.com"
                   className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
                 />
               </div>
               <p className="mt-1 text-[10px] text-slate-500">
-                Provide an email for the Root User or account recovery. If left blank, a game cadet ID is generated.
+                Optional: add an email for account recovery or sign-in. If left blank, a game cadet ID is generated.
               </p>
             </div>
           )}

@@ -112,13 +112,13 @@ export function EmailModal({
                 type="email"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="e.g. root@buddyline.com or you@gmail.com"
+                placeholder="e.g. you@example.com"
                 required
                 className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
               />
             </div>
             <p className="mt-1.5 text-[10px] text-slate-400 leading-relaxed">
-              Use this email to sign in or connect with the <code className="text-cyan-300">ROOT_USER</code> environment variable for platform owner permissions.
+              You can use this email address to sign into your account and receive updates.
             </p>
           </div>
 

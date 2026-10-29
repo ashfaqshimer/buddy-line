@@ -51,10 +51,19 @@ const getTrustedOrigins = () => {
 export const isRootUser = (user?: { email?: string | null; username?: string | null } | null): boolean => {
   if (!user) return false;
   const rootTarget = (process.env.ROOT_USER || "").trim().toLowerCase();
-  if (!rootTarget) return false;
+  const rootEmails = (process.env.ROOT_ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
   const email = (user.email || "").trim().toLowerCase();
   const username = (user.username || "").trim().toLowerCase();
-  return (email !== "" && email === rootTarget) || (username !== "" && username === rootTarget);
+  if (rootTarget && ((email !== "" && email === rootTarget) || (username !== "" && username === rootTarget))) {
+    return true;
+  }
+  if (email !== "" && rootEmails.includes(email)) {
+    return true;
+  }
+  return false;
 };
 
 export const auth = betterAuth({

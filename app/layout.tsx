@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Buddy Line | Nebula Hub - Deep Space Sabotage",
-  description: "Next.js multiplayer text-chat social deduction game set aboard the ISS Astraeus.",
+  title: "Nebula Hub | Gaming Hub & Community Arcade",
+  description: "The gaming hub for creators to upload custom web games and play official releases like Deep Space Sabotage.",
 };
 
 export default function RootLayout({

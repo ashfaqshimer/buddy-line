@@ -25,6 +25,8 @@ interface HeaderProps {
   onToggleDevTools: () => void;
   phase?: string;
   activeSection?: string;
+  onGameVisibilityChanged?: (gameId: string, isHidden: boolean) => void;
+  isDeepSpaceHidden?: boolean;
 }
 
 export function Header({
@@ -32,6 +34,8 @@ export function Header({
   devTools,
   onToggleDevTools,
   activeSection = 'game',
+  onGameVisibilityChanged,
+  isDeepSpaceHidden = false,
 }: HeaderProps) {
   const { data: session } = useSession();
   const [copied, setCopied] = useState(false);
@@ -85,6 +89,11 @@ export function Header({
             <span className="font-medium text-slate-300">
               {activeSection === 'arcade' ? 'Community Arcade' : 'Deep Space Sabotage'}
             </span>
+            {activeSection === 'game' && isDeepSpaceHidden && isAdmin && (
+              <span className="rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+                Admin Preview
+              </span>
+            )}
           </div>
 
           <div className="hidden md:flex items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-cyan-300">
@@ -139,15 +148,15 @@ export function Header({
             </button>
           </div>
 
-          {/* Root User Administration Panel Button */}
+          {/* Administration Panel Button */}
           {isRoot && (
             <button
               onClick={() => setIsAdminModalOpen(true)}
-              title="Open Root Administration Panel"
+              title="Open Admin Panel"
               className="flex items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 px-2.5 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20 transition shadow-sm"
             >
               <Crown className="size-3.5 text-amber-400" />
-              <span className="hidden sm:inline text-[11px] font-black uppercase tracking-wider">Root Panel</span>
+              <span className="hidden sm:inline text-[11px] font-black uppercase tracking-wider">Admin Panel</span>
             </button>
           )}
 
@@ -177,7 +186,7 @@ export function Header({
                       )}
                     </div>
                     <div className="text-[10px] text-cyan-300/80">
-                      {isAdmin ? (userRole === 'root' ? 'System Root 👑' : 'Administrator 🛡️') : 'Online Player'}
+                      {isAdmin ? (userRole === 'root' ? 'Owner 👑' : 'Administrator 🛡️') : 'Online Player'}
                     </div>
                   </div>
                   <ChevronDown className="hidden sm:block size-4 text-slate-500" />
@@ -223,7 +232,7 @@ export function Header({
                       )}
                     </button>
 
-                    {isRoot && (
+                    {isAdmin && (
                       <button
                         onClick={() => {
                           setIsAdminModalOpen(true);
@@ -232,7 +241,7 @@ export function Header({
                         className="w-full mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-400/10 transition text-left"
                       >
                         <Crown className="size-3.5 text-amber-400" />
-                        <span>Manage Admins 👑</span>
+                        <span>Hub & Admin Controls 🛡️</span>
                       </button>
                     )}
 
@@ -266,11 +275,12 @@ export function Header({
         initialMode="signup"
       />
 
-      {/* Root Admin Management Modal */}
+      {/* Root & Admin Management Modal */}
       <AdminManagerModal
         isOpen={isAdminModalOpen}
         onClose={() => setIsAdminModalOpen(false)}
         currentUser={session?.user}
+        onGameVisibilityChanged={onGameVisibilityChanged}
       />
 
       {/* Email Link & Update Modal */}
