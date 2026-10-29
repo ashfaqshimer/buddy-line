@@ -48,8 +48,12 @@ const getTrustedOrigins = () => {
   return origins;
 };
 
-export const isRootUser = (user?: { email?: string | null; username?: string | null } | null): boolean => {
+export const isRootUser = (
+  user?: { email?: string | null; username?: string | null; role?: string | null } | null
+): boolean => {
   if (!user) return false;
+  if (user.role?.toLowerCase() === 'root') return true;
+
   const rootTarget = (process.env.ROOT_USER || "").trim().toLowerCase();
   const rootEmails = (process.env.ROOT_ADMIN_EMAILS || "")
     .split(",")
@@ -57,10 +61,15 @@ export const isRootUser = (user?: { email?: string | null; username?: string | n
     .filter(Boolean);
   const email = (user.email || "").trim().toLowerCase();
   const username = (user.username || "").trim().toLowerCase();
+
   if (rootTarget && ((email !== "" && email === rootTarget) || (username !== "" && username === rootTarget))) {
     return true;
   }
   if (email !== "" && rootEmails.includes(email)) {
+    return true;
+  }
+  // Standard root user convention
+  if (username === "root" || email === "root" || email === "root@buddyline.local" || email === "root@buddyline.com") {
     return true;
   }
   return false;

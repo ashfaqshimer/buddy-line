@@ -149,27 +149,31 @@ export async function getAppGamesAction(): Promise<{
   success: boolean;
   games: AppGame[];
   isAdmin: boolean;
+  isRoot: boolean;
   error?: string;
 }> {
   try {
     let isAdmin = false;
+    let isRoot = false;
     try {
       const session = await auth.api.getSession({
         headers: await headers(),
       });
       if (session?.user) {
         const userObj = session.user as { role?: string; email?: string; username?: string };
-        isAdmin = userObj.role === 'admin' || isRootUser(userObj);
+        isRoot = isRootUser(userObj);
+        isAdmin = userObj.role === 'admin' || isRoot;
       }
     } catch {
       isAdmin = false;
+      isRoot = false;
     }
 
     const games = await getAppGames(isAdmin);
-    return { success: true, games, isAdmin };
+    return { success: true, games, isAdmin, isRoot };
   } catch (error) {
     console.error('Failed to get app games:', error);
-    return { success: false, games: [], isAdmin: false, error: 'Failed to retrieve app games.' };
+    return { success: false, games: [], isAdmin: false, isRoot: false, error: 'Failed to retrieve app games.' };
   }
 }
 

@@ -37,14 +37,28 @@ function getDb() {
   }
 }
 
-function isRootIdentifier(identifier, email, username) {
+function isRootIdentifier(identifier, email, username, role) {
+  if (role && role.toLowerCase() === 'root') return true;
   const rootTarget = (process.env.ROOT_USER || '').trim().toLowerCase();
-  if (!rootTarget) return false;
-  return (
-    (identifier && identifier.toLowerCase() === rootTarget) ||
-    (email && email.toLowerCase() === rootTarget) ||
-    (username && username.toLowerCase() === rootTarget)
-  );
+  const rootEmails = (process.env.ROOT_ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanUsername = (username || '').trim().toLowerCase();
+  const cleanId = (identifier || '').trim().toLowerCase();
+
+  if (rootTarget && (cleanId === rootTarget || cleanEmail === rootTarget || cleanUsername === rootTarget)) {
+    return true;
+  }
+  if (cleanEmail && rootEmails.includes(cleanEmail)) {
+    return true;
+  }
+  if (cleanUsername === 'root' || cleanEmail === 'root' || cleanEmail === 'root@buddyline.local' || cleanEmail === 'root@buddyline.com') {
+    return true;
+  }
+  return false;
 }
 
 async function listUsers() {
@@ -71,7 +85,7 @@ async function listUsers() {
 
     console.table(
       rows.map((u) => {
-        const isRoot = isRootIdentifier(null, u.email, u.username);
+        const isRoot = isRootIdentifier(null, u.email, u.username, u.role);
         return {
           ID: u.id,
           Name: u.name,

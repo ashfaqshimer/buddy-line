@@ -21,7 +21,22 @@ export async function checkIsRootUserAction(): Promise<boolean> {
       headers: await headers(),
     });
     if (!session?.user) return false;
-    return isRootUser(session.user as { email?: string; username?: string });
+    
+    const user = session.user as { id?: string; email?: string; username?: string; role?: string };
+    if (isRootUser(user)) return true;
+
+    // Check DB in case username or role was not fully hydrated in session cookie
+    if (user.id && (!user.username || !user.role)) {
+      if (dbInstance instanceof Pool) {
+        const res = await dbInstance.query('SELECT email, username, role FROM "user" WHERE id = $1', [user.id]);
+        if (res.rows[0] && isRootUser(res.rows[0])) return true;
+      } else if (dbInstance instanceof DatabaseSync) {
+        const row = dbInstance.prepare('SELECT email, username, role FROM user WHERE id = ?').get(user.id) as { email: string; username: string | null; role: string | null } | undefined;
+        if (row && isRootUser(row)) return true;
+      }
+    }
+
+    return false;
   } catch (err) {
     console.error('Failed to check root user status:', err);
     return false;

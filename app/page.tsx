@@ -31,6 +31,7 @@ import {
   Gamepad2,
   Loader2,
   Lock,
+  Crown,
 } from 'lucide-react';
 
 export default function NebulaHubApp() {
@@ -39,6 +40,7 @@ export default function NebulaHubApp() {
   const [activeSection, setActiveSection] = useState<'game' | 'arcade'>('game');
   const [appGames, setAppGames] = useState<AppGame[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isRoot, setIsRoot] = useState(false);
   const [isAppGamesLoaded, setIsAppGamesLoaded] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isTogglingVisibility, setIsTogglingVisibility] = useState(false);
@@ -52,6 +54,7 @@ export default function NebulaHubApp() {
       if (res.success && res.games) {
         setAppGames(res.games);
         setIsAdmin(res.isAdmin);
+        setIsRoot(res.isRoot);
 
         // If Deep Space is hidden and the user is NOT an admin, default activeSection to 'arcade'
         const deepSpace = res.games.find((g) => g.id === 'deep-space');
@@ -183,6 +186,7 @@ export default function NebulaHubApp() {
           onSelectSection={(sec) => setActiveSection(sec)}
           appGames={appGames}
           isAdmin={isAdmin}
+          isRoot={isRoot}
           onOpenAdminManager={() => setIsAdminModalOpen(true)}
         />
 
@@ -269,6 +273,12 @@ export default function NebulaHubApp() {
                               ? '🔒 Hidden (Admin Preview Only)'
                               : '🟢 Released (Publicly Visible)'}
                           </span>
+                          {isRoot && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-400/20 to-purple-500/20 border border-amber-400/40 px-2 py-0.5 text-[10px] font-black text-amber-300 uppercase tracking-wider shadow-[0_0_8px_rgba(251,191,36,0.25)]">
+                              <Crown className="size-2.5 text-amber-400 fill-amber-400" />
+                              Root Control
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-slate-300 mt-1 leading-relaxed">
                           {isDeepSpaceHidden

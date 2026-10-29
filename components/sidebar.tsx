@@ -13,6 +13,7 @@ import {
   Settings,
   Shield,
   Layers,
+  Crown,
 } from 'lucide-react';
 import { AppGame } from '@/lib/app-games';
 
@@ -21,6 +22,7 @@ interface SidebarProps {
   onSelectSection?: (section: 'game' | 'arcade') => void;
   appGames?: AppGame[];
   isAdmin?: boolean;
+  isRoot?: boolean;
   onOpenAdminManager?: () => void;
 }
 
@@ -29,6 +31,7 @@ export function Sidebar({
   onSelectSection,
   appGames = [],
   isAdmin = false,
+  isRoot = false,
   onOpenAdminManager,
 }: SidebarProps) {
   // Find Deep Space game status
@@ -180,20 +183,33 @@ export function Sidebar({
           <div className="rounded-2xl border border-amber-400/20 bg-amber-500/[0.05] p-3">
             <div className="flex items-center justify-between text-xs font-bold text-amber-300 mb-1.5">
               <div className="flex items-center gap-1.5">
-                <Shield className="size-3.5" />
-                <span>Admin Controls</span>
+                {isRoot ? (
+                  <Crown className="size-3.5 text-amber-400 fill-amber-400/30" />
+                ) : (
+                  <Shield className="size-3.5" />
+                )}
+                <span>{isRoot ? 'Root Superuser Controls' : 'Admin Controls'}</span>
               </div>
-              <span className="size-1.5 rounded-full bg-amber-400 animate-ping" />
+              {isRoot ? (
+                <span className="rounded bg-gradient-to-r from-amber-400/25 to-purple-500/25 border border-amber-400/40 px-1.5 py-0.5 text-[8px] font-black text-amber-300 uppercase tracking-widest flex items-center gap-0.5 shadow-[0_0_8px_rgba(251,191,36,0.3)]">
+                  <Crown className="size-2 text-amber-400 fill-amber-400" />
+                  ROOT
+                </span>
+              ) : (
+                <span className="size-1.5 rounded-full bg-amber-400 animate-ping" />
+              )}
             </div>
             <p className="text-[11px] text-slate-400 leading-tight mb-2.5">
-              Manage game release visibility or grant administrator roles.
+              {isRoot
+                ? 'Full superuser privileges: manage game releases, assign roles, and administer platform settings.'
+                : 'Manage game release visibility or grant administrator roles.'}
             </p>
             <button
               onClick={onOpenAdminManager}
               className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-amber-400/15 border border-amber-400/30 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-400 hover:text-slate-950 transition active:scale-95"
             >
-              <Settings className="size-3.5" />
-              <span>Release Manager</span>
+              {isRoot ? <Crown className="size-3.5" /> : <Settings className="size-3.5" />}
+              <span>{isRoot ? 'Open Root Admin Panel' : 'Release Manager'}</span>
             </button>
           </div>
         )}
