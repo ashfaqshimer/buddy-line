@@ -7,7 +7,6 @@ import {
   FileCode,
   FileText,
   Palette,
-  Sparkles,
   CheckCircle2,
   AlertCircle,
   HelpCircle,
@@ -64,7 +63,7 @@ const STARTER_TEMPLATE = {
 </html>`,
   css: `body {
   margin: 0;
-  background: #090a0f;
+  background: #151920;
   color: #fff;
   font-family: system-ui, sans-serif;
   display: flex;
@@ -83,33 +82,33 @@ const STARTER_TEMPLATE = {
   font-size: 18px;
   font-weight: 900;
   letter-spacing: 2px;
-  color: #10e7a6;
+  color: #2dd4bf;
   margin-bottom: 8px;
 }
 canvas {
-  background: radial-gradient(circle at center, #1e1b4b 0%, #030712 100%);
-  border: 2px solid #818cf8;
+  background: radial-gradient(circle at center, #1e2638 0%, #111419 100%);
+  border: 2px solid #2dd4bf;
   border-radius: 16px;
-  box-shadow: 0 0 30px rgba(129, 140, 248, 0.3);
+  box-shadow: 0 0 30px rgba(45, 212, 191, 0.25);
   max-width: 95vw;
   cursor: crosshair;
 }
 #game-over {
   display: none;
   position: absolute;
-  background: rgba(15, 23, 42, 0.95);
-  border: 2px solid #10e7a6;
+  background: rgba(28, 32, 40, 0.95);
+  border: 2px solid #2dd4bf;
   padding: 24px 40px;
   border-radius: 16px;
   text-align: center;
 }
 button {
-  background: #10e7a6;
-  color: #020617;
+  background: #2dd4bf;
+  color: #0f172a;
   border: none;
   padding: 10px 20px;
   font-weight: bold;
-  border-radius: 8px;
+  border-radius: 9999px;
   cursor: pointer;
 }`,
   js: `const canvas = document.getElementById('canvas');
@@ -138,7 +137,7 @@ function spawnGem() {
     x: Math.random() * (canvas.width - 24),
     y: -20,
     speed: 2 + Math.random() * 3,
-    color: ['#10e7a6', '#c084fc', '#f472b6', '#fbbf24'][Math.floor(Math.random() * 4)]
+    color: ['#2dd4bf', '#38bdf8', '#818cf8', '#f472b6'][Math.floor(Math.random() * 4)]
   });
 }
 setInterval(spawnGem, 500);
@@ -173,7 +172,7 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
   // Basket
-  ctx.fillStyle = '#10e7a6';
+  ctx.fillStyle = '#2dd4bf';
   ctx.fillRect(basket.x, basket.y, basket.size, 10);
 
   // Gems
@@ -362,18 +361,18 @@ export function GameUploaderModal({
     : '';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="relative flex max-h-[92vh] w-full max-w-4xl flex-col rounded-3xl border border-white/10 bg-[#0d101c] shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
+      <div className="relative flex max-h-[92vh] w-full max-w-4xl flex-col rounded-2xl border border-white/[0.08] bg-[#1c2028] shadow-[6px_6px_20px_rgba(0,0,0,0.5)] overflow-hidden">
         {/* Top Header */}
-        <div className="flex items-center justify-between border-b border-white/[0.08] px-6 py-4 bg-white/[0.02]">
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4 bg-[#181c24]">
           <div className="flex items-center gap-3">
-            <div className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-400 via-teal-500 to-violet-600 text-slate-950 shadow-lg shadow-emerald-500/25">
+            <div className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-400 to-teal-600 text-slate-950 shadow-lg shadow-teal-500/25">
               <GiJoystick className="size-6 text-slate-950 font-black" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-black text-white tracking-tight">Game Creator Studio</h2>
-                <span className="rounded-full bg-emerald-400/15 border border-emerald-400/30 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                <span className="rounded-full bg-teal-400/10 border border-teal-400/20 px-2 py-0.5 text-[10px] font-bold text-teal-400">
                   HTML5 Sandboxed
                 </span>
               </div>
@@ -387,7 +386,7 @@ export function GameUploaderModal({
             <button
               type="button"
               onClick={loadStarterTemplate}
-              className="hidden sm:flex items-center gap-1.5 rounded-xl border border-violet-400/30 bg-violet-500/15 px-3 py-1.5 text-xs font-bold text-violet-300 hover:bg-violet-500/25 transition"
+              className="hidden sm:flex items-center gap-1.5 rounded-full border border-teal-400/20 bg-teal-400/8 px-3.5 py-1.5 text-xs font-bold text-teal-300 hover:bg-teal-400/15 transition"
               title="Autofill with starter game template"
             >
               <Wand2 className="size-3.5" />
@@ -396,7 +395,7 @@ export function GameUploaderModal({
 
             <button
               onClick={onClose}
-              className="rounded-xl p-2 text-slate-400 hover:bg-white/10 hover:text-white transition"
+              className="rounded-xl p-2 text-slate-400 hover:bg-white/[0.08] hover:text-white transition"
             >
               <X className="size-5" />
             </button>
@@ -407,7 +406,7 @@ export function GameUploaderModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Error Banner */}
           {errorMessage && (
-            <div className="flex items-center gap-2 rounded-2xl bg-rose-500/10 border border-rose-500/25 p-3.5 text-xs text-rose-300">
+            <div className="flex items-center gap-2 rounded-2xl bg-rose-500/8 border border-rose-500/20 p-3.5 text-xs text-rose-300">
               <AlertCircle className="size-4 shrink-0 text-rose-400" />
               <span>{errorMessage}</span>
             </div>
@@ -426,7 +425,7 @@ export function GameUploaderModal({
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Astro Jump, Cyber Runner, Neon Dodge..."
                   maxLength={40}
-                  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-base font-bold text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  className="w-full rounded-2xl border border-white/[0.08] bg-[#151920] px-4 py-3 text-base font-bold text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 shadow-[inset_2px_2px_6px_rgba(0,0,0,0.3)]"
                 />
               </div>
 
@@ -440,13 +439,13 @@ export function GameUploaderModal({
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="e.g. Press Spacebar to jump and dodge asteroids! Arrow keys to move."
                   maxLength={120}
-                  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  className="w-full rounded-2xl border border-white/[0.08] bg-[#151920] px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 shadow-[inset_2px_2px_6px_rgba(0,0,0,0.3)]"
                 />
               </div>
             </div>
 
             {/* Categorized Icon Picker */}
-            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 max-w-xs">
+            <div className="rounded-2xl border border-white/[0.06] bg-[#151920] p-4 max-w-xs shadow-[inset_1px_1px_4px_rgba(0,0,0,0.25)]">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
                   Game Icon Badge
@@ -465,8 +464,8 @@ export function GameUploaderModal({
                           onClick={() => setSelectedIcon(emoji)}
                           className={`size-8 rounded-lg text-base flex items-center justify-center border transition ${
                             selectedIcon === emoji
-                              ? 'border-emerald-400 bg-emerald-400/20 scale-110 shadow-sm'
-                              : 'border-white/5 bg-white/[0.03] hover:border-white/20'
+                              ? 'border-teal-400 bg-teal-400/15 scale-110 shadow-sm'
+                              : 'border-white/[0.04] bg-white/[0.02] hover:border-white/15'
                           }`}
                         >
                           {emoji}
@@ -485,7 +484,7 @@ export function GameUploaderModal({
               <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
                 Code Files (HTML, CSS, JS)
               </span>
-              <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
+              <span className="text-[11px] text-teal-400 flex items-center gap-1 font-semibold">
                 <HelpCircle className="size-3" />
                 HTML file is all that is required
               </span>
@@ -498,16 +497,16 @@ export function GameUploaderModal({
                 onDrop={(e) => handleFileDrop(e, 'html')}
                 className={`relative flex flex-col justify-between rounded-2xl border-2 border-dashed p-4 transition ${
                   htmlFile
-                    ? 'border-emerald-500/40 bg-emerald-500/[0.05]'
-                    : 'border-emerald-500/30 bg-emerald-500/[0.02] hover:border-emerald-400'
+                    ? 'border-teal-500/40 bg-teal-500/[0.04]'
+                    : 'border-teal-500/25 bg-teal-500/[0.02] hover:border-teal-400'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-400">
+                    <span className="rounded-md bg-teal-500/15 px-2 py-0.5 text-[10px] font-black uppercase text-teal-400">
                       Step 1 • Required
                     </span>
-                    <FileCode className="size-4 text-emerald-400" />
+                    <FileCode className="size-4 text-teal-400" />
                   </div>
                   <h4 className="font-bold text-white text-sm">HTML File (.html)</h4>
                   <p className="text-[11px] text-slate-400 mt-0.5">
@@ -517,13 +516,13 @@ export function GameUploaderModal({
 
                 <div className="mt-4">
                   {htmlFile ? (
-                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5">
+                    <div className="rounded-xl border border-teal-500/25 bg-teal-500/8 p-2.5">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 truncate text-xs font-semibold text-emerald-300">
+                        <div className="flex items-center gap-2 truncate text-xs font-semibold text-teal-300">
                           <CheckCircle2 className="size-4 shrink-0" />
                           <span className="truncate">{htmlFile.name}</span>
                         </div>
-                        <span className="text-[10px] text-emerald-400/80">{htmlFile.size}</span>
+                        <span className="text-[10px] text-teal-400/80">{htmlFile.size}</span>
                       </div>
                       <button
                         type="button"
@@ -537,7 +536,7 @@ export function GameUploaderModal({
                     <button
                       type="button"
                       onClick={() => htmlInputRef.current?.click()}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 py-2.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500/25 transition"
+                      className="w-full flex items-center justify-center gap-2 rounded-full bg-teal-500/10 border border-teal-500/25 py-2.5 text-xs font-bold text-teal-300 hover:bg-teal-500/20 transition"
                     >
                       <Upload className="size-3.5" />
                       <span>Choose .html file</span>
@@ -561,16 +560,16 @@ export function GameUploaderModal({
                 onDrop={(e) => handleFileDrop(e, 'css')}
                 className={`relative flex flex-col justify-between rounded-2xl border-2 border-dashed p-4 transition ${
                   cssFile
-                    ? 'border-emerald-500/40 bg-emerald-500/[0.05]'
-                    : 'border-violet-500/30 bg-violet-500/[0.02] hover:border-violet-400'
+                    ? 'border-teal-500/40 bg-teal-500/[0.04]'
+                    : 'border-white/[0.1] bg-white/[0.02] hover:border-teal-400/50'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="rounded-md bg-violet-500/20 px-2 py-0.5 text-[10px] font-black uppercase text-violet-400">
+                    <span className="rounded-md bg-white/[0.06] px-2 py-0.5 text-[10px] font-black uppercase text-slate-300">
                       Step 2 • Optional
                     </span>
-                    <Palette className="size-4 text-violet-400" />
+                    <Palette className="size-4 text-teal-400" />
                   </div>
                   <h4 className="font-bold text-white text-sm">CSS Stylesheet (.css)</h4>
                   <p className="text-[11px] text-slate-400 mt-0.5">
@@ -580,13 +579,13 @@ export function GameUploaderModal({
 
                 <div className="mt-4">
                   {cssFile ? (
-                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5">
+                    <div className="rounded-xl border border-teal-500/25 bg-teal-500/8 p-2.5">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 truncate text-xs font-semibold text-emerald-300">
+                        <div className="flex items-center gap-2 truncate text-xs font-semibold text-teal-300">
                           <CheckCircle2 className="size-4 shrink-0" />
                           <span className="truncate">{cssFile.name}</span>
                         </div>
-                        <span className="text-[10px] text-emerald-400/80">{cssFile.size}</span>
+                        <span className="text-[10px] text-teal-400/80">{cssFile.size}</span>
                       </div>
                       <button
                         type="button"
@@ -600,7 +599,7 @@ export function GameUploaderModal({
                     <button
                       type="button"
                       onClick={() => cssInputRef.current?.click()}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-violet-500/15 border border-violet-500/30 py-2.5 text-xs font-bold text-violet-300 hover:bg-violet-500/25 transition"
+                      className="w-full flex items-center justify-center gap-2 rounded-full bg-white/[0.04] border border-white/[0.08] py-2.5 text-xs font-bold text-slate-300 hover:bg-white/[0.08] transition"
                     >
                       <Upload className="size-3.5" />
                       <span>Choose .css file</span>
@@ -624,16 +623,16 @@ export function GameUploaderModal({
                 onDrop={(e) => handleFileDrop(e, 'js')}
                 className={`relative flex flex-col justify-between rounded-2xl border-2 border-dashed p-4 transition ${
                   jsFile
-                    ? 'border-emerald-500/40 bg-emerald-500/[0.05]'
-                    : 'border-amber-500/30 bg-amber-500/[0.02] hover:border-amber-400'
+                    ? 'border-teal-500/40 bg-teal-500/[0.04]'
+                    : 'border-white/[0.1] bg-white/[0.02] hover:border-teal-400/50'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="rounded-md bg-amber-500/20 px-2 py-0.5 text-[10px] font-black uppercase text-amber-400">
+                    <span className="rounded-md bg-white/[0.06] px-2 py-0.5 text-[10px] font-black uppercase text-slate-300">
                       Step 3 • Optional
                     </span>
-                    <FileText className="size-4 text-amber-400" />
+                    <FileText className="size-4 text-teal-400" />
                   </div>
                   <h4 className="font-bold text-white text-sm">JavaScript Logic (.js)</h4>
                   <p className="text-[11px] text-slate-400 mt-0.5">
@@ -643,13 +642,13 @@ export function GameUploaderModal({
 
                 <div className="mt-4">
                   {jsFile ? (
-                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5">
+                    <div className="rounded-xl border border-teal-500/25 bg-teal-500/8 p-2.5">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 truncate text-xs font-semibold text-emerald-300">
+                        <div className="flex items-center gap-2 truncate text-xs font-semibold text-teal-300">
                           <CheckCircle2 className="size-4 shrink-0" />
                           <span className="truncate">{jsFile.name}</span>
                         </div>
-                        <span className="text-[10px] text-emerald-400/80">{jsFile.size}</span>
+                        <span className="text-[10px] text-teal-400/80">{jsFile.size}</span>
                       </div>
                       <button
                         type="button"
@@ -663,7 +662,7 @@ export function GameUploaderModal({
                     <button
                       type="button"
                       onClick={() => jsInputRef.current?.click()}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500/15 border border-amber-500/30 py-2.5 text-xs font-bold text-amber-300 hover:bg-amber-500/25 transition"
+                      className="w-full flex items-center justify-center gap-2 rounded-full bg-white/[0.04] border border-white/[0.08] py-2.5 text-xs font-bold text-slate-300 hover:bg-white/[0.08] transition"
                     >
                       <Upload className="size-3.5" />
                       <span>Choose .js file</span>
@@ -685,20 +684,20 @@ export function GameUploaderModal({
 
           {/* 3. Live Test Sandbox Preview */}
           {htmlFile && (
-            <div className="rounded-2xl border border-emerald-400/20 bg-white/[0.02] p-4">
+            <div className="rounded-2xl border border-teal-400/15 bg-[#151920] p-4 shadow-[inset_1px_1px_4px_rgba(0,0,0,0.25)]">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                  <span className="text-xs font-bold uppercase tracking-wider text-teal-300">
                     Live Sandbox Test Window
                   </span>
-                  <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-[10px] text-emerald-400 font-semibold">
+                  <span className="rounded-full bg-teal-400/10 px-2 py-0.5 text-[10px] text-teal-400 font-semibold">
                     Test Play Before Publishing
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setPreviewMode(!previewMode)}
-                  className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 hover:underline"
+                  className="flex items-center gap-1.5 text-xs font-bold text-teal-400 hover:underline"
                 >
                   <Eye className="size-3.5" />
                   <span>{previewMode ? 'Hide Test Window' : 'Test Play Now 🕹️'}</span>
@@ -706,7 +705,7 @@ export function GameUploaderModal({
               </div>
 
               {previewMode && (
-                <div className="overflow-hidden rounded-xl border border-white/15 bg-black">
+                <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-black">
                   <iframe
                     title="Live Test Sandbox"
                     sandbox="allow-scripts allow-modals allow-pointer-lock"
@@ -720,11 +719,11 @@ export function GameUploaderModal({
         </div>
 
         {/* Modal Footer Controls */}
-        <div className="flex items-center justify-between border-t border-white/[0.08] bg-[#090b14] px-6 py-4">
+        <div className="flex items-center justify-between border-t border-white/[0.06] bg-[#181c24] px-6 py-4">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition"
+            className="rounded-full px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition"
           >
             Cancel
           </button>
@@ -733,7 +732,7 @@ export function GameUploaderModal({
             type="button"
             disabled={!htmlFile || isSubmitting}
             onClick={handlePublish}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 px-6 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-emerald-500/25 hover:from-emerald-300 hover:to-teal-300 transition transform active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-6 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-teal-500/20 hover:shadow-[0_0_24px_rgba(45,212,191,0.35)] transition transform active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <>

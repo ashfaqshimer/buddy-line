@@ -94,27 +94,27 @@ export function Header({
       id: 'catalog',
       label: 'Arcade',
       shortLabel: 'Arcade',
-      icon: <GiJoystick className="size-4 shrink-0 text-emerald-400" />,
+      icon: <GiJoystick className="size-4 shrink-0 text-teal-400" />,
     },
     {
       id: 'leaderboards',
       label: 'Leaderboards',
       shortLabel: 'Scores',
-      icon: <GiTrophyCup className="size-4 shrink-0 text-amber-400" />,
+      icon: <GiTrophyCup className="size-4 shrink-0 text-teal-300" />,
       badge: 'TOP',
     },
     {
       id: 'community',
       label: 'Community Lounge',
       shortLabel: 'Lounge',
-      icon: <IoChatbubbles className="size-4 shrink-0 text-violet-400" />,
+      icon: <IoChatbubbles className="size-4 shrink-0 text-teal-300" />,
       badge: 'CHAT',
     },
   ];
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#090a0f]/90 backdrop-blur-xl transition-all">
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#1a1f27]/90 backdrop-blur-xl transition-all">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-[4.5rem] flex items-center justify-between gap-2 sm:gap-4">
           {/* Left: Brand Identity + Desktop Nav */}
           <div className="flex items-center gap-3 lg:gap-6 min-w-0 shrink-0">
@@ -123,21 +123,21 @@ export function Header({
               onClick={() => onSelectTab?.('catalog')}
               className="flex items-center gap-2.5 sm:gap-3 text-left group focus:outline-none shrink-0"
             >
-              <div className="relative flex size-10 sm:size-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-400 via-teal-500 to-violet-600 text-slate-950 shadow-[0_0_20px_rgba(16,231,166,0.35)] transition-transform duration-300 group-hover:scale-105 group-hover:shadow-[0_0_28px_rgba(16,231,166,0.55)] shrink-0">
+              <div className="relative flex size-10 sm:size-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-400 to-teal-600 text-slate-950 shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-transform duration-300 group-hover:scale-105 group-hover:shadow-[0_0_28px_rgba(45,212,191,0.5)] shrink-0">
                 <GiGameConsole className="size-5.5 sm:size-6 text-slate-950" />
                 <span className="absolute -bottom-0.5 -right-0.5 flex size-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full size-2.5 bg-emerald-400" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full size-2.5 bg-teal-400" />
                 </span>
               </div>
 
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-lg sm:text-xl font-black tracking-tight text-white group-hover:text-emerald-400 transition-colors whitespace-nowrap">
+                  <span className="text-lg sm:text-xl font-black tracking-tight text-white group-hover:text-teal-400 transition-colors whitespace-nowrap">
                     BUDDY LINE
                   </span>
-                  <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[9px] sm:text-[10px] font-black text-emerald-400 tracking-wider shrink-0">
-                    <Zap className="size-2 text-emerald-400 fill-emerald-400" />
+                  <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-teal-500/10 border border-teal-500/25 px-2 py-0.5 text-[9px] sm:text-[10px] font-black text-teal-400 tracking-wider shrink-0">
+                    <Zap className="size-2 text-teal-400 fill-teal-400" />
                     <span>ARCADE</span>
                   </span>
                 </div>
@@ -148,7 +148,7 @@ export function Header({
                   {totalGamesCount !== undefined && totalGamesCount > 0 && (
                     <>
                       <span className="size-1 rounded-full bg-slate-600" />
-                      <span className="text-emerald-400 font-semibold">{totalGamesCount} playable</span>
+                      <span className="text-teal-400 font-semibold">{totalGamesCount} playable</span>
                     </>
                   )}
                 </div>
@@ -156,7 +156,7 @@ export function Header({
             </button>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden md:flex items-center gap-1 ml-2 lg:ml-4 pl-2 lg:pl-4 border-l border-white/[0.08] shrink-0">
+            <nav className="hidden md:flex items-center gap-1 ml-2 lg:ml-4 pl-2 lg:pl-4 border-l border-white/[0.06] shrink-0">
               {navItems.map((item) => {
                 const isActive = activeTab === item.id;
                 return (
@@ -165,7 +165,7 @@ export function Header({
                     onClick={() => onSelectTab?.(item.id)}
                     className={`relative flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                       isActive
-                        ? 'text-white bg-white/[0.08] shadow-inner'
+                        ? 'text-white bg-white/[0.07] shadow-inner'
                         : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                     }`}
                   >
@@ -176,7 +176,7 @@ export function Header({
                       <span
                         className={`text-[9px] font-black px-1.5 py-0.2 rounded-md shrink-0 ${
                           isActive
-                            ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/30'
+                            ? 'bg-teal-400/20 text-teal-300 border border-teal-400/30'
                             : 'bg-white/[0.06] text-slate-400'
                         }`}
                       >
@@ -184,7 +184,7 @@ export function Header({
                       </span>
                     )}
                     {isActive && (
-                      <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-emerald-400 to-violet-500 rounded-full" />
+                      <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-teal-400 to-teal-600 rounded-full" />
                     )}
                   </button>
                 );
@@ -194,10 +194,10 @@ export function Header({
 
           {/* Right Action Controls */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Upload CTA Button in Cyber Emerald */}
+            {/* Upload CTA Button */}
             <button
               onClick={handleUpload}
-              className="relative group overflow-hidden flex items-center gap-1.5 sm:gap-2 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 px-3 sm:px-4 py-2 text-xs font-black text-slate-950 shadow-[0_0_18px_rgba(16,231,166,0.25)] hover:shadow-[0_0_26px_rgba(16,231,166,0.45)] transition-all duration-300 transform active:scale-95 whitespace-nowrap shrink-0"
+              className="relative group overflow-hidden flex items-center gap-1.5 sm:gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-4 sm:px-5 py-2 text-xs font-black text-slate-950 shadow-[0_0_18px_rgba(45,212,191,0.25)] hover:shadow-[0_0_26px_rgba(45,212,191,0.45)] transition-all duration-300 transform active:scale-95 whitespace-nowrap shrink-0"
             >
               <div className="absolute inset-0 w-1/2 h-full bg-white/20 skew-x-12 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-700 pointer-events-none" />
               <Upload className="size-3.5 shrink-0 transition-transform duration-300 group-hover:-translate-y-0.5" />
@@ -208,11 +208,11 @@ export function Header({
             {/* Root Superuser Tag (Visible on desktop) */}
             {effectiveIsRoot && (
               <div
-                className="hidden 2xl:flex items-center gap-1.5 rounded-xl border border-amber-400/50 bg-gradient-to-r from-amber-500/20 via-violet-500/20 to-emerald-500/20 px-2.5 py-1.5 text-xs font-bold text-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.25)] ring-1 ring-amber-400/30 backdrop-blur-sm whitespace-nowrap shrink-0"
+                className="hidden 2xl:flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/10 px-2.5 py-1.5 text-xs font-bold text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.15)] whitespace-nowrap shrink-0"
                 title="Super Administrator (Root)"
               >
                 <Crown className="size-3 text-amber-400 fill-amber-400 shrink-0" />
-                <span className="text-[11px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-300 to-yellow-100 bg-clip-text text-transparent">
+                <span className="text-[11px] font-black uppercase tracking-wider text-amber-300">
                   Root
                 </span>
               </div>
@@ -226,7 +226,7 @@ export function Header({
                   else setIsAdminModalOpen(true);
                 }}
                 title="Open Admin Management Panel"
-                className="hidden md:flex items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 px-2.5 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20 transition shadow-sm whitespace-nowrap shrink-0"
+                className="hidden md:flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/8 px-2.5 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-400/15 transition shadow-sm whitespace-nowrap shrink-0"
               >
                 <Crown className="size-3.5 text-amber-400 shrink-0" />
                 <span className="hidden xl:inline text-[11px] font-black uppercase tracking-wider">Admin</span>
@@ -234,7 +234,7 @@ export function Header({
             )}
 
             {/* User Profile / Auth Area */}
-            <div className="relative border-l border-white/[0.08] pl-2 sm:pl-3 shrink-0">
+            <div className="relative border-l border-white/[0.06] pl-2 sm:pl-3 shrink-0">
               {isLoggedIn ? (
                 <div className="relative">
                   <button
@@ -242,37 +242,37 @@ export function Header({
                     className="flex items-center gap-2 rounded-xl p-1 hover:bg-white/[0.06] transition shrink-0"
                   >
                     <div className="relative shrink-0">
-                      <div className="flex size-8 sm:size-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-violet-600 text-sm shadow-[0_0_12px_rgba(16,231,166,0.25)] font-black text-white">
+                      <div className="flex size-8 sm:size-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 text-sm shadow-[0_0_12px_rgba(45,212,191,0.2)] font-black text-white">
                         {userAvatar.length <= 2 ? userAvatar : userDisplayName.slice(0, 2).toUpperCase()}
                       </div>
-                      <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full border-2 border-[#090a0f] bg-emerald-400" />
+                      <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full border-2 border-[#1a1f27] bg-teal-400" />
                       {effectiveIsRoot && (
                         <span
                           title="Root Superuser"
-                          className="absolute -top-1.5 -left-1.5 flex size-4 items-center justify-center rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 text-[9px] shadow-[0_0_8px_rgba(251,191,36,0.8)] border border-amber-200/50"
+                          className="absolute -top-1.5 -left-1.5 flex size-4 items-center justify-center rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 text-[9px] shadow-[0_0_8px_rgba(251,191,36,0.6)] border border-amber-200/50"
                         >
                           👑
                         </span>
                       )}
                     </div>
 
-                    {/* User display details only visible on large desktop to keep navbar clean */}
+                    {/* User display details only visible on large desktop */}
                     <div className="hidden xl:block text-left whitespace-nowrap">
                       <div className="flex items-center gap-1 text-xs font-bold text-white">
                         <span className="max-w-[85px] truncate">{userDisplayName}</span>
                         {effectiveIsRoot ? (
-                          <span className="rounded bg-amber-400/20 text-amber-300 border border-amber-400/40 px-1 py-0.2 text-[9px] font-black uppercase shrink-0">
+                          <span className="rounded bg-amber-400/20 text-amber-300 border border-amber-400/30 px-1 py-0.2 text-[9px] font-black uppercase shrink-0">
                             ROOT
                           </span>
                         ) : isAdmin ? (
-                          <span className="rounded bg-amber-400/20 text-amber-300 border border-amber-400/40 px-1 py-0.2 text-[9px] font-black uppercase shrink-0">
+                          <span className="rounded bg-amber-400/20 text-amber-300 border border-amber-400/30 px-1 py-0.2 text-[9px] font-black uppercase shrink-0">
                             ADMIN
                           </span>
                         ) : (
-                          <ShieldCheck className="size-3 text-emerald-400 shrink-0" />
+                          <ShieldCheck className="size-3 text-teal-400 shrink-0" />
                         )}
                       </div>
-                      <div className="text-[10px] text-emerald-400/90 font-medium truncate max-w-[95px]">
+                      <div className="text-[10px] text-teal-400/90 font-medium truncate max-w-[95px]">
                         {effectiveIsRoot ? 'Superuser 👑' : isAdmin ? 'Admin 🛡️' : 'Player 🕹️'}
                       </div>
                     </div>
@@ -281,17 +281,17 @@ export function Header({
 
                   {/* Profile Dropdown */}
                   {isProfileMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-white/10 bg-[#0f121d] p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-white/[0.08] bg-[#1c2028] p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                       <div className="px-3 py-2.5 border-b border-white/[0.06]">
                         <div className="flex items-center justify-between gap-1">
                           <div className="text-xs font-bold text-white truncate">{userDisplayName}</div>
                           {effectiveIsRoot ? (
-                            <span className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300 bg-amber-400/20 border border-amber-400/40 rounded px-1.5 py-0.5 shrink-0">
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300 bg-amber-400/15 border border-amber-400/30 rounded px-1.5 py-0.5 shrink-0">
                               <Crown className="size-2.5 text-amber-400 fill-amber-400" />
                               ROOT
                             </span>
                           ) : isAdmin ? (
-                            <span className="text-[9px] font-black uppercase tracking-wider text-amber-300 bg-amber-400/20 rounded px-1 shrink-0">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-amber-300 bg-amber-400/15 rounded px-1 shrink-0">
                               {userRole}
                             </span>
                           ) : null}
@@ -310,7 +310,7 @@ export function Header({
                         className="w-full mt-1.5 flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.06] transition text-left"
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <Mail className="size-3.5 text-emerald-400 shrink-0" />
+                          <Mail className="size-3.5 text-teal-400 shrink-0" />
                           <span className="truncate">
                             {(customEmail || session?.user?.email)?.endsWith('@buddyline.local')
                               ? 'Link Email Address'
@@ -318,7 +318,7 @@ export function Header({
                           </span>
                         </div>
                         {(customEmail || session?.user?.email)?.endsWith('@buddyline.local') && (
-                          <span className="rounded bg-amber-400/20 text-amber-300 px-1 py-0.2 text-[9px] font-bold shrink-0">
+                          <span className="rounded bg-amber-400/15 text-amber-300 px-1 py-0.2 text-[9px] font-bold shrink-0">
                             Setup
                           </span>
                         )}
@@ -331,7 +331,7 @@ export function Header({
                             else setIsAdminModalOpen(true);
                             setIsProfileMenuOpen(false);
                           }}
-                          className="w-full mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-400/10 transition text-left"
+                          className="w-full mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-400/8 transition text-left"
                         >
                           <Crown className="size-3.5 text-amber-400 shrink-0" />
                           <span>Admin Console 🛡️</span>
@@ -340,7 +340,7 @@ export function Header({
 
                       <button
                         onClick={handleSignOut}
-                        className="w-full mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/10 transition text-left"
+                        className="w-full mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/8 transition text-left"
                       >
                         <LogOut className="size-3.5 shrink-0" />
                         <span>Sign Out</span>
@@ -351,7 +351,7 @@ export function Header({
               ) : (
                 <button
                   onClick={() => setIsAuthOpen(true)}
-                  className="flex items-center gap-1.5 sm:gap-2 rounded-xl bg-emerald-400/15 border border-emerald-400/30 px-3 py-1.5 text-xs font-black text-emerald-400 hover:bg-emerald-400 hover:text-slate-950 transition active:scale-95 shadow-sm whitespace-nowrap shrink-0"
+                  className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-teal-400/10 border border-teal-400/25 px-3 py-1.5 text-xs font-black text-teal-400 hover:bg-teal-400 hover:text-slate-950 transition active:scale-95 shadow-sm whitespace-nowrap shrink-0"
                 >
                   <Sparkles className="size-3.5 shrink-0" />
                   <span>Sign In</span>
@@ -362,7 +362,7 @@ export function Header({
             {/* Mobile Menu Toggle Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden flex size-8 sm:size-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-300 hover:text-white shrink-0"
+              className="md:hidden flex size-8 sm:size-9 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-slate-300 hover:text-white shrink-0"
               aria-label="Toggle navigation menu"
             >
               {isMobileMenuOpen ? <X className="size-4.5" /> : <Menu className="size-4.5" />}
@@ -372,7 +372,7 @@ export function Header({
 
         {/* Mobile Navigation Drawer */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-white/[0.08] bg-[#0c0e17] px-4 py-3 space-y-2 animate-in fade-in duration-150">
+          <div className="md:hidden border-t border-white/[0.06] bg-[#1a1f27] px-4 py-3 space-y-2 animate-in fade-in duration-150">
             {navItems.map((item) => (
               <button
                 key={item.id}
@@ -382,7 +382,7 @@ export function Header({
                 }}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold ${
                   activeTab === item.id
-                    ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/30'
+                    ? 'bg-teal-400/15 text-teal-300 border border-teal-400/25'
                     : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
@@ -391,7 +391,7 @@ export function Header({
                   <span>{item.label}</span>
                 </div>
                 {item.badge && (
-                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-white/10 text-slate-300">
+                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-white/[0.08] text-slate-300">
                     {item.badge}
                   </span>
                 )}
@@ -405,7 +405,7 @@ export function Header({
                   else setIsAdminModalOpen(true);
                   setIsMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-amber-300 bg-amber-400/10 border border-amber-400/20"
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-amber-300 bg-amber-400/8 border border-amber-400/20"
               >
                 <Crown className="size-4 text-amber-400" />
                 <span>Open Admin Management Panel</span>

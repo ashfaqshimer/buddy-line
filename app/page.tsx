@@ -15,7 +15,7 @@ export default function BuddyLineApp() {
   const { data: session } = useSession();
 
   return (
-    <div className="min-h-screen bg-[#060913] text-slate-100 flex flex-col selection:bg-cyan-400/30 selection:text-white">
+    <div className="min-h-screen bg-[#151920] text-[#e8eaed] flex flex-col selection:bg-teal-400/30 selection:text-white">
       {/* Top Navbar */}
       <Header
         onUploadClick={() => setIsUploaderOpen(true)}
@@ -36,7 +36,7 @@ export default function BuddyLineApp() {
         />
       </main>
 
-      {/* Modern Community Footer */}
+      {/* Footer */}
       <Footer
         onOpenUpload={() => setIsUploaderOpen(true)}
         onSelectTab={setActiveTab}

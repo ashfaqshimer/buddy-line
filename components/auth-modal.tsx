@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { X, Sparkles, User, Lock, Rocket, AlertCircle, Mail } from 'lucide-react';
-import { GiJoystick, GiSparkles } from 'react-icons/gi';
+
+const AVATAR_OPTIONS = ['🚀', '👾', '🕹️', '🐱', '🤖', '🦊', '⚡', '🍕', '🛸', '🦄', '🏆', '⭐'];
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -11,8 +12,6 @@ interface AuthModalProps {
   onSuccess?: () => void;
   initialMode?: 'signin' | 'signup';
 }
-
-const AVATAR_OPTIONS = ['🚀', '👾', '🕹️', '🐱', '🤖', '🦊', '⚡', '🍕', '🛸', '🦄', '🏆', '⭐'];
 
 export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }: AuthModalProps) {
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
@@ -96,8 +95,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#0d101d] p-6 shadow-2xl shadow-emerald-500/10">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#1c2028] p-6 shadow-2xl shadow-black/40">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -108,7 +107,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
 
         {/* Modal Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-400 via-teal-500 to-violet-600 text-3xl shadow-lg shadow-emerald-500/30 mb-3">
+          <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-400 to-teal-600 text-3xl shadow-lg shadow-teal-500/20 mb-3">
             {mode === 'signup' ? selectedAvatar : '🚀'}
           </div>
           <h2 className="text-2xl font-black text-white tracking-tight">
@@ -122,13 +121,13 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
         </div>
 
         {/* Mode Switcher Tabs */}
-        <div className="flex rounded-xl bg-white/[0.04] p-1 mb-5 border border-white/5">
+        <div className="flex rounded-xl bg-[#151920] p-1 mb-5 border border-white/[0.06]">
           <button
             type="button"
             onClick={() => { setMode('signup'); setError(''); }}
             className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
               mode === 'signup'
-                ? 'bg-emerald-400 text-slate-950 shadow-md shadow-emerald-400/20'
+                ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/20'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -139,7 +138,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
             onClick={() => { setMode('signin'); setError(''); }}
             className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
               mode === 'signin'
-                ? 'bg-emerald-400 text-slate-950 shadow-md shadow-emerald-400/20'
+                ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/20'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -149,7 +148,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
 
         {/* Error Alert */}
         {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 p-3 text-xs text-rose-300">
+          <div className="mb-4 flex items-center gap-2 rounded-xl bg-rose-500/8 border border-rose-500/20 p-3 text-xs text-rose-300">
             <AlertCircle className="size-4 shrink-0 text-rose-400" />
             <span>{error}</span>
           </div>
@@ -170,8 +169,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
                     onClick={() => setSelectedAvatar(avatar)}
                     className={`flex size-11 items-center justify-center rounded-xl text-xl border transition ${
                       selectedAvatar === avatar
-                        ? 'border-emerald-400 bg-emerald-400/20 scale-105 shadow-md shadow-emerald-500/30'
-                        : 'border-white/10 bg-white/[0.03] hover:border-white/20'
+                        ? 'border-teal-400 bg-teal-400/15 scale-105 shadow-md shadow-teal-500/20'
+                        : 'border-white/[0.06] bg-white/[0.03] hover:border-white/15'
                     }`}
                   >
                     {avatar}
@@ -195,7 +194,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
                 placeholder={mode === 'signup' ? 'e.g. AstroKid or PixelHero' : 'Enter your nickname or email'}
                 maxLength={40}
                 required
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                className="w-full rounded-xl border border-white/[0.08] bg-[#151920] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
               />
             </div>
           </div>
@@ -207,7 +206,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
                   Email Address
                 </label>
-                <span className="text-[10px] text-emerald-400/80 font-semibold uppercase tracking-wider">
+                <span className="text-[10px] text-teal-400/80 font-semibold uppercase tracking-wider">
                   Optional
                 </span>
               </div>
@@ -218,7 +217,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="e.g. you@example.com"
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  className="w-full rounded-xl border border-white/[0.08] bg-[#151920] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
                 />
               </div>
               <p className="mt-1 text-[10px] text-slate-500">
@@ -240,7 +239,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                className="w-full rounded-xl border border-white/[0.08] bg-[#151920] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
               />
             </div>
           </div>
@@ -249,7 +248,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 py-3 text-sm font-black text-slate-950 shadow-lg shadow-emerald-500/25 hover:from-emerald-300 hover:to-teal-300 transition transform active:scale-95 disabled:opacity-50"
+            className="w-full mt-2 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 py-3 text-sm font-black text-slate-950 shadow-lg shadow-teal-500/20 hover:shadow-[0_0_30px_rgba(45,212,191,0.4)] transition transform active:scale-95 disabled:opacity-50"
           >
             {loading ? (
               <span className="animate-spin text-lg">⚙️</span>

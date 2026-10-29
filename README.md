@@ -9,6 +9,13 @@ Buddy Line is a web arcade platform where anyone can play, build, and share cust
 - **Sandboxed Execution:** Secure `iframe` sandbox runner with fullscreen capability, responsive scaling, and play tracking.
 - **Player Accounts & Moderation:** Built with Better Auth (Neon Postgres or SQLite fallback), supporting guest play, username/password logins, creator attribution, and admin/root role management.
 
+## Design System & Styling
+
+Buddy Line uses a dark neumorphic design system with glowing teal (`#2dd4bf`) accents and subtle dark charcoal surfaces:
+- **Design Tokens & Guidelines:** Full documentation available in [`docs/STYLING.md`](docs/STYLING.md).
+- **TypeScript Tokens:** Predefined token presets available via `import { tokens, colors } from "@/lib/tokens"`.
+- **Reusable UI Components:** Shadcn-inspired primitives in `@/components/ui` (`Button`, `Card`, `Badge`, `Input`).
+
 ## Getting Started
 
 Run the development server:

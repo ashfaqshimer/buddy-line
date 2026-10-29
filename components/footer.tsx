@@ -12,22 +12,22 @@ interface FooterProps {
 
 export function Footer({ onOpenUpload, onSelectTab }: FooterProps) {
   return (
-    <footer className="mt-20 border-t border-white/[0.08] bg-[#090a0f]/90 backdrop-blur-xl relative overflow-hidden">
+    <footer className="mt-20 border-t border-white/[0.06] bg-[#1a1f27]/90 backdrop-blur-xl relative overflow-hidden">
       {/* Background glow effects */}
-      <div className="absolute left-1/4 top-0 -translate-y-1/2 w-96 h-32 bg-emerald-500/10 blur-3xl pointer-events-none" />
-      <div className="absolute right-1/4 top-0 -translate-y-1/2 w-96 h-32 bg-violet-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute left-1/4 top-0 -translate-y-1/2 w-96 h-32 bg-teal-500/6 blur-3xl pointer-events-none" />
+      <div className="absolute right-1/4 top-0 -translate-y-1/2 w-96 h-32 bg-teal-400/4 blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand Info */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-400 via-teal-500 to-violet-600 text-slate-950 shadow-[0_0_20px_rgba(16,231,166,0.35)]">
+              <div className="flex size-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-400 to-teal-600 text-slate-950 shadow-[0_0_20px_rgba(45,212,191,0.25)]">
                 <GiGameConsole className="size-5.5 text-slate-950 font-black" />
               </div>
               <div>
                 <span className="text-lg font-black tracking-tight text-white">BUDDY LINE</span>
-                <span className="ml-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                <span className="ml-2 rounded-full bg-teal-500/10 border border-teal-500/20 px-2 py-0.5 text-[10px] font-bold text-teal-400 uppercase tracking-wider">
                   Arcade Hub
                 </span>
               </div>
@@ -39,12 +39,12 @@ export function Footer({ onOpenUpload, onSelectTab }: FooterProps) {
 
             <div className="flex items-center gap-4 text-xs text-slate-400 pt-2">
               <div className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[11px] font-medium text-emerald-400/90">Arcade Online</span>
+                <span className="size-2 rounded-full bg-teal-400 animate-pulse" />
+                <span className="text-[11px] font-medium text-teal-400/90">Arcade Online</span>
               </div>
               <span>•</span>
               <div className="flex items-center gap-1">
-                <ShieldCheck className="size-3.5 text-emerald-400" />
+                <ShieldCheck className="size-3.5 text-teal-400" />
                 <span className="text-[11px]">Sandboxed Iframe Security</span>
               </div>
             </div>
@@ -59,36 +59,36 @@ export function Footer({ onOpenUpload, onSelectTab }: FooterProps) {
               <li>
                 <button
                   onClick={() => onSelectTab?.('catalog')}
-                  className="text-slate-400 hover:text-emerald-300 transition flex items-center gap-1.5"
+                  className="text-slate-400 hover:text-teal-300 transition flex items-center gap-1.5"
                 >
-                  <GiJoystick className="size-3.5 text-emerald-400" />
+                  <GiJoystick className="size-3.5 text-teal-400" />
                   <span>Games Catalog</span>
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => onSelectTab?.('leaderboards')}
-                  className="text-slate-400 hover:text-amber-300 transition flex items-center gap-1.5"
+                  className="text-slate-400 hover:text-teal-300 transition flex items-center gap-1.5"
                 >
-                  <GiTrophyCup className="size-3.5 text-amber-400" />
+                  <GiTrophyCup className="size-3.5 text-teal-400" />
                   <span>High Score Podium</span>
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => onSelectTab?.('community')}
-                  className="text-slate-400 hover:text-violet-300 transition flex items-center gap-1.5"
+                  className="text-slate-400 hover:text-teal-300 transition flex items-center gap-1.5"
                 >
-                  <IoChatbubbles className="size-3.5 text-violet-400" />
+                  <IoChatbubbles className="size-3.5 text-teal-400" />
                   <span>Community Lounge</span>
                 </button>
               </li>
               <li>
                 <button
                   onClick={onOpenUpload}
-                  className="text-emerald-400 font-semibold hover:text-emerald-300 transition flex items-center gap-1"
+                  className="text-teal-400 font-semibold hover:text-teal-300 transition flex items-center gap-1"
                 >
-                  <IoSparkles className="size-3 text-emerald-400" />
+                  <IoSparkles className="size-3 text-teal-400" />
                   <span>Upload Your Game</span>
                 </button>
               </li>
@@ -102,15 +102,15 @@ export function Footer({ onOpenUpload, onSelectTab }: FooterProps) {
             </h4>
             <ul className="space-y-2 text-xs text-slate-400">
               <li className="flex items-center gap-1.5">
-                <Code2 className="size-3.5 text-violet-400" />
+                <Code2 className="size-3.5 text-teal-400" />
                 <span>HTML5 / Canvas 2D</span>
               </li>
               <li className="flex items-center gap-1.5">
-                <Terminal className="size-3.5 text-emerald-400" />
+                <Terminal className="size-3.5 text-teal-400" />
                 <span>Vanilla JS Bundler</span>
               </li>
               <li className="flex items-center gap-1.5">
-                <GiTrophyCup className="size-3.5 text-amber-400" />
+                <GiTrophyCup className="size-3.5 text-teal-400" />
                 <span>Zero Server Dependencies</span>
               </li>
             </ul>

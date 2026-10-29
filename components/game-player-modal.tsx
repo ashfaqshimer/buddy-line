@@ -10,7 +10,7 @@ import {
   Share2,
   Check,
 } from 'lucide-react';
-import { GiGameConsole, GiJoystick } from 'react-icons/gi';
+import { GiJoystick } from 'react-icons/gi';
 import { GameRecord } from '@/lib/games-db';
 import { bundleGameSource } from '@/lib/game-bundler';
 import { recordGamePlay } from '@/app/game-actions';
@@ -124,13 +124,13 @@ export function GamePlayerModal({
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 flex flex-col w-screen h-screen bg-[#07080e] animate-in fade-in duration-200 select-none overflow-hidden"
+      className="fixed inset-0 z-50 flex flex-col w-screen h-screen bg-[#111419] animate-in fade-in duration-200 select-none overflow-hidden"
     >
       {/* Top Arcade HUD Bar */}
-      <div className="flex items-center justify-between border-b border-white/[0.08] bg-[#0c0e18]/95 backdrop-blur-md px-4 sm:px-6 py-2.5 shrink-0 z-10 shadow-lg">
+      <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#1a1f27]/95 backdrop-blur-md px-4 sm:px-6 py-2.5 shrink-0 z-10 shadow-lg">
         {/* Left: Game Branding & Creator Info */}
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-500/20 via-teal-500/20 to-violet-500/20 border border-emerald-400/30 text-2xl shadow-inner shrink-0">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-teal-500/10 border border-teal-400/20 text-2xl shadow-inner shrink-0">
             {game.icon || '🎮'}
           </div>
 
@@ -139,7 +139,7 @@ export function GamePlayerModal({
               <h3 className="font-black text-white text-base tracking-tight truncate">
                 {game.title}
               </h3>
-              <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300 border border-emerald-400/20 shrink-0">
+              <span className="rounded-full bg-teal-400/8 px-2 py-0.5 text-[10px] font-bold text-teal-300 border border-teal-400/15 shrink-0">
                 {game.playCount + 1} Plays
               </span>
             </div>
@@ -156,14 +156,14 @@ export function GamePlayerModal({
         {/* Right: HUD Control Actions */}
         <div className="flex items-center gap-2 shrink-0">
           {/* Community Reactions Quick Pill */}
-          <div className="hidden md:flex items-center gap-1 rounded-xl bg-white/[0.04] p-1 border border-white/5">
+          <div className="hidden md:flex items-center gap-1 rounded-xl bg-white/[0.03] p-1 border border-white/[0.06]">
             {Object.entries(reactions).map(([emoji, count]) => (
               <button
                 key={emoji}
                 onClick={() => handleReaction(emoji)}
                 className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition ${
                   userReacted === emoji
-                    ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/30'
+                    ? 'bg-teal-400/15 text-teal-300 border border-teal-400/20'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -177,9 +177,9 @@ export function GamePlayerModal({
           <button
             onClick={handleShare}
             title="Share Game"
-            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition"
+            className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/[0.08] hover:text-white transition"
           >
-            {copiedLink ? <Check className="size-3.5 text-emerald-400" /> : <Share2 className="size-3.5" />}
+            {copiedLink ? <Check className="size-3.5 text-teal-400" /> : <Share2 className="size-3.5" />}
             <span className="hidden sm:inline">{copiedLink ? 'Copied!' : 'Share'}</span>
           </button>
 
@@ -187,7 +187,7 @@ export function GamePlayerModal({
           <button
             onClick={() => setReloadKey((k) => k + 1)}
             title="Restart Game"
-            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition"
+            className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/[0.08] hover:text-white transition"
           >
             <RotateCcw className="size-3.5" />
             <span className="hidden sm:inline">Restart</span>
@@ -197,7 +197,7 @@ export function GamePlayerModal({
           <button
             onClick={toggleFullscreen}
             title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition"
+            className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/[0.08] hover:text-white transition"
           >
             {isFullscreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
             <span className="hidden sm:inline">{isFullscreen ? 'Exit' : 'Fullscreen'}</span>
@@ -208,7 +208,7 @@ export function GamePlayerModal({
             <button
               onClick={() => onDeleteRequest(game)}
               title="Delete Game"
-              className="flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500 hover:text-white transition"
+              className="flex items-center gap-1.5 rounded-full border border-rose-500/20 bg-rose-500/8 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500 hover:text-white transition"
             >
               <Trash2 className="size-3.5" />
               <span className="hidden sm:inline">Delete</span>
@@ -219,16 +219,16 @@ export function GamePlayerModal({
           <button
             onClick={handleClose}
             title="Close Game (Esc)"
-            className="flex size-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-400 hover:bg-rose-500/20 hover:text-rose-300 transition"
+            className="flex size-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-slate-400 hover:bg-rose-500/15 hover:text-rose-300 transition"
           >
             <X className="size-4" />
           </button>
         </div>
       </div>
 
-      {/* Sandboxed Game Frame with Ambient Neon Glow */}
+      {/* Sandboxed Game Frame with Ambient Glow */}
       <div className="flex-1 bg-black relative w-full h-full overflow-hidden flex items-center justify-center">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,231,166,0.06)_0%,transparent_70%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(45,212,191,0.04)_0%,transparent_70%)] pointer-events-none" />
 
         <iframe
           key={reloadKey}
@@ -236,23 +236,23 @@ export function GamePlayerModal({
           sandbox="allow-scripts allow-modals allow-pointer-lock"
           allow="autoplay; fullscreen; pointer-lock"
           srcDoc={bundledHtml}
-          className="w-full h-full border-0 absolute inset-0 bg-[#060810]"
+          className="w-full h-full border-0 absolute inset-0 bg-[#111419]"
         />
       </div>
 
       {/* Bottom Mini Controls Info Strip */}
-      <div className="flex items-center justify-between border-t border-white/[0.06] bg-[#090b14] px-4 py-1.5 text-[11px] text-slate-400 shrink-0">
+      <div className="flex items-center justify-between border-t border-white/[0.06] bg-[#1a1f27] px-4 py-1.5 text-[11px] text-slate-400 shrink-0">
         <div className="flex items-center gap-3">
-          <span className="text-emerald-400 font-bold flex items-center gap-1">
+          <span className="text-teal-400 font-bold flex items-center gap-1">
             <GiJoystick className="size-3.5" />
             <span>Controls:</span>
           </span>
           <span className="truncate max-w-xl">{game.description}</span>
         </div>
         <div className="hidden sm:flex items-center gap-3 text-slate-500">
-          <span>Press <kbd className="rounded bg-white/10 px-1 py-0.5 text-[10px] text-slate-300">Esc</kbd> to exit</span>
+          <span>Press <kbd className="rounded bg-white/[0.08] px-1 py-0.5 text-[10px] text-slate-300">Esc</kbd> to exit</span>
           <span>•</span>
-          <span className="text-emerald-400/90 font-medium">Safe Sandboxed Iframe</span>
+          <span className="text-teal-400/90 font-medium">Safe Sandboxed Iframe</span>
         </div>
       </div>
     </div>

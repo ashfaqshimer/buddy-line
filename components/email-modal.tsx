@@ -50,8 +50,8 @@ export function EmailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-[#0d101e] p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#1c2028] p-6 shadow-2xl shadow-black/40">
         <button
           onClick={onClose}
           className="absolute right-4 top-4 rounded-xl p-2 text-slate-400 hover:bg-white/5 hover:text-white transition"
@@ -60,7 +60,7 @@ export function EmailModal({
         </button>
 
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex size-10 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-400/20 text-emerald-400">
+          <div className="flex size-10 items-center justify-center rounded-2xl bg-teal-500/10 border border-teal-400/20 text-teal-400">
             <Mail className="size-5" />
           </div>
           <div>
@@ -76,11 +76,11 @@ export function EmailModal({
         </div>
 
         {currentEmail && (
-          <div className="mb-4 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-xs">
+          <div className="mb-4 rounded-xl border border-white/[0.06] bg-[#151920] p-3 text-xs">
             <span className="text-slate-400">Current ID: </span>
             <span className="font-mono text-slate-200">{currentEmail}</span>
             {isPlaceholder && (
-              <span className="ml-2 rounded-md bg-amber-400/10 text-amber-300 border border-amber-400/20 px-1.5 py-0.5 text-[9px] font-bold">
+              <span className="ml-2 rounded-md bg-amber-400/10 text-amber-300 border border-amber-400/15 px-1.5 py-0.5 text-[9px] font-bold">
                 Auto-Generated
               </span>
             )}
@@ -88,15 +88,15 @@ export function EmailModal({
         )}
 
         {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/8 p-3 text-xs text-rose-300">
             <AlertCircle className="size-4 shrink-0 text-rose-400" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-300">
-            <CheckCircle2 className="size-4 shrink-0 text-emerald-400" />
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-teal-500/20 bg-teal-500/8 p-3 text-xs text-teal-300">
+            <CheckCircle2 className="size-4 shrink-0 text-teal-400" />
             <span>Email updated successfully!</span>
           </div>
         )}
@@ -114,7 +114,7 @@ export function EmailModal({
                 onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="e.g. you@example.com"
                 required
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                className="w-full rounded-xl border border-white/[0.08] bg-[#151920] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
               />
             </div>
             <p className="mt-1.5 text-[10px] text-slate-400 leading-relaxed">
@@ -127,14 +127,14 @@ export function EmailModal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10 transition"
+              className="rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.08] transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !newEmail.trim()}
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 px-4 py-2 text-xs font-bold text-slate-950 hover:from-emerald-300 hover:to-teal-400 transition active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-4 py-2 text-xs font-bold text-slate-950 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition active:scale-95 disabled:opacity-50"
             >
               {loading ? (
                 <>
