@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { username } from "better-auth/plugins";
+import { username, admin } from "better-auth/plugins";
 import { Pool } from "pg";
 import { DatabaseSync } from "node:sqlite";
 import { getMigrations } from "better-auth/db/migration";
@@ -57,10 +57,34 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: false,
   },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const adminEmails = (process.env.ADMIN_EMAILS || process.env.ROOT_ADMIN_EMAILS || "")
+            .split(",")
+            .map((e) => e.trim().toLowerCase())
+            .filter(Boolean);
+          if (user.email && adminEmails.includes(user.email.toLowerCase())) {
+            return {
+              data: {
+                ...user,
+                role: "admin",
+              },
+            };
+          }
+        },
+      },
+    },
+  },
   plugins: [
     username({
       minUsernameLength: 3,
       maxUsernameLength: 25,
+    }),
+    admin({
+      defaultRole: "user",
+      adminRoles: ["admin"],
     }),
   ],
 });

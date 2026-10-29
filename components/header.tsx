@@ -48,7 +48,9 @@ export function Header({
     setIsProfileMenuOpen(false);
   };
 
-  const userObj = session?.user as { name?: string; username?: string; image?: string | null } | undefined;
+  const userObj = session?.user as { name?: string; username?: string; image?: string | null; role?: string } | undefined;
+  const userRole = userObj?.role;
+  const isAdmin = userRole === 'admin' || userRole === 'root';
   const userDisplayName = userObj?.username || userObj?.name || 'Commander Vale';
   const userAvatar = userObj?.image || '🚀';
   const isLoggedIn = !!session?.user;
@@ -135,11 +137,19 @@ export function Header({
                     <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-[#0b0f1c] bg-emerald-400" />
                   </div>
                   <div className="hidden sm:block text-left">
-                    <div className="flex items-center gap-1 text-xs font-semibold text-white">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
                       <span className="max-w-[110px] truncate">{userDisplayName}</span>
-                      <ShieldCheck className="size-3 text-cyan-400 shrink-0" />
+                      {isAdmin ? (
+                        <span className="rounded-md bg-amber-400/20 text-amber-300 border border-amber-400/40 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider">
+                          {userRole}
+                        </span>
+                      ) : (
+                        <ShieldCheck className="size-3 text-cyan-400 shrink-0" />
+                      )}
                     </div>
-                    <div className="text-[10px] text-cyan-300/80">Online Player</div>
+                    <div className="text-[10px] text-cyan-300/80">
+                      {isAdmin ? (userRole === 'root' ? 'System Root 👑' : 'Administrator 🛡️') : 'Online Player'}
+                    </div>
                   </div>
                   <ChevronDown className="hidden sm:block size-4 text-slate-500" />
                 </button>
@@ -148,7 +158,14 @@ export function Header({
                 {isProfileMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-white/10 bg-[#0e1322] p-1.5 shadow-2xl z-50">
                     <div className="px-3 py-2 border-b border-white/5">
-                      <div className="text-xs font-bold text-white truncate">{userDisplayName}</div>
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="text-xs font-bold text-white truncate">{userDisplayName}</div>
+                        {isAdmin && (
+                          <span className="text-[9px] font-black uppercase tracking-wider text-amber-300 bg-amber-400/20 rounded px-1">
+                            {userRole}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] text-slate-400 truncate">
                         {session?.user?.email || 'Buddy Line Member'}
                       </div>

@@ -660,6 +660,64 @@ export async function createGame(game: Omit<GameRecord, 'id' | 'playCount' | 'cr
   return newGame;
 }
 
+export async function getGameById(gameId: string): Promise<GameRecord | null> {
+  await ensureGamesTable();
+
+  if (dbInstance instanceof Pool) {
+    const res = await dbInstance.query<RawGameRow>('SELECT * FROM games WHERE id = $1', [gameId]);
+    if (res.rows.length === 0) return null;
+    const row = res.rows[0];
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description || '',
+      icon: row.icon,
+      htmlContent: row.html_content,
+      cssContent: row.css_content || '',
+      jsContent: row.js_content || '',
+      authorId: row.author_id,
+      authorUsername: row.author_username,
+      authorAvatar: row.author_avatar || '👾',
+      playCount: row.play_count || 0,
+      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+    };
+  } else if (dbInstance instanceof DatabaseSync) {
+    const row = dbInstance.prepare('SELECT * FROM games WHERE id = ?').get(gameId) as unknown as RawGameRow | undefined;
+    if (!row) return null;
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description || '',
+      icon: row.icon,
+      htmlContent: row.html_content,
+      cssContent: row.css_content || '',
+      jsContent: row.js_content || '',
+      authorId: row.author_id,
+      authorUsername: row.author_username,
+      authorAvatar: row.author_avatar || '👾',
+      playCount: row.play_count || 0,
+      createdAt: String(row.created_at),
+    };
+  }
+
+  const demo = DEMO_GAMES.find((g) => g.id === gameId);
+  return demo || null;
+}
+
+export async function deleteGame(gameId: string): Promise<boolean> {
+  await ensureGamesTable();
+
+  if (dbInstance instanceof Pool) {
+    const res = await dbInstance.query('DELETE FROM games WHERE id = $1', [gameId]);
+    return (res.rowCount ?? 0) > 0;
+  } else if (dbInstance instanceof DatabaseSync) {
+    const info = dbInstance.prepare('DELETE FROM games WHERE id = ?').run(gameId);
+    return Number(info.changes) > 0;
+  }
+
+  return false;
+}
+
 export async function incrementPlayCount(gameId: string): Promise<number> {
   await ensureGamesTable();
 

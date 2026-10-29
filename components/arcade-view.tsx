@@ -11,9 +11,12 @@ import {
   Flame,
   Clock,
   Plus,
+  Trash2,
+  AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import { GameRecord } from '@/lib/games-db';
-import { getGames } from '@/app/game-actions';
+import { getGames, deleteGameAction } from '@/app/game-actions';
 import { GamePlayerModal } from './game-player-modal';
 import { GameUploaderModal } from './game-uploader-modal';
 import { AuthModal } from './auth-modal';
@@ -30,6 +33,11 @@ export function ArcadeView() {
   const [activeGame, setActiveGame] = useState<GameRecord | null>(null);
   const [isUploaderOpen, setIsUploaderOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  // Deletion state
+  const [gameToDelete, setGameToDelete] = useState<GameRecord | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -60,6 +68,35 @@ export function ArcadeView() {
       setIsAuthOpen(true);
     } else {
       setIsUploaderOpen(true);
+    }
+  };
+
+  const currentUserRole = (session?.user as { role?: string } | undefined)?.role;
+  const isAdmin = currentUserRole === 'admin' || currentUserRole === 'root';
+  const canDeleteGame = (game: GameRecord) => {
+    if (!session?.user) return false;
+    return session.user.id === game.authorId || isAdmin;
+  };
+
+  const confirmDeleteGame = async () => {
+    if (!gameToDelete) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await deleteGameAction(gameToDelete.id);
+      if (res.success) {
+        setGames((prev) => prev.filter((g) => g.id !== gameToDelete.id));
+        if (activeGame?.id === gameToDelete.id) {
+          setActiveGame(null);
+        }
+        setGameToDelete(null);
+      } else {
+        setDeleteError(res.error || 'Failed to delete game.');
+      }
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Error deleting game.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -237,9 +274,24 @@ export function ArcadeView() {
                   <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-blue-500/10 border border-cyan-400/30 text-3xl shadow-inner group-hover:scale-110 transition-transform">
                     {game.icon || '🎮'}
                   </div>
-                  <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold text-cyan-300">
-                    <Gamepad2 className="size-3 text-cyan-400" />
-                    <span>{game.playCount} plays</span>
+                  <div className="flex items-center gap-1.5">
+                    {canDeleteGame(game) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteError(null);
+                          setGameToDelete(game);
+                        }}
+                        title={isAdmin && game.authorId !== session?.user?.id ? 'Delete Game (Admin)' : 'Delete Your Game'}
+                        className="flex size-7 items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition active:scale-95"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    )}
+                    <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold text-cyan-300">
+                      <Gamepad2 className="size-3 text-cyan-400" />
+                      <span>{game.playCount} plays</span>
+                    </div>
                   </div>
                 </div>
 
@@ -285,7 +337,71 @@ export function ArcadeView() {
           game={activeGame}
           onClose={() => setActiveGame(null)}
           onPlayRecorded={handlePlayRecorded}
+          canDelete={canDeleteGame(activeGame)}
+          onDeleteRequest={(game) => {
+            setDeleteError(null);
+            setGameToDelete(game);
+          }}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {gameToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md rounded-3xl border border-rose-500/30 bg-[#0d101d] p-6 shadow-2xl">
+            <div className="flex items-center gap-3 text-rose-400 mb-4">
+              <div className="flex size-10 items-center justify-center rounded-2xl bg-rose-500/10 border border-rose-500/20">
+                <AlertTriangle className="size-5" />
+              </div>
+              <div>
+                <h3 className="font-black text-white text-base">Delete Game</h3>
+                <p className="text-xs text-rose-300/80">Permanent removal confirmation</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-300 leading-relaxed">
+              Are you sure you want to delete <span className="font-bold text-white">"{gameToDelete.title}"</span>? This will permanently remove the game from the Community Arcade.
+            </p>
+
+            {deleteError && (
+              <div className="mt-4 rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-xs text-rose-300">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  if (!isDeleting) {
+                    setGameToDelete(null);
+                    setDeleteError(null);
+                  }
+                }}
+                disabled={isDeleting}
+                className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteGame}
+                disabled={isDeleting}
+                className="flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-500 shadow-lg shadow-rose-600/30 transition active:scale-95 disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="size-3.5" />
+                    <span>Yes, Delete Game</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Game Uploader Modal */}
