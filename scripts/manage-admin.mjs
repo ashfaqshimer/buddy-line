@@ -138,6 +138,47 @@ async function setRole(identifier, role) {
   }
 }
 
+async function setEmail(identifier, newEmail) {
+  if (!identifier || !newEmail) {
+    console.error('Usage: node scripts/manage-admin.mjs set-email <username-or-current-email> <new-email>');
+    process.exit(1);
+  }
+
+  const normalizedEmail = newEmail.toLowerCase().trim();
+  const db = getDb();
+  console.log(`Setting email '${normalizedEmail}' for user '${identifier}' on ${db.type === 'postgres' ? 'Neon Postgres' : 'SQLite'}...`);
+
+  try {
+    let updated = 0;
+    if (db.type === 'postgres') {
+      const res = await db.client.query(
+        'UPDATE "user" SET email = $1 WHERE LOWER(email) = LOWER($2) OR LOWER(username) = LOWER($2) RETURNING id, name, username, email, role',
+        [normalizedEmail, identifier]
+      );
+      updated = res.rowCount;
+      if (updated > 0) {
+        console.log(`✅ Success! Updated user email:`, res.rows[0]);
+      }
+      await db.client.end();
+    } else {
+      const info = db.client.prepare(
+        'UPDATE user SET email = ? WHERE LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)'
+      ).run(normalizedEmail, identifier, identifier);
+      updated = Number(info.changes);
+      if (updated > 0) {
+        const user = db.client.prepare('SELECT id, name, username, email, role FROM user WHERE LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)').get(normalizedEmail, normalizedEmail);
+        console.log(`✅ Success! Updated user email:`, user);
+      }
+    }
+
+    if (updated === 0) {
+      console.error(`❌ User '${identifier}' was not found.`);
+    }
+  } catch (err) {
+    console.error('Error setting email:', err.message);
+  }
+}
+
 const [,, command, arg1, arg2] = process.argv;
 
 switch (command) {
@@ -147,6 +188,9 @@ switch (command) {
   case 'set-role':
     setRole(arg1, arg2);
     break;
+  case 'set-email':
+    setEmail(arg1, arg2);
+    break;
   default:
     console.log(`
 Buddy Line User Role Management CLI:
@@ -155,8 +199,11 @@ Commands:
   node scripts/manage-admin.mjs list
       List all registered users and their current roles
 
-  node scripts/manage-admin.mjs set-role <email-or-username> <admin|root|user>
+  node scripts/manage-admin.mjs set-role <email-or-username> <admin|user>
       Promote or assign a role to a user
+
+  node scripts/manage-admin.mjs set-email <email-or-username> <new-email>
+      Update or link a real email address to an existing user
 `);
     break;
 }

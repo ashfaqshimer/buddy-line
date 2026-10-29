@@ -11,10 +11,12 @@ import {
   LogOut,
   Sparkles,
   Crown,
+  Mail,
 } from 'lucide-react';
 import { useSession, signOut } from '@/lib/auth-client';
 import { AuthModal } from './auth-modal';
 import { AdminManagerModal } from './admin-manager-modal';
+import { EmailModal } from './email-modal';
 import { checkIsRootUserAction } from '@/app/admin-actions';
 
 interface HeaderProps {
@@ -36,7 +38,9 @@ export function Header({
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isRoot, setIsRoot] = useState(false);
+  const [customEmail, setCustomEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (session?.user) {
@@ -192,9 +196,32 @@ export function Header({
                         )}
                       </div>
                       <div className="text-[10px] text-slate-400 truncate">
-                        {session?.user?.email || 'Buddy Line Member'}
+                        {customEmail || session?.user?.email || 'Buddy Line Member'}
                       </div>
                     </div>
+
+                    {/* Email management button */}
+                    <button
+                      onClick={() => {
+                        setIsEmailModalOpen(true);
+                        setIsProfileMenuOpen(false);
+                      }}
+                      className="w-full mt-1.5 flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.06] transition text-left"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Mail className="size-3.5 text-cyan-400 shrink-0" />
+                        <span className="truncate">
+                          {(customEmail || session?.user?.email)?.endsWith('@buddyline.local')
+                            ? 'Link Email Address'
+                            : 'Update Email'}
+                        </span>
+                      </div>
+                      {(customEmail || session?.user?.email)?.endsWith('@buddyline.local') && (
+                        <span className="rounded bg-amber-400/20 text-amber-300 px-1 py-0.2 text-[9px] font-bold shrink-0">
+                          Setup
+                        </span>
+                      )}
+                    </button>
 
                     {isRoot && (
                       <button
@@ -244,6 +271,17 @@ export function Header({
         isOpen={isAdminModalOpen}
         onClose={() => setIsAdminModalOpen(false)}
         currentUser={session?.user}
+      />
+
+      {/* Email Link & Update Modal */}
+      <EmailModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        currentEmail={customEmail || session?.user?.email}
+        onEmailUpdated={(updated) => {
+          setCustomEmail(updated);
+          checkIsRootUserAction().then(setIsRoot);
+        }}
       />
     </>
   );
