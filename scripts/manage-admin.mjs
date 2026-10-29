@@ -37,9 +37,22 @@ function getDb() {
   }
 }
 
+function isRootIdentifier(identifier, email, username) {
+  const rootTarget = (process.env.ROOT_USER || '').trim().toLowerCase();
+  if (!rootTarget) return false;
+  return (
+    (identifier && identifier.toLowerCase() === rootTarget) ||
+    (email && email.toLowerCase() === rootTarget) ||
+    (username && username.toLowerCase() === rootTarget)
+  );
+}
+
 async function listUsers() {
   const db = getDb();
   console.log(`\n📋 Querying users from ${db.type === 'postgres' ? 'Neon Postgres' : 'SQLite'}...\n`);
+  if (process.env.ROOT_USER) {
+    console.log(`👑 Designated ROOT_USER: ${process.env.ROOT_USER}\n`);
+  }
 
   try {
     let rows = [];
@@ -57,14 +70,17 @@ async function listUsers() {
     }
 
     console.table(
-      rows.map((u) => ({
-        ID: u.id,
-        Name: u.name,
-        Username: u.username || '—',
-        Email: u.email,
-        Role: u.role || 'user',
-        Created: u.createdAt || u.created_at,
-      }))
+      rows.map((u) => {
+        const isRoot = isRootIdentifier(null, u.email, u.username);
+        return {
+          ID: u.id,
+          Name: u.name,
+          Username: u.username || '—',
+          Email: u.email,
+          Role: isRoot ? '👑 root (owner)' : u.role || 'user',
+          Created: u.createdAt || u.created_at,
+        };
+      })
     );
   } catch (err) {
     console.error('Error fetching users:', err.message);
@@ -78,9 +94,14 @@ async function setRole(identifier, role) {
   }
 
   const normalizedRole = role.toLowerCase().trim();
-  const validRoles = ['user', 'admin', 'root'];
+  const validRoles = ['user', 'admin'];
   if (!validRoles.includes(normalizedRole)) {
-    console.warn(`Warning: '${normalizedRole}' is not in standard roles (user, admin, root), but applying anyway.`);
+    console.warn(`Warning: '${normalizedRole}' is not 'admin' or 'user', but applying anyway.`);
+  }
+
+  if (isRootIdentifier(identifier) && normalizedRole !== 'admin') {
+    console.error(`❌ Action prohibited: Cannot demote the designated ROOT_USER ('${identifier}').`);
+    process.exit(1);
   }
 
   const db = getDb();

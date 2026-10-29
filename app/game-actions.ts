@@ -8,7 +8,7 @@ import {
   incrementPlayCount,
   GameRecord,
 } from '@/lib/games-db';
-import { auth } from '@/lib/auth';
+import { auth, isRootUser } from '@/lib/auth';
 import { headers } from 'next/headers';
 
 export async function getGames(): Promise<GameRecord[]> {
@@ -105,17 +105,10 @@ export async function deleteGameAction(
     }
 
     // 3. Permission checks: Author OR Admin / Root
-    const userRole = (session.user as { role?: string }).role;
-    const adminEmails = (process.env.ADMIN_EMAILS || process.env.ROOT_ADMIN_EMAILS || '')
-      .split(',')
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
-
+    const userRole = (session.user as { role?: string; username?: string }).role;
     const isAuthor = game.authorId === session.user.id;
-    const isAdmin =
-      userRole === 'admin' ||
-      userRole === 'root' ||
-      (session.user.email ? adminEmails.includes(session.user.email.toLowerCase()) : false);
+    const isRoot = isRootUser(session.user as { email?: string; username?: string });
+    const isAdmin = userRole === 'admin' || isRoot;
 
     if (!isAuthor && !isAdmin) {
       return {

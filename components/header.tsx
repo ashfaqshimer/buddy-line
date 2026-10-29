@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Copy,
   Check,
@@ -10,9 +10,12 @@ import {
   Orbit,
   LogOut,
   Sparkles,
+  Crown,
 } from 'lucide-react';
 import { useSession, signOut } from '@/lib/auth-client';
 import { AuthModal } from './auth-modal';
+import { AdminManagerModal } from './admin-manager-modal';
+import { checkIsRootUserAction } from '@/app/admin-actions';
 
 interface HeaderProps {
   roomCode: string;
@@ -32,6 +35,16 @@ export function Header({
   const [copied, setCopied] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [isRoot, setIsRoot] = useState(false);
+
+  useEffect(() => {
+    if (session?.user) {
+      checkIsRootUserAction().then(setIsRoot);
+    } else {
+      setIsRoot(false);
+    }
+  }, [session?.user]);
 
   const copyRoomCode = async () => {
     try {
@@ -49,8 +62,8 @@ export function Header({
   };
 
   const userObj = session?.user as { name?: string; username?: string; image?: string | null; role?: string } | undefined;
-  const userRole = userObj?.role;
-  const isAdmin = userRole === 'admin' || userRole === 'root';
+  const userRole = isRoot ? 'root' : userObj?.role;
+  const isAdmin = isRoot || userRole === 'admin';
   const userDisplayName = userObj?.username || userObj?.name || 'Commander Vale';
   const userAvatar = userObj?.image || '🚀';
   const isLoggedIn = !!session?.user;
@@ -122,6 +135,18 @@ export function Header({
             </button>
           </div>
 
+          {/* Root User Administration Panel Button */}
+          {isRoot && (
+            <button
+              onClick={() => setIsAdminModalOpen(true)}
+              title="Open Root Administration Panel"
+              className="flex items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 px-2.5 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20 transition shadow-sm"
+            >
+              <Crown className="size-3.5 text-amber-400" />
+              <span className="hidden sm:inline text-[11px] font-black uppercase tracking-wider">Root Panel</span>
+            </button>
+          )}
+
           {/* User Profile / Auth Area */}
           <div className="relative border-l border-white/10 pl-3 md:pl-5">
             {isLoggedIn ? (
@@ -156,7 +181,7 @@ export function Header({
 
                 {/* Profile dropdown */}
                 {isProfileMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-white/10 bg-[#0e1322] p-1.5 shadow-2xl z-50">
+                  <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-white/10 bg-[#0e1322] p-1.5 shadow-2xl z-50">
                     <div className="px-3 py-2 border-b border-white/5">
                       <div className="flex items-center justify-between gap-1">
                         <div className="text-xs font-bold text-white truncate">{userDisplayName}</div>
@@ -170,6 +195,20 @@ export function Header({
                         {session?.user?.email || 'Buddy Line Member'}
                       </div>
                     </div>
+
+                    {isRoot && (
+                      <button
+                        onClick={() => {
+                          setIsAdminModalOpen(true);
+                          setIsProfileMenuOpen(false);
+                        }}
+                        className="w-full mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-400/10 transition text-left"
+                      >
+                        <Crown className="size-3.5 text-amber-400" />
+                        <span>Manage Admins 👑</span>
+                      </button>
+                    )}
+
                     <button
                       onClick={handleSignOut}
                       className="w-full mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/10 transition text-left"
@@ -198,6 +237,13 @@ export function Header({
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         initialMode="signup"
+      />
+
+      {/* Root Admin Management Modal */}
+      <AdminManagerModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        currentUser={session?.user}
       />
     </>
   );

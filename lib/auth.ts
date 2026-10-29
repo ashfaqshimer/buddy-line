@@ -48,6 +48,15 @@ const getTrustedOrigins = () => {
   return origins;
 };
 
+export const isRootUser = (user?: { email?: string | null; username?: string | null } | null): boolean => {
+  if (!user) return false;
+  const rootTarget = (process.env.ROOT_USER || "").trim().toLowerCase();
+  if (!rootTarget) return false;
+  const email = (user.email || "").trim().toLowerCase();
+  const username = (user.username || "").trim().toLowerCase();
+  return (email !== "" && email === rootTarget) || (username !== "" && username === rootTarget);
+};
+
 export const auth = betterAuth({
   database: dbInstance as Parameters<typeof betterAuth>[0]['database'],
   baseURL: getBaseUrl(),
@@ -61,11 +70,7 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
-          const adminEmails = (process.env.ADMIN_EMAILS || process.env.ROOT_ADMIN_EMAILS || "")
-            .split(",")
-            .map((e) => e.trim().toLowerCase())
-            .filter(Boolean);
-          if (user.email && adminEmails.includes(user.email.toLowerCase())) {
+          if (isRootUser(user)) {
             return {
               data: {
                 ...user,
