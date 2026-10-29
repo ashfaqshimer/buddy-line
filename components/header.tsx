@@ -2,16 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Copy,
-  Check,
-  Terminal,
+  Gamepad2,
   ChevronDown,
   ShieldCheck,
-  Orbit,
   LogOut,
   Sparkles,
   Crown,
   Mail,
+  Upload,
 } from 'lucide-react';
 import { useSession, signOut } from '@/lib/auth-client';
 import { AuthModal } from './auth-modal';
@@ -20,25 +18,15 @@ import { EmailModal } from './email-modal';
 import { checkIsRootUserAction } from '@/app/admin-actions';
 
 interface HeaderProps {
-  roomCode: string;
-  devTools: boolean;
-  onToggleDevTools: () => void;
-  phase?: string;
-  activeSection?: string;
-  onGameVisibilityChanged?: (gameId: string, isHidden: boolean) => void;
-  isDeepSpaceHidden?: boolean;
+  onUploadClick?: () => void;
+  onOpenAdminManager?: () => void;
 }
 
 export function Header({
-  roomCode,
-  devTools,
-  onToggleDevTools,
-  activeSection = 'game',
-  onGameVisibilityChanged,
-  isDeepSpaceHidden = false,
+  onUploadClick,
+  onOpenAdminManager,
 }: HeaderProps) {
   const { data: session } = useSession();
-  const [copied, setCopied] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
@@ -53,16 +41,6 @@ export function Header({
       setIsRoot(false);
     }
   }, [session?.user]);
-
-  const copyRoomCode = async () => {
-    try {
-      await navigator.clipboard.writeText(roomCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // fallback
-    }
-  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -79,101 +57,72 @@ export function Header({
   const effectiveIsRoot = isRoot || Boolean(isDirectRoot);
   const userRole = effectiveIsRoot ? 'root' : userObj?.role;
   const isAdmin = effectiveIsRoot || userRole === 'admin';
-  const userDisplayName = userObj?.username || userObj?.name || 'Commander Vale';
-  const userAvatar = userObj?.image || '🚀';
+  const userDisplayName = userObj?.username || userObj?.name || 'Buddy Gamer';
+  const userAvatar = userObj?.image || '👾';
   const isLoggedIn = !!session?.user;
+
+  const handleUpload = () => {
+    if (!isLoggedIn) {
+      setIsAuthOpen(true);
+    } else if (onUploadClick) {
+      onUploadClick();
+    }
+  };
 
   return (
     <>
       <header className="sticky top-0 z-30 flex h-18 items-center justify-between border-b border-white/[0.08] bg-[#0b0f1c]/80 px-4 md:px-8 backdrop-blur-md">
-        {/* Breadcrumb & Mission Info */}
+        {/* Brand & Tagline */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span className="hidden sm:inline font-medium text-slate-500">Buddy Line</span>
-            <span className="hidden sm:inline text-slate-600">/</span>
-            <span className="font-semibold text-cyan-300">Nebula Hub</span>
-            <span className="text-slate-600">/</span>
-            <span className="font-medium text-slate-300">
-              {activeSection === 'arcade' ? 'Community Arcade' : 'Deep Space Sabotage'}
-            </span>
-            {activeSection === 'game' && isDeepSpaceHidden && isAdmin && (
-              <span className="rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
-                Admin Preview
-              </span>
-            )}
+          <div className="flex size-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-400 via-blue-500 to-purple-600 text-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.35)]">
+            <Gamepad2 className="size-5.5 text-slate-950 font-black" />
           </div>
-
-          <div className="hidden md:flex items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-cyan-300">
-            <Orbit className="size-3 animate-spin text-cyan-400" />
-            <span>ISS Astraeus</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-black tracking-tight text-white">BUDDY LINE</span>
+              <span className="hidden sm:inline-flex rounded-full bg-cyan-400/15 border border-cyan-400/30 px-2 py-0.5 text-[10px] font-bold text-cyan-300 uppercase tracking-wider">
+                Community Arcade
+              </span>
+            </div>
+            <p className="hidden md:block text-[11px] text-slate-400">
+              Play, build & share web games
+            </p>
           </div>
         </div>
 
-        {/* Right Controls: Room Code, Dev Tools Toggle, Profile */}
-        <div className="flex items-center gap-3 md:gap-5">
-          {/* Room Code Indicator with copy button */}
-          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-              <span className="text-[10px] uppercase tracking-wider text-slate-500">Room</span>
-              <span className="font-mono text-xs md:text-sm font-bold text-cyan-300 tracking-wider">
-                {roomCode}
-              </span>
-            </div>
-            <button
-              onClick={copyRoomCode}
-              title="Copy room invite code"
-              className="flex size-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white transition"
-            >
-              {copied ? (
-                <Check className="size-3.5 text-emerald-400" />
-              ) : (
-                <Copy className="size-3.5" />
-              )}
-            </button>
-          </div>
-
-          {/* Dev Tools Toggle Switch */}
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-1.5 text-xs">
-              <Terminal className={`size-3.5 ${devTools ? 'text-cyan-400' : 'text-slate-500'}`} />
-              <span className="hidden sm:inline text-xs font-medium text-slate-300">Dev Tools</span>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={devTools}
-              onClick={onToggleDevTools}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
-                devTools ? 'bg-cyan-500' : 'bg-slate-800'
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block size-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                  devTools ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
+        {/* Right Controls: Upload CTA, Root/Admin Badge, Profile */}
+        <div className="flex items-center gap-3 md:gap-4">
+          {/* Quick Upload Game Button */}
+          <button
+            onClick={handleUpload}
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-2 text-xs font-black text-slate-950 hover:from-cyan-300 hover:to-blue-400 transition transform active:scale-95 shadow-md shadow-cyan-500/20"
+          >
+            <Upload className="size-3.5" />
+            <span>Upload Game</span>
+          </button>
 
           {/* Root User Badge */}
           {effectiveIsRoot && (
             <div
-              className="flex items-center gap-1.5 rounded-xl border border-amber-400/50 bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-cyan-500/20 px-2.5 py-1.5 text-xs font-bold text-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.25)] ring-1 ring-amber-400/30 backdrop-blur-sm"
+              className="hidden lg:flex items-center gap-1.5 rounded-xl border border-amber-400/50 bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-cyan-500/20 px-2.5 py-1.5 text-xs font-bold text-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.25)] ring-1 ring-amber-400/30 backdrop-blur-sm"
               title="Logged in as Root User (Super Administrator)"
             >
               <div className="flex size-4 items-center justify-center rounded-full bg-amber-400/25 text-amber-300">
                 <Crown className="size-3 text-amber-400 fill-amber-400" />
               </div>
               <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-300 via-amber-200 to-yellow-100 bg-clip-text text-transparent">
-                Root User
+                Root
               </span>
             </div>
           )}
 
           {/* Administration Panel Button */}
-          {effectiveIsRoot && (
+          {isAdmin && (
             <button
-              onClick={() => setIsAdminModalOpen(true)}
+              onClick={() => {
+                if (onOpenAdminManager) onOpenAdminManager();
+                else setIsAdminModalOpen(true);
+              }}
               title="Open Admin Panel"
               className="flex items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 px-2.5 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20 transition shadow-sm"
             >
@@ -183,12 +132,12 @@ export function Header({
           )}
 
           {/* User Profile / Auth Area */}
-          <div className="relative border-l border-white/10 pl-3 md:pl-5">
+          <div className="relative border-l border-white/10 pl-3 md:pl-4">
             {isLoggedIn ? (
               <div className="relative">
                 <button
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                  className="flex items-center gap-3 rounded-xl p-1 hover:bg-white/[0.04] transition"
+                  className="flex items-center gap-2.5 rounded-xl p-1 hover:bg-white/[0.04] transition"
                 >
                   <div className="relative">
                     <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 text-base shadow-[0_0_12px_rgba(34,211,238,0.3)]">
@@ -221,7 +170,7 @@ export function Header({
                       )}
                     </div>
                     <div className="text-[10px] text-cyan-300/80">
-                      {effectiveIsRoot ? 'Root Superuser 👑' : isAdmin ? 'Administrator 🛡️' : 'Online Player'}
+                      {effectiveIsRoot ? 'Root Superuser 👑' : isAdmin ? 'Administrator 🛡️' : 'Player 👾'}
                     </div>
                   </div>
                   <ChevronDown className="hidden sm:block size-4 text-slate-500" />
@@ -247,12 +196,6 @@ export function Header({
                       <div className="text-[10px] text-slate-400 truncate">
                         {customEmail || session?.user?.email || 'Buddy Line Member'}
                       </div>
-                      {effectiveIsRoot && (
-                        <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-bold text-amber-300 bg-amber-500/10 rounded-lg px-2 py-1 border border-amber-500/25">
-                          <Crown className="size-3 text-amber-400 fill-amber-400 shrink-0" />
-                          <span>Root Superuser</span>
-                        </div>
-                      )}
                     </div>
 
                     {/* Email management button */}
@@ -281,13 +224,14 @@ export function Header({
                     {isAdmin && (
                       <button
                         onClick={() => {
-                          setIsAdminModalOpen(true);
+                          if (onOpenAdminManager) onOpenAdminManager();
+                          else setIsAdminModalOpen(true);
                           setIsProfileMenuOpen(false);
                         }}
                         className="w-full mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-400/10 transition text-left"
                       >
                         <Crown className="size-3.5 text-amber-400" />
-                        <span>Hub & Admin Controls 🛡️</span>
+                        <span>Admin Panel 🛡️</span>
                       </button>
                     )}
 
@@ -321,12 +265,11 @@ export function Header({
         initialMode="signup"
       />
 
-      {/* Root & Admin Management Modal */}
+      {/* Admin Management Modal */}
       <AdminManagerModal
         isOpen={isAdminModalOpen}
         onClose={() => setIsAdminModalOpen(false)}
         currentUser={session?.user}
-        onGameVisibilityChanged={onGameVisibilityChanged}
       />
 
       {/* Email Link & Update Modal */}

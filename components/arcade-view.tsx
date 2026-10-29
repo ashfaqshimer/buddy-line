@@ -14,6 +14,7 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
+  User,
 } from 'lucide-react';
 import { GameRecord } from '@/lib/games-db';
 import { getGames, deleteGameAction } from '@/app/game-actions';
@@ -22,17 +23,46 @@ import { GameUploaderModal } from './game-uploader-modal';
 import { AuthModal } from './auth-modal';
 import { useSession } from '@/lib/auth-client';
 
-export function ArcadeView() {
+export type ArcadeFilterType = 'all' | 'popular' | 'newest' | 'my-games';
+
+interface ArcadeViewProps {
+  filter?: ArcadeFilterType;
+  onFilterChange?: (filter: ArcadeFilterType) => void;
+  isUploaderOpen?: boolean;
+  setIsUploaderOpen?: (open: boolean) => void;
+  onGamesLoaded?: (count: number) => void;
+}
+
+export function ArcadeView({
+  filter = 'all',
+  onFilterChange,
+  isUploaderOpen: externalIsUploaderOpen,
+  setIsUploaderOpen: externalSetIsUploaderOpen,
+  onGamesLoaded,
+}: ArcadeViewProps) {
   const { data: session } = useSession();
   const [games, setGames] = useState<GameRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'popular' | 'newest'>('all');
+  const [internalFilter, setInternalFilter] = useState<ArcadeFilterType>('all');
+
+  const activeFilter = onFilterChange ? filter : internalFilter;
+  const setFilter = (nextFilter: ArcadeFilterType) => {
+    if (onFilterChange) {
+      onFilterChange(nextFilter);
+    } else {
+      setInternalFilter(nextFilter);
+    }
+  };
 
   // Modals
   const [activeGame, setActiveGame] = useState<GameRecord | null>(null);
-  const [isUploaderOpen, setIsUploaderOpen] = useState(false);
+  const [internalUploaderOpen, setInternalUploaderOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  const isUploaderOpen =
+    externalIsUploaderOpen !== undefined ? externalIsUploaderOpen : internalUploaderOpen;
+  const setIsUploaderOpen = externalSetIsUploaderOpen || setInternalUploaderOpen;
 
   // Deletion state
   const [gameToDelete, setGameToDelete] = useState<GameRecord | null>(null);
@@ -45,16 +75,18 @@ export function ArcadeView() {
       if (isMounted) {
         setGames(fetched);
         setLoading(false);
+        onGamesLoaded?.(fetched.length);
       }
     });
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [onGamesLoaded]);
 
   const handleGameUploaded = (newGame: GameRecord) => {
     setGames((prev) => [newGame, ...prev]);
-    setActiveGame(newGame); // Immediately let the kid play their newly uploaded game!
+    onGamesLoaded?.(games.length + 1);
+    setActiveGame(newGame); // Immediately play uploaded game!
   };
 
   const handlePlayRecorded = (gameId: string, newCount: number) => {
@@ -72,7 +104,13 @@ export function ArcadeView() {
   };
 
   const currentUserRole = (session?.user as { role?: string } | undefined)?.role;
-  const isAdmin = currentUserRole === 'admin' || currentUserRole === 'root';
+  const isDirectRoot =
+    (session?.user as { username?: string; email?: string } | undefined)?.username?.toLowerCase() === 'root' ||
+    (session?.user as { username?: string; email?: string } | undefined)?.email?.toLowerCase() === 'root' ||
+    (session?.user as { username?: string; email?: string } | undefined)?.email?.toLowerCase() === 'root@buddyline.local' ||
+    (session?.user as { username?: string; email?: string } | undefined)?.email?.toLowerCase() === 'root@buddyline.com';
+  const isAdmin = currentUserRole === 'admin' || currentUserRole === 'root' || Boolean(isDirectRoot);
+
   const canDeleteGame = (game: GameRecord) => {
     if (!session?.user) return false;
     return session.user.id === game.authorId || isAdmin;
@@ -86,6 +124,7 @@ export function ArcadeView() {
       const res = await deleteGameAction(gameToDelete.id);
       if (res.success) {
         setGames((prev) => prev.filter((g) => g.id !== gameToDelete.id));
+        onGamesLoaded?.(Math.max(0, games.length - 1));
         if (activeGame?.id === gameToDelete.id) {
           setActiveGame(null);
         }
@@ -103,6 +142,12 @@ export function ArcadeView() {
   // Filter & Search
   const filteredGames = games
     .filter((g) => {
+      // My games filter check
+      if (activeFilter === 'my-games') {
+        if (!session?.user) return false;
+        if (g.authorId !== session.user.id) return false;
+      }
+
       const matchSearch =
         g.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         g.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -110,8 +155,8 @@ export function ArcadeView() {
       return matchSearch;
     })
     .sort((a, b) => {
-      if (filter === 'popular') return b.playCount - a.playCount;
-      if (filter === 'newest')
+      if (activeFilter === 'popular') return b.playCount - a.playCount;
+      if (activeFilter === 'newest')
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       return 0;
     });
@@ -127,13 +172,13 @@ export function ArcadeView() {
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-cyan-300 mb-3">
               <Sparkles className="size-3.5" />
-              <span>COMMUNITY ARCADE HUB</span>
+              <span>BUDDY LINE COMMUNITY ARCADE</span>
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">
-              Play & Build Games!
+              Play & Build Web Games!
             </h1>
             <p className="mt-2 text-sm text-slate-300 leading-relaxed">
-              Anyone can code an HTML game and share it with the world. Jump into the community creations or upload your own game in seconds!
+              Anyone can code an HTML game and share it with the world. Jump into community creations or upload your custom game in seconds!
             </p>
           </div>
 
@@ -199,11 +244,11 @@ export function ArcadeView() {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 rounded-2xl bg-white/[0.04] p-1 border border-white/5 self-start sm:self-auto">
+        <div className="flex items-center gap-1.5 rounded-2xl bg-white/[0.04] p-1 border border-white/5 self-start sm:self-auto overflow-x-auto max-w-full">
           <button
             onClick={() => setFilter('all')}
-            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${
-              filter === 'all'
+            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition whitespace-nowrap ${
+              activeFilter === 'all'
                 ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
                 : 'text-slate-400 hover:text-white'
             }`}
@@ -212,8 +257,8 @@ export function ArcadeView() {
           </button>
           <button
             onClick={() => setFilter('popular')}
-            className={`flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
-              filter === 'popular'
+            className={`flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition whitespace-nowrap ${
+              activeFilter === 'popular'
                 ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
                 : 'text-slate-400 hover:text-white'
             }`}
@@ -223,8 +268,8 @@ export function ArcadeView() {
           </button>
           <button
             onClick={() => setFilter('newest')}
-            className={`flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
-              filter === 'newest'
+            className={`flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition whitespace-nowrap ${
+              activeFilter === 'newest'
                 ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
                 : 'text-slate-400 hover:text-white'
             }`}
@@ -232,14 +277,45 @@ export function ArcadeView() {
             <Clock className="size-3" />
             <span>Newest</span>
           </button>
+          <button
+            onClick={() => {
+              if (!session?.user) {
+                setIsAuthOpen(true);
+              } else {
+                setFilter('my-games');
+              }
+            }}
+            className={`flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition whitespace-nowrap ${
+              activeFilter === 'my-games'
+                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <User className="size-3" />
+            <span>My Uploads</span>
+          </button>
         </div>
       </div>
 
       {/* Game Cards Grid */}
       {loading ? (
         <div className="py-20 text-center">
-          <div className="inline-block animate-spin text-3xl mb-3">🛸</div>
-          <div className="text-slate-400 text-sm font-medium">Loading Community Arcade...</div>
+          <div className="inline-block animate-spin text-3xl mb-3">🕹️</div>
+          <div className="text-slate-400 text-sm font-medium">Loading Buddy Line Arcade...</div>
+        </div>
+      ) : activeFilter === 'my-games' && !session?.user ? (
+        <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-12 text-center">
+          <div className="text-4xl mb-3">👤</div>
+          <h3 className="text-lg font-bold text-white">Sign In to View Your Uploads</h3>
+          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+            Log in to manage and play the games you've uploaded to Buddy Line!
+          </p>
+          <button
+            onClick={() => setIsAuthOpen(true)}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-300 transition"
+          >
+            <span>Sign In / Join</span>
+          </button>
         </div>
       ) : filteredGames.length === 0 ? (
         <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-12 text-center">
@@ -248,6 +324,8 @@ export function ArcadeView() {
           <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
             {searchQuery
               ? `No games match "${searchQuery}". Try a different keyword!`
+              : activeFilter === 'my-games'
+              ? "You haven't uploaded any games yet. Be a creator and upload one now!"
               : 'Be the very first player to upload a cool game to Buddy Line!'}
           </p>
           <button

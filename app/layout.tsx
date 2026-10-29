@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nebula Hub | Gaming Hub & Community Arcade",
-  description: "The gaming hub for creators to upload custom web games and play official releases like Deep Space Sabotage.",
+  title: "Buddy Line | Community Web Arcade",
+  description: "Play, build, and share custom HTML/JS web games with the Buddy Line community.",
 };
 
 export default function RootLayout({
