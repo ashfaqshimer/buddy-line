@@ -274,3 +274,4 @@ export function AdminManagerModal({ isOpen, onClose }: AdminManagerModalProps) {
     </div>
   );
 }
+

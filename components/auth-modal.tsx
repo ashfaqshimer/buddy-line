@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { authClient } from '@/lib/auth-client';
-import { X, Sparkles, User, Lock, Rocket, AlertCircle } from 'lucide-react';
+import { X, Sparkles, User, Lock, Rocket, AlertCircle, Mail } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -16,6 +16,7 @@ const AVATAR_OPTIONS = ['🚀', '👾', '🕹️', '🐱', '🤖', '🦊', '⚡'
 export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }: AuthModalProps) {
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('🚀');
   const [error, setError] = useState('');
@@ -27,12 +28,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
     e.preventDefault();
     setError('');
 
-    const cleanUsername = username.trim();
-    if (!cleanUsername) {
-      setError('Please choose a username!');
+    const cleanIdentifier = username.trim();
+    if (!cleanIdentifier) {
+      setError(mode === 'signup' ? 'Please choose a username!' : 'Please enter your username or email!');
       return;
     }
-    if (cleanUsername.length < 3) {
+    if (mode === 'signup' && cleanIdentifier.length < 3) {
       setError('Username must be at least 3 letters long.');
       return;
     }
@@ -45,10 +46,15 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
 
     try {
       if (mode === 'signup') {
+        const cleanEmail = email.trim();
+        const targetEmail = cleanEmail
+          ? cleanEmail.toLowerCase()
+          : `${cleanIdentifier.toLowerCase().replace(/[^a-z0-9]/g, '')}@buddyline.local`;
+
         const res = await authClient.signUp.email({
-          email: `${cleanUsername.toLowerCase().replace(/[^a-z0-9]/g, '')}@buddyline.local`,
-          name: cleanUsername,
-          username: cleanUsername,
+          email: targetEmail,
+          name: cleanIdentifier,
+          username: cleanIdentifier,
           password: password,
           image: selectedAvatar,
         });
@@ -59,10 +65,17 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
           return;
         }
       } else {
-        const res = await authClient.signIn.username({
-          username: cleanUsername,
-          password: password,
-        });
+        // Sign In: Support both email and username!
+        const isEmailInput = cleanIdentifier.includes('@');
+        const res = isEmailInput
+          ? await authClient.signIn.email({
+              email: cleanIdentifier.toLowerCase(),
+              password: password,
+            })
+          : await authClient.signIn.username({
+              username: cleanIdentifier,
+              password: password,
+            });
 
         if (res.error) {
           setError(res.error.message || 'Wrong username or password. Try again!');
@@ -168,10 +181,10 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
             </div>
           )}
 
-          {/* Username Input */}
+          {/* Username / Identifier Input */}
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-              Nickname / Username
+              {mode === 'signup' ? 'Nickname / Username' : 'Username or Email'}
             </label>
             <div className="relative">
               <User className="absolute left-3.5 top-3 size-4 text-slate-400" />
@@ -179,13 +192,40 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. AstroKid or PixelHero"
-                maxLength={20}
+                placeholder={mode === 'signup' ? 'e.g. AstroKid or PixelHero' : 'Enter your nickname or email'}
+                maxLength={40}
                 required
                 className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
               />
             </div>
           </div>
+
+          {/* Optional Email Input (Signup only) */}
+          {mode === 'signup' && (
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                  Email Address
+                </label>
+                <span className="text-[10px] text-cyan-400/80 font-semibold uppercase tracking-wider">
+                  Optional
+                </span>
+              </div>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-3 size-4 text-slate-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="e.g. root@buddyline.com"
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                />
+              </div>
+              <p className="mt-1 text-[10px] text-slate-500">
+                Provide an email for the Root User or account recovery. If left blank, a game cadet ID is generated.
+              </p>
+            </div>
+          )}
 
           {/* Password Input */}
           <div>
