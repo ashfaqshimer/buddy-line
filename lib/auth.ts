@@ -21,6 +21,19 @@ export const migrationDbInstance = unpooledUrl
   ? new Pool({ connectionString: unpooledUrl })
   : dbInstance;
 
+// Guard against uncaught termination errors on idle pool connections (e.g. Neon scale-to-zero)
+if (dbInstance instanceof Pool) {
+  dbInstance.on('error', (err) => {
+    console.warn('Neon Postgres idle client pool notice (dbInstance):', err?.message || err);
+  });
+}
+
+if (migrationDbInstance instanceof Pool && migrationDbInstance !== dbInstance) {
+  migrationDbInstance.on('error', (err) => {
+    console.warn('Neon Postgres idle client pool notice (migrationDbInstance):', err?.message || err);
+  });
+}
+
 // Clean base URL: Resolves correctly in local dev and automatically on Vercel deployments
 const getBaseUrl = () => {
   const url = process.env.BETTER_AUTH_URL;

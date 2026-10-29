@@ -238,6 +238,12 @@ export function GameUploaderModal({
     file: File,
     setter: (val: { name: string; size: string; content: string }) => void
   ) => {
+    // 10MB individual file size limit
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMessage(`File "${file.name}" is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed size is 10 MB.`);
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
@@ -341,7 +347,11 @@ export function GameUploaderModal({
     } catch (err: unknown) {
       console.error(err);
       const msg = err instanceof Error ? err.message : 'Something went wrong while publishing.';
-      setErrorMessage(msg);
+      if (msg.includes('Body exceeded') || msg.includes('413') || msg.includes('too large')) {
+        setErrorMessage('Your game code exceeds the maximum payload size (10 MB). Please optimize images or assets.');
+      } else {
+        setErrorMessage(msg);
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -476,32 +476,75 @@ let initialized = false;
 async function ensureGamesTable() {
   if (initialized) return;
 
-  if (migrationDbInstance instanceof Pool) {
-    await migrationDbInstance.query(`
-      CREATE TABLE IF NOT EXISTS games (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        description TEXT,
-        icon TEXT NOT NULL,
-        html_content TEXT NOT NULL,
-        css_content TEXT,
-        js_content TEXT,
-        author_id TEXT NOT NULL,
-        author_username TEXT NOT NULL,
-        author_avatar TEXT,
-        play_count INTEGER DEFAULT 0,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+  try {
+    if (migrationDbInstance instanceof Pool) {
+      await migrationDbInstance.query(`
+        CREATE TABLE IF NOT EXISTS games (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          description TEXT,
+          icon TEXT NOT NULL,
+          html_content TEXT NOT NULL,
+          css_content TEXT,
+          js_content TEXT,
+          author_id TEXT NOT NULL,
+          author_username TEXT NOT NULL,
+          author_avatar TEXT,
+          play_count INTEGER DEFAULT 0,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
 
-    // Seed demos if table is empty
-    const { rowCount } = await migrationDbInstance.query('SELECT 1 FROM games LIMIT 1');
-    if (rowCount === 0) {
-      for (const game of DEMO_GAMES) {
-        await migrationDbInstance.query(
-          `INSERT INTO games (id, title, description, icon, html_content, css_content, js_content, author_id, author_username, author_avatar, play_count, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-          [
+      // Seed demos if table is empty
+      const { rowCount } = await migrationDbInstance.query('SELECT 1 FROM games LIMIT 1');
+      if (rowCount === 0) {
+        for (const game of DEMO_GAMES) {
+          await migrationDbInstance.query(
+            `INSERT INTO games (id, title, description, icon, html_content, css_content, js_content, author_id, author_username, author_avatar, play_count, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+            [
+              game.id,
+              game.title,
+              game.description,
+              game.icon,
+              game.htmlContent,
+              game.cssContent || '',
+              game.jsContent || '',
+              game.authorId,
+              game.authorUsername,
+              game.authorAvatar,
+              game.playCount,
+              game.createdAt
+            ]
+          );
+        }
+      }
+    } else if (dbInstance instanceof DatabaseSync) {
+      dbInstance.exec(`
+        CREATE TABLE IF NOT EXISTS games (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          description TEXT,
+          icon TEXT NOT NULL,
+          html_content TEXT NOT NULL,
+          css_content TEXT,
+          js_content TEXT,
+          author_id TEXT NOT NULL,
+          author_username TEXT NOT NULL,
+          author_avatar TEXT,
+          play_count INTEGER DEFAULT 0,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      const check = dbInstance.prepare('SELECT COUNT(*) as count FROM games').get() as { count: number };
+      if (!check || check.count === 0) {
+        const insert = dbInstance.prepare(`
+          INSERT INTO games (id, title, description, icon, html_content, css_content, js_content, author_id, author_username, author_avatar, play_count, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        for (const game of DEMO_GAMES) {
+          insert.run(
             game.id,
             game.title,
             game.description,
@@ -514,51 +557,12 @@ async function ensureGamesTable() {
             game.authorAvatar,
             game.playCount,
             game.createdAt
-          ]
-        );
+          );
+        }
       }
     }
-  } else if (dbInstance instanceof DatabaseSync) {
-    dbInstance.exec(`
-      CREATE TABLE IF NOT EXISTS games (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        description TEXT,
-        icon TEXT NOT NULL,
-        html_content TEXT NOT NULL,
-        css_content TEXT,
-        js_content TEXT,
-        author_id TEXT NOT NULL,
-        author_username TEXT NOT NULL,
-        author_avatar TEXT,
-        play_count INTEGER DEFAULT 0,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    const check = dbInstance.prepare('SELECT COUNT(*) as count FROM games').get() as { count: number };
-    if (!check || check.count === 0) {
-      const insert = dbInstance.prepare(`
-        INSERT INTO games (id, title, description, icon, html_content, css_content, js_content, author_id, author_username, author_avatar, play_count, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-      for (const game of DEMO_GAMES) {
-        insert.run(
-          game.id,
-          game.title,
-          game.description,
-          game.icon,
-          game.htmlContent,
-          game.cssContent || '',
-          game.jsContent || '',
-          game.authorId,
-          game.authorUsername,
-          game.authorAvatar,
-          game.playCount,
-          game.createdAt
-        );
-      }
-    }
+  } catch (err) {
+    console.warn('ensureGamesTable notice:', err);
   }
 
   initialized = true;
