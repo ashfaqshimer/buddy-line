@@ -41,7 +41,7 @@ import { getGames, deleteGameAction } from '@/app/game-actions';
 import { GamePlayerModal } from './game-player-modal';
 import { GameUploaderModal } from './game-uploader-modal';
 import { AuthModal } from './auth-modal';
-import { useSession } from '@/lib/auth-client';
+import { useAuth } from '@/components/auth-provider';
 import { NavTabType } from './header';
 
 export type ArcadeFilterType = 'all' | 'popular' | 'newest' | 'action' | 'puzzle' | 'retro' | 'my-games';
@@ -121,7 +121,7 @@ export function ArcadeView({
   activeNavTab = 'catalog',
   onSelectNavTab,
 }: ArcadeViewProps) {
-  const { data: session } = useSession();
+  const { session, isPending, isAdmin: authIsAdmin } = useAuth();
   const [games, setGames] = useState<GameRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -210,7 +210,7 @@ export function ArcadeView({
     (session?.user as { username?: string; email?: string } | undefined)?.email?.toLowerCase() === 'root' ||
     (session?.user as { username?: string; email?: string } | undefined)?.email?.toLowerCase() === 'root@buddyline.local' ||
     (session?.user as { username?: string; email?: string } | undefined)?.email?.toLowerCase() === 'root@buddyline.com';
-  const isAdmin = currentUserRole === 'admin' || currentUserRole === 'root' || Boolean(isDirectRoot);
+  const isAdmin = authIsAdmin || currentUserRole === 'admin' || currentUserRole === 'root' || Boolean(isDirectRoot);
 
   const canDeleteGame = (game: GameRecord) => {
     if (!session?.user) return false;
@@ -660,6 +660,11 @@ export function ArcadeView({
               <div className="inline-block animate-spin text-4xl mb-3">🕹️</div>
               <div className="text-slate-300 text-sm font-bold">Connecting to Buddy Line Arcade...</div>
               <div className="text-slate-500 text-xs mt-1">Loading community games catalog</div>
+            </div>
+          ) : activeFilter === 'my-games' && isPending ? (
+            <div className="rounded-2xl border border-white/[0.06] bg-[#1c2028] p-12 text-center shadow-[6px_6px_16px_rgba(0,0,0,0.4)] animate-pulse">
+              <div className="size-8 mx-auto rounded-full border-2 border-teal-400 border-t-transparent animate-spin mb-3" />
+              <div className="text-slate-300 text-sm font-bold">Verifying cadet session...</div>
             </div>
           ) : activeFilter === 'my-games' && !session?.user ? (
             <div className="rounded-2xl border border-white/[0.06] bg-[#1c2028] p-12 text-center shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">

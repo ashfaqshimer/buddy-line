@@ -1,53 +1,34 @@
-'use client';
+import { auth, isRootUser } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { BuddyLineApp } from '@/components/buddy-line-app';
+import type { SessionType } from '@/components/auth-provider';
 
-import React, { useState } from 'react';
-import { Header, NavTabType } from '@/components/header';
-import { ArcadeView } from '@/components/arcade-view';
-import { AdminManagerModal } from '@/components/admin-manager-modal';
-import { Footer } from '@/components/footer';
-import { useSession } from '@/lib/auth-client';
+export const dynamic = 'force-dynamic';
 
-export default function BuddyLineApp() {
-  const [isUploaderOpen, setIsUploaderOpen] = useState(false);
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<NavTabType>('catalog');
-  const [totalGamesCount, setTotalGamesCount] = useState<number>(0);
-  const { data: session } = useSession();
+export default async function HomePage() {
+  let session: SessionType = null;
+  let isRoot = false;
+
+  try {
+    const reqHeaders = await headers();
+    const fetchedSession = await auth.api.getSession({
+      headers: reqHeaders,
+    });
+
+    if (fetchedSession) {
+      session = fetchedSession as unknown as SessionType;
+      if (fetchedSession.user) {
+        isRoot = isRootUser(fetchedSession.user);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch server session:', err);
+  }
 
   return (
-    <div className="min-h-screen bg-[#151920] text-[#e8eaed] flex flex-col selection:bg-teal-400/30 selection:text-white">
-      {/* Top Navbar */}
-      <Header
-        onUploadClick={() => setIsUploaderOpen(true)}
-        onOpenAdminManager={() => setIsAdminModalOpen(true)}
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        totalGamesCount={totalGamesCount}
-      />
-
-      {/* Main Arcade Experience */}
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
-        <ArcadeView
-          isUploaderOpen={isUploaderOpen}
-          setIsUploaderOpen={setIsUploaderOpen}
-          activeNavTab={activeTab}
-          onSelectNavTab={setActiveTab}
-          onGamesLoaded={setTotalGamesCount}
-        />
-      </main>
-
-      {/* Footer */}
-      <Footer
-        onOpenUpload={() => setIsUploaderOpen(true)}
-        onSelectTab={setActiveTab}
-      />
-
-      {/* Admin Manager Modal */}
-      <AdminManagerModal
-        isOpen={isAdminModalOpen}
-        onClose={() => setIsAdminModalOpen(false)}
-        currentUser={session?.user}
-      />
-    </div>
+    <BuddyLineApp
+      initialSession={session}
+      initialIsRoot={isRoot}
+    />
   );
 }
