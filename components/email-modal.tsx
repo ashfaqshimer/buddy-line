@@ -60,7 +60,7 @@ export function EmailModal({
         </button>
 
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex size-10 items-center justify-center rounded-2xl bg-cyan-500/10 border border-cyan-400/20 text-cyan-300">
+          <div className="flex size-10 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-400/20 text-emerald-400">
             <Mail className="size-5" />
           </div>
           <div>
@@ -114,7 +114,7 @@ export function EmailModal({
                 onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="e.g. you@example.com"
                 required
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
               />
             </div>
             <p className="mt-1.5 text-[10px] text-slate-400 leading-relaxed">
@@ -134,7 +134,7 @@ export function EmailModal({
             <button
               type="submit"
               disabled={loading || !newEmail.trim()}
-              className="flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-300 transition active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 px-4 py-2 text-xs font-bold text-slate-950 hover:from-emerald-300 hover:to-teal-400 transition active:scale-95 disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -154,4 +154,3 @@ export function EmailModal({
     </div>
   );
 }
-

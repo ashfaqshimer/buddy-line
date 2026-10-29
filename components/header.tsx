@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Gamepad2,
   ChevronDown,
   ShieldCheck,
   LogOut,
@@ -10,27 +9,41 @@ import {
   Crown,
   Mail,
   Upload,
+  Menu,
+  X,
+  Zap,
 } from 'lucide-react';
+import { GiGameConsole, GiJoystick, GiTrophyCup } from 'react-icons/gi';
+import { IoChatbubbles } from 'react-icons/io5';
 import { useSession, signOut } from '@/lib/auth-client';
 import { AuthModal } from './auth-modal';
 import { AdminManagerModal } from './admin-manager-modal';
 import { EmailModal } from './email-modal';
 import { checkIsRootUserAction } from '@/app/admin-actions';
 
+export type NavTabType = 'catalog' | 'leaderboards' | 'community';
+
 interface HeaderProps {
   onUploadClick?: () => void;
   onOpenAdminManager?: () => void;
+  activeTab?: NavTabType;
+  onSelectTab?: (tab: NavTabType) => void;
+  totalGamesCount?: number;
 }
 
 export function Header({
   onUploadClick,
   onOpenAdminManager,
+  activeTab = 'catalog',
+  onSelectTab,
+  totalGamesCount,
 }: HeaderProps) {
   const { data: session } = useSession();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isRoot, setIsRoot] = useState(false);
   const [customEmail, setCustomEmail] = useState<string | null>(null);
 
@@ -45,6 +58,7 @@ export function Header({
   const handleSignOut = async () => {
     await signOut();
     setIsProfileMenuOpen(false);
+    setIsMobileMenuOpen(false);
   };
 
   const userObj = session?.user as { name?: string; username?: string; image?: string | null; role?: string; email?: string } | undefined;
@@ -69,196 +83,339 @@ export function Header({
     }
   };
 
+  const navItems: {
+    id: NavTabType;
+    label: string;
+    shortLabel: string;
+    icon: React.ReactNode;
+    badge?: string;
+  }[] = [
+    {
+      id: 'catalog',
+      label: 'Arcade',
+      shortLabel: 'Arcade',
+      icon: <GiJoystick className="size-4 shrink-0 text-emerald-400" />,
+    },
+    {
+      id: 'leaderboards',
+      label: 'Leaderboards',
+      shortLabel: 'Scores',
+      icon: <GiTrophyCup className="size-4 shrink-0 text-amber-400" />,
+      badge: 'TOP',
+    },
+    {
+      id: 'community',
+      label: 'Community Lounge',
+      shortLabel: 'Lounge',
+      icon: <IoChatbubbles className="size-4 shrink-0 text-violet-400" />,
+      badge: 'CHAT',
+    },
+  ];
+
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-18 items-center justify-between border-b border-white/[0.08] bg-[#0b0f1c]/80 px-4 md:px-8 backdrop-blur-md">
-        {/* Brand & Tagline */}
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-400 via-blue-500 to-purple-600 text-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.35)]">
-            <Gamepad2 className="size-5.5 text-slate-950 font-black" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-black tracking-tight text-white">BUDDY LINE</span>
-              <span className="hidden sm:inline-flex rounded-full bg-cyan-400/15 border border-cyan-400/30 px-2 py-0.5 text-[10px] font-bold text-cyan-300 uppercase tracking-wider">
-                Community Arcade
-              </span>
-            </div>
-            <p className="hidden md:block text-[11px] text-slate-400">
-              Play, build & share web games
-            </p>
-          </div>
-        </div>
-
-        {/* Right Controls: Upload CTA, Root/Admin Badge, Profile */}
-        <div className="flex items-center gap-3 md:gap-4">
-          {/* Quick Upload Game Button */}
-          <button
-            onClick={handleUpload}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-2 text-xs font-black text-slate-950 hover:from-cyan-300 hover:to-blue-400 transition transform active:scale-95 shadow-md shadow-cyan-500/20"
-          >
-            <Upload className="size-3.5" />
-            <span>Upload Game</span>
-          </button>
-
-          {/* Root User Badge */}
-          {effectiveIsRoot && (
-            <div
-              className="hidden lg:flex items-center gap-1.5 rounded-xl border border-amber-400/50 bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-cyan-500/20 px-2.5 py-1.5 text-xs font-bold text-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.25)] ring-1 ring-amber-400/30 backdrop-blur-sm"
-              title="Logged in as Root User (Super Administrator)"
-            >
-              <div className="flex size-4 items-center justify-center rounded-full bg-amber-400/25 text-amber-300">
-                <Crown className="size-3 text-amber-400 fill-amber-400" />
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-300 via-amber-200 to-yellow-100 bg-clip-text text-transparent">
-                Root
-              </span>
-            </div>
-          )}
-
-          {/* Administration Panel Button */}
-          {isAdmin && (
+      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#090a0f]/90 backdrop-blur-xl transition-all">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-[4.5rem] flex items-center justify-between gap-2 sm:gap-4">
+          {/* Left: Brand Identity + Desktop Nav */}
+          <div className="flex items-center gap-3 lg:gap-6 min-w-0 shrink-0">
+            {/* Logo Brand Button */}
             <button
-              onClick={() => {
-                if (onOpenAdminManager) onOpenAdminManager();
-                else setIsAdminModalOpen(true);
-              }}
-              title="Open Admin Panel"
-              className="flex items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 px-2.5 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20 transition shadow-sm"
+              onClick={() => onSelectTab?.('catalog')}
+              className="flex items-center gap-2.5 sm:gap-3 text-left group focus:outline-none shrink-0"
             >
-              <Crown className="size-3.5 text-amber-400" />
-              <span className="hidden sm:inline text-[11px] font-black uppercase tracking-wider">Admin Panel</span>
-            </button>
-          )}
+              <div className="relative flex size-10 sm:size-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-400 via-teal-500 to-violet-600 text-slate-950 shadow-[0_0_20px_rgba(16,231,166,0.35)] transition-transform duration-300 group-hover:scale-105 group-hover:shadow-[0_0_28px_rgba(16,231,166,0.55)] shrink-0">
+                <GiGameConsole className="size-5.5 sm:size-6 text-slate-950" />
+                <span className="absolute -bottom-0.5 -right-0.5 flex size-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full size-2.5 bg-emerald-400" />
+                </span>
+              </div>
 
-          {/* User Profile / Auth Area */}
-          <div className="relative border-l border-white/10 pl-3 md:pl-4">
-            {isLoggedIn ? (
-              <div className="relative">
-                <button
-                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                  className="flex items-center gap-2.5 rounded-xl p-1 hover:bg-white/[0.04] transition"
-                >
-                  <div className="relative">
-                    <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 text-base shadow-[0_0_12px_rgba(34,211,238,0.3)]">
-                      {userAvatar.length <= 2 ? userAvatar : userDisplayName.slice(0, 2).toUpperCase()}
-                    </div>
-                    <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-[#0b0f1c] bg-emerald-400" />
-                    {effectiveIsRoot && (
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="text-lg sm:text-xl font-black tracking-tight text-white group-hover:text-emerald-400 transition-colors whitespace-nowrap">
+                    BUDDY LINE
+                  </span>
+                  <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[9px] sm:text-[10px] font-black text-emerald-400 tracking-wider shrink-0">
+                    <Zap className="size-2 text-emerald-400 fill-emerald-400" />
+                    <span>ARCADE</span>
+                  </span>
+                </div>
+
+                {/* Subtitle hidden on small/medium screens to prevent navbar blowout */}
+                <div className="hidden lg:flex items-center gap-2 text-[11px] text-slate-400 whitespace-nowrap">
+                  <span>Open Community Games</span>
+                  {totalGamesCount !== undefined && totalGamesCount > 0 && (
+                    <>
+                      <span className="size-1 rounded-full bg-slate-600" />
+                      <span className="text-emerald-400 font-semibold">{totalGamesCount} playable</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </button>
+
+            {/* Desktop Navigation Links */}
+            <nav className="hidden md:flex items-center gap-1 ml-2 lg:ml-4 pl-2 lg:pl-4 border-l border-white/[0.08] shrink-0">
+              {navItems.map((item) => {
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onSelectTab?.(item.id)}
+                    className={`relative flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
+                      isActive
+                        ? 'text-white bg-white/[0.08] shadow-inner'
+                        : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    {item.icon}
+                    <span className="hidden xl:inline">{item.label}</span>
+                    <span className="xl:hidden">{item.shortLabel}</span>
+                    {item.badge && (
                       <span
-                        title="Root Superuser"
-                        className="absolute -top-1.5 -left-1.5 flex size-4 items-center justify-center rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 text-[9px] shadow-[0_0_8px_rgba(251,191,36,0.8)] border border-amber-200/50"
+                        className={`text-[9px] font-black px-1.5 py-0.2 rounded-md shrink-0 ${
+                          isActive
+                            ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/30'
+                            : 'bg-white/[0.06] text-slate-400'
+                        }`}
                       >
-                        👑
+                        {item.badge}
                       </span>
                     )}
-                  </div>
-                  <div className="hidden sm:block text-left">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
-                      <span className="max-w-[110px] truncate">{userDisplayName}</span>
-                      {effectiveIsRoot ? (
-                        <span className="rounded-md bg-gradient-to-r from-amber-400/25 to-purple-500/25 text-amber-300 border border-amber-400/50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shadow-[0_0_8px_rgba(245,158,11,0.25)]">
-                          <Crown className="size-2.5 text-amber-400 fill-amber-400" />
-                          <span>ROOT</span>
+                    {isActive && (
+                      <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-emerald-400 to-violet-500 rounded-full" />
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Right Action Controls */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Upload CTA Button in Cyber Emerald */}
+            <button
+              onClick={handleUpload}
+              className="relative group overflow-hidden flex items-center gap-1.5 sm:gap-2 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 px-3 sm:px-4 py-2 text-xs font-black text-slate-950 shadow-[0_0_18px_rgba(16,231,166,0.25)] hover:shadow-[0_0_26px_rgba(16,231,166,0.45)] transition-all duration-300 transform active:scale-95 whitespace-nowrap shrink-0"
+            >
+              <div className="absolute inset-0 w-1/2 h-full bg-white/20 skew-x-12 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-700 pointer-events-none" />
+              <Upload className="size-3.5 shrink-0 transition-transform duration-300 group-hover:-translate-y-0.5" />
+              <span className="hidden sm:inline">Upload Game</span>
+              <span className="sm:hidden">Upload</span>
+            </button>
+
+            {/* Root Superuser Tag (Visible on desktop) */}
+            {effectiveIsRoot && (
+              <div
+                className="hidden 2xl:flex items-center gap-1.5 rounded-xl border border-amber-400/50 bg-gradient-to-r from-amber-500/20 via-violet-500/20 to-emerald-500/20 px-2.5 py-1.5 text-xs font-bold text-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.25)] ring-1 ring-amber-400/30 backdrop-blur-sm whitespace-nowrap shrink-0"
+                title="Super Administrator (Root)"
+              >
+                <Crown className="size-3 text-amber-400 fill-amber-400 shrink-0" />
+                <span className="text-[11px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-300 to-yellow-100 bg-clip-text text-transparent">
+                  Root
+                </span>
+              </div>
+            )}
+
+            {/* Admin Panel Button */}
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  if (onOpenAdminManager) onOpenAdminManager();
+                  else setIsAdminModalOpen(true);
+                }}
+                title="Open Admin Management Panel"
+                className="hidden md:flex items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 px-2.5 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20 transition shadow-sm whitespace-nowrap shrink-0"
+              >
+                <Crown className="size-3.5 text-amber-400 shrink-0" />
+                <span className="hidden xl:inline text-[11px] font-black uppercase tracking-wider">Admin</span>
+              </button>
+            )}
+
+            {/* User Profile / Auth Area */}
+            <div className="relative border-l border-white/[0.08] pl-2 sm:pl-3 shrink-0">
+              {isLoggedIn ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                    className="flex items-center gap-2 rounded-xl p-1 hover:bg-white/[0.06] transition shrink-0"
+                  >
+                    <div className="relative shrink-0">
+                      <div className="flex size-8 sm:size-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-violet-600 text-sm shadow-[0_0_12px_rgba(16,231,166,0.25)] font-black text-white">
+                        {userAvatar.length <= 2 ? userAvatar : userDisplayName.slice(0, 2).toUpperCase()}
+                      </div>
+                      <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full border-2 border-[#090a0f] bg-emerald-400" />
+                      {effectiveIsRoot && (
+                        <span
+                          title="Root Superuser"
+                          className="absolute -top-1.5 -left-1.5 flex size-4 items-center justify-center rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 text-[9px] shadow-[0_0_8px_rgba(251,191,36,0.8)] border border-amber-200/50"
+                        >
+                          👑
                         </span>
-                      ) : isAdmin ? (
-                        <span className="rounded-md bg-amber-400/20 text-amber-300 border border-amber-400/40 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider">
-                          {userRole}
-                        </span>
-                      ) : (
-                        <ShieldCheck className="size-3 text-cyan-400 shrink-0" />
                       )}
                     </div>
-                    <div className="text-[10px] text-cyan-300/80">
-                      {effectiveIsRoot ? 'Root Superuser 👑' : isAdmin ? 'Administrator 🛡️' : 'Player 👾'}
-                    </div>
-                  </div>
-                  <ChevronDown className="hidden sm:block size-4 text-slate-500" />
-                </button>
 
-                {/* Profile dropdown */}
-                {isProfileMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-white/10 bg-[#0e1322] p-1.5 shadow-2xl z-50">
-                    <div className="px-3 py-2 border-b border-white/5">
-                      <div className="flex items-center justify-between gap-1">
-                        <div className="text-xs font-bold text-white truncate">{userDisplayName}</div>
+                    {/* User display details only visible on large desktop to keep navbar clean */}
+                    <div className="hidden xl:block text-left whitespace-nowrap">
+                      <div className="flex items-center gap-1 text-xs font-bold text-white">
+                        <span className="max-w-[85px] truncate">{userDisplayName}</span>
                         {effectiveIsRoot ? (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-amber-300 bg-gradient-to-r from-amber-400/25 to-purple-500/25 border border-amber-400/40 rounded px-1.5 py-0.5 shadow-[0_0_6px_rgba(251,191,36,0.3)]">
-                            <Crown className="size-2.5 text-amber-400 fill-amber-400" />
+                          <span className="rounded bg-amber-400/20 text-amber-300 border border-amber-400/40 px-1 py-0.2 text-[9px] font-black uppercase shrink-0">
                             ROOT
                           </span>
                         ) : isAdmin ? (
-                          <span className="text-[9px] font-black uppercase tracking-wider text-amber-300 bg-amber-400/20 rounded px-1">
-                            {userRole}
+                          <span className="rounded bg-amber-400/20 text-amber-300 border border-amber-400/40 px-1 py-0.2 text-[9px] font-black uppercase shrink-0">
+                            ADMIN
                           </span>
-                        ) : null}
+                        ) : (
+                          <ShieldCheck className="size-3 text-emerald-400 shrink-0" />
+                        )}
                       </div>
-                      <div className="text-[10px] text-slate-400 truncate">
-                        {customEmail || session?.user?.email || 'Buddy Line Member'}
+                      <div className="text-[10px] text-emerald-400/90 font-medium truncate max-w-[95px]">
+                        {effectiveIsRoot ? 'Superuser 👑' : isAdmin ? 'Admin 🛡️' : 'Player 🕹️'}
                       </div>
                     </div>
+                    <ChevronDown className="hidden sm:block size-3.5 text-slate-400 shrink-0" />
+                  </button>
 
-                    {/* Email management button */}
-                    <button
-                      onClick={() => {
-                        setIsEmailModalOpen(true);
-                        setIsProfileMenuOpen(false);
-                      }}
-                      className="w-full mt-1.5 flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.06] transition text-left"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Mail className="size-3.5 text-cyan-400 shrink-0" />
-                        <span className="truncate">
-                          {(customEmail || session?.user?.email)?.endsWith('@buddyline.local')
-                            ? 'Link Email Address'
-                            : 'Update Email'}
-                        </span>
+                  {/* Profile Dropdown */}
+                  {isProfileMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-white/10 bg-[#0f121d] p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                      <div className="px-3 py-2.5 border-b border-white/[0.06]">
+                        <div className="flex items-center justify-between gap-1">
+                          <div className="text-xs font-bold text-white truncate">{userDisplayName}</div>
+                          {effectiveIsRoot ? (
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300 bg-amber-400/20 border border-amber-400/40 rounded px-1.5 py-0.5 shrink-0">
+                              <Crown className="size-2.5 text-amber-400 fill-amber-400" />
+                              ROOT
+                            </span>
+                          ) : isAdmin ? (
+                            <span className="text-[9px] font-black uppercase tracking-wider text-amber-300 bg-amber-400/20 rounded px-1 shrink-0">
+                              {userRole}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                          {customEmail || session?.user?.email || 'Buddy Line Member'}
+                        </div>
                       </div>
-                      {(customEmail || session?.user?.email)?.endsWith('@buddyline.local') && (
-                        <span className="rounded bg-amber-400/20 text-amber-300 px-1 py-0.2 text-[9px] font-bold shrink-0">
-                          Setup
-                        </span>
-                      )}
-                    </button>
 
-                    {isAdmin && (
+                      {/* Email management */}
                       <button
                         onClick={() => {
-                          if (onOpenAdminManager) onOpenAdminManager();
-                          else setIsAdminModalOpen(true);
+                          setIsEmailModalOpen(true);
                           setIsProfileMenuOpen(false);
                         }}
-                        className="w-full mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-400/10 transition text-left"
+                        className="w-full mt-1.5 flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.06] transition text-left"
                       >
-                        <Crown className="size-3.5 text-amber-400" />
-                        <span>Admin Panel 🛡️</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Mail className="size-3.5 text-emerald-400 shrink-0" />
+                          <span className="truncate">
+                            {(customEmail || session?.user?.email)?.endsWith('@buddyline.local')
+                              ? 'Link Email Address'
+                              : 'Update Email'}
+                          </span>
+                        </div>
+                        {(customEmail || session?.user?.email)?.endsWith('@buddyline.local') && (
+                          <span className="rounded bg-amber-400/20 text-amber-300 px-1 py-0.2 text-[9px] font-bold shrink-0">
+                            Setup
+                          </span>
+                        )}
                       </button>
-                    )}
 
-                    <button
-                      onClick={handleSignOut}
-                      className="w-full mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/10 transition text-left"
-                    >
-                      <LogOut className="size-3.5" />
-                      <span>Log Out</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            if (onOpenAdminManager) onOpenAdminManager();
+                            else setIsAdminModalOpen(true);
+                            setIsProfileMenuOpen(false);
+                          }}
+                          className="w-full mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-400/10 transition text-left"
+                        >
+                          <Crown className="size-3.5 text-amber-400 shrink-0" />
+                          <span>Admin Console 🛡️</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/10 transition text-left"
+                      >
+                        <LogOut className="size-3.5 shrink-0" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsAuthOpen(true)}
+                  className="flex items-center gap-1.5 sm:gap-2 rounded-xl bg-emerald-400/15 border border-emerald-400/30 px-3 py-1.5 text-xs font-black text-emerald-400 hover:bg-emerald-400 hover:text-slate-950 transition active:scale-95 shadow-sm whitespace-nowrap shrink-0"
+                >
+                  <Sparkles className="size-3.5 shrink-0" />
+                  <span>Sign In</span>
+                </button>
+              )}
+            </div>
+
+            {/* Mobile Menu Toggle Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden flex size-8 sm:size-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-300 hover:text-white shrink-0"
+              aria-label="Toggle navigation menu"
+            >
+              {isMobileMenuOpen ? <X className="size-4.5" /> : <Menu className="size-4.5" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Drawer */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-white/[0.08] bg-[#0c0e17] px-4 py-3 space-y-2 animate-in fade-in duration-150">
+            {navItems.map((item) => (
               <button
-                onClick={() => setIsAuthOpen(true)}
-                className="flex items-center gap-2 rounded-xl bg-cyan-400/15 border border-cyan-400/30 px-3.5 py-1.5 text-xs font-bold text-cyan-300 hover:bg-cyan-400 hover:text-slate-950 transition active:scale-95 shadow-sm"
+                key={item.id}
+                onClick={() => {
+                  onSelectTab?.(item.id);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold ${
+                  activeTab === item.id
+                    ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/30'
+                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                }`}
               >
-                <Sparkles className="size-3.5" />
-                <span>Sign In / Join</span>
+                <div className="flex items-center gap-2.5">
+                  {item.icon}
+                  <span>{item.label}</span>
+                </div>
+                {item.badge && (
+                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-white/10 text-slate-300">
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  if (onOpenAdminManager) onOpenAdminManager();
+                  else setIsAdminModalOpen(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-amber-300 bg-amber-400/10 border border-amber-400/20"
+              >
+                <Crown className="size-4 text-amber-400" />
+                <span>Open Admin Management Panel</span>
               </button>
             )}
           </div>
-        </div>
+        )}
       </header>
 
-      {/* Auth Modal when opened from header */}
+      {/* Auth Modal */}
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}

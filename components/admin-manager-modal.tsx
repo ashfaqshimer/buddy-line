@@ -12,7 +12,6 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  Users,
   Sparkles,
 } from 'lucide-react';
 import { getUsersListAction, setUserRoleAction, UserSummary } from '@/app/admin-actions';
@@ -167,7 +166,7 @@ export function AdminManagerModal({
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
                 placeholder="Search username, name, or email..."
-                className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
+                className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none"
               />
             </div>
 
@@ -183,7 +182,7 @@ export function AdminManagerModal({
 
           {loadingUsers ? (
             <div className="py-16 text-center text-slate-400">
-              <Loader2 className="size-6 animate-spin mx-auto mb-2 text-cyan-400" />
+              <Loader2 className="size-6 animate-spin mx-auto mb-2 text-emerald-400" />
               <span className="text-xs">Loading Buddy Line member directory...</span>
             </div>
           ) : filteredUsers.length === 0 ? (
@@ -203,7 +202,7 @@ export function AdminManagerModal({
                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-3.5 hover:bg-white/[0.04] transition"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-cyan-500/20 to-blue-500/10 border border-cyan-400/20 text-xs font-bold text-cyan-300">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-500/20 to-teal-500/10 border border-emerald-400/20 text-xs font-bold text-emerald-300">
                         {(user.username || user.name).slice(0, 2).toUpperCase()}
                       </div>
                       <div className="min-w-0">
@@ -217,8 +216,8 @@ export function AdminManagerModal({
                               ROOT
                             </span>
                           ) : isUserAdmin ? (
-                            <span className="flex items-center gap-1 rounded bg-cyan-400/15 text-cyan-300 border border-cyan-400/30 px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-wider">
-                              <ShieldCheck className="size-2.5 text-cyan-400" />
+                            <span className="flex items-center gap-1 rounded bg-emerald-400/15 text-emerald-300 border border-emerald-400/30 px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-wider">
+                              <ShieldCheck className="size-2.5 text-emerald-400" />
                               ADMIN
                             </span>
                           ) : (
@@ -244,7 +243,7 @@ export function AdminManagerModal({
                           className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition active:scale-95 disabled:opacity-50 ${
                             isUserAdmin
                               ? 'border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20'
-                              : 'border border-cyan-400/30 bg-cyan-400/15 text-cyan-300 hover:bg-cyan-400 hover:text-slate-950'
+                              : 'border border-emerald-400/30 bg-emerald-400/15 text-emerald-300 hover:bg-emerald-400 hover:text-slate-950'
                           }`}
                         >
                           {isLoadingThis ? (
@@ -276,7 +275,7 @@ export function AdminManagerModal({
         {/* Modal Footer */}
         <div className="border-t border-white/[0.08] bg-[#090d18] px-6 py-3.5 flex items-center justify-between text-xs text-slate-400">
           <div className="flex items-center gap-1.5">
-            <Sparkles className="size-3 text-cyan-400" />
+            <Sparkles className="size-3 text-emerald-400" />
             <span>Buddy Line Platform Security Layer</span>
           </div>
           <button
