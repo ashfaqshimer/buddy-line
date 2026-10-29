@@ -1,0 +1,232 @@
+'use client';
+
+import React, { useState } from 'react';
+import { authClient } from '@/lib/auth-client';
+import { X, Sparkles, User, Lock, Rocket, AlertCircle } from 'lucide-react';
+
+interface AuthModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+  initialMode?: 'signin' | 'signup';
+}
+
+const AVATAR_OPTIONS = ['🚀', '👾', '🕹️', '🐱', '🤖', '🦊', '⚡', '🍕', '🛸', '🦄', '🏆', '⭐'];
+
+export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }: AuthModalProps) {
+  const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [selectedAvatar, setSelectedAvatar] = useState('🚀');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    const cleanUsername = username.trim();
+    if (!cleanUsername) {
+      setError('Please choose a username!');
+      return;
+    }
+    if (cleanUsername.length < 3) {
+      setError('Username must be at least 3 letters long.');
+      return;
+    }
+    if (password.length < 4) {
+      setError('Password must be at least 4 characters long.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      if (mode === 'signup') {
+        const res = await authClient.signUp.email({
+          email: `${cleanUsername.toLowerCase().replace(/[^a-z0-9]/g, '')}@buddyline.local`,
+          name: cleanUsername,
+          username: cleanUsername,
+          password: password,
+          image: selectedAvatar,
+        });
+
+        if (res.error) {
+          setError(res.error.message || 'Could not create account. Try another nickname!');
+          setLoading(false);
+          return;
+        }
+      } else {
+        const res = await authClient.signIn.username({
+          username: cleanUsername,
+          password: password,
+        });
+
+        if (res.error) {
+          setError(res.error.message || 'Wrong username or password. Try again!');
+          setLoading(false);
+          return;
+        }
+      }
+
+      setLoading(false);
+      if (onSuccess) onSuccess();
+      onClose();
+    } catch (err: unknown) {
+      console.error('Auth error:', err);
+      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again!';
+      setError(msg);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#0e1322] p-6 shadow-2xl shadow-cyan-500/10">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 rounded-xl p-2 text-slate-400 hover:bg-white/5 hover:text-white transition"
+        >
+          <X className="size-5" />
+        </button>
+
+        {/* Modal Header */}
+        <div className="text-center mb-6">
+          <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-3xl shadow-lg shadow-cyan-500/30 mb-3">
+            {mode === 'signup' ? selectedAvatar : '🚀'}
+          </div>
+          <h2 className="text-2xl font-black text-white tracking-tight">
+            {mode === 'signup' ? 'Join Buddy Line!' : 'Welcome Back, Cadet!'}
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">
+            {mode === 'signup'
+              ? 'Pick an avatar and nickname to play & share games'
+              : 'Sign in to access your game creations and rank'}
+          </p>
+        </div>
+
+        {/* Mode Switcher Tabs */}
+        <div className="flex rounded-xl bg-white/[0.04] p-1 mb-5 border border-white/5">
+          <button
+            type="button"
+            onClick={() => { setMode('signup'); setError(''); }}
+            className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
+              mode === 'signup'
+                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Create Account
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMode('signin'); setError(''); }}
+            className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
+              mode === 'signin'
+                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Sign In
+          </button>
+        </div>
+
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 p-3 text-xs text-rose-300">
+            <AlertCircle className="size-4 shrink-0 text-rose-400" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Avatar Picker (Signup only) */}
+          {mode === 'signup' && (
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-2">
+                Pick Your Mascot Avatar:
+              </label>
+              <div className="grid grid-cols-6 gap-2">
+                {AVATAR_OPTIONS.map((avatar) => (
+                  <button
+                    key={avatar}
+                    type="button"
+                    onClick={() => setSelectedAvatar(avatar)}
+                    className={`flex size-11 items-center justify-center rounded-xl text-xl border transition ${
+                      selectedAvatar === avatar
+                        ? 'border-cyan-400 bg-cyan-400/20 scale-105 shadow-md shadow-cyan-500/30'
+                        : 'border-white/10 bg-white/[0.03] hover:border-white/20'
+                    }`}
+                  >
+                    {avatar}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Username Input */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+              Nickname / Username
+            </label>
+            <div className="relative">
+              <User className="absolute left-3.5 top-3 size-4 text-slate-400" />
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="e.g. AstroKid or PixelHero"
+                maxLength={20}
+                required
+                className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+              />
+            </div>
+          </div>
+
+          {/* Password Input */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+              Secret Password
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-3 size-4 text-slate-400" />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+              />
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-500/25 hover:from-cyan-300 hover:to-blue-400 transition transform active:scale-95 disabled:opacity-50"
+          >
+            {loading ? (
+              <span className="animate-spin text-lg">⚙️</span>
+            ) : mode === 'signup' ? (
+              <>
+                <Rocket className="size-4" />
+                <span>Launch My Account 🚀</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="size-4" />
+                <span>Enter Buddy Line</span>
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}

@@ -9,15 +9,15 @@ import {
   Gamepad2,
   Sparkles,
   Signal,
-  Layers,
   Compass,
 } from 'lucide-react';
 
 interface SidebarProps {
   activeSection?: string;
+  onSelectSection?: (section: 'game' | 'arcade') => void;
 }
 
-export function Sidebar({ activeSection = 'game' }: SidebarProps) {
+export function Sidebar({ activeSection = 'game', onSelectSection }: SidebarProps) {
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.08] bg-[#0b0f1c] px-4 py-6 lg:flex">
       {/* Platform Branding: Buddy Line Parent */}
@@ -47,20 +47,60 @@ export function Sidebar({ activeSection = 'game' }: SidebarProps) {
             <span>Nebula Hub</span>
             <Sparkles className="size-3 text-cyan-400" />
           </div>
-          <nav className="flex flex-col gap-1 text-sm">
-            <a
-              href="#game"
-              className="group flex items-center gap-3 rounded-xl bg-cyan-400/10 px-3 py-2.5 font-medium text-cyan-200 ring-1 ring-cyan-300/20 shadow-[0_0_20px_rgba(34,211,238,0.1)] transition-all hover:bg-cyan-400/15"
+          <nav className="flex flex-col gap-2 text-sm">
+            {/* 1. Deep Space Sabotage */}
+            <button
+              onClick={() => onSelectSection?.('game')}
+              className={`w-full group flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition-all text-left ${
+                activeSection === 'game'
+                  ? 'bg-cyan-400/15 text-cyan-200 ring-1 ring-cyan-300/25 shadow-[0_0_20px_rgba(34,211,238,0.1)]'
+                  : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
+              }`}
             >
-              <div className="flex size-7 items-center justify-center rounded-lg bg-cyan-400/20 text-cyan-300">
+              <div
+                className={`flex size-7 items-center justify-center rounded-lg ${
+                  activeSection === 'game'
+                    ? 'bg-cyan-400/20 text-cyan-300'
+                    : 'bg-white/5 text-slate-400 group-hover:text-cyan-300'
+                }`}
+              >
                 <Rocket className="size-4" />
               </div>
               <div className="flex flex-col">
                 <span className="leading-tight font-semibold text-white">Deep Space Sabotage</span>
                 <span className="text-[10px] text-cyan-300/70">Text Deduction</span>
               </div>
-              <span className="ml-auto flex size-2 rounded-full bg-cyan-400 animate-pulse" />
-            </a>
+              {activeSection === 'game' && (
+                <span className="ml-auto flex size-2 rounded-full bg-cyan-400 animate-pulse" />
+              )}
+            </button>
+
+            {/* 2. Community Arcade Hub */}
+            <button
+              onClick={() => onSelectSection?.('arcade')}
+              className={`w-full group flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition-all text-left ${
+                activeSection === 'arcade'
+                  ? 'bg-cyan-400/15 text-cyan-200 ring-1 ring-cyan-300/25 shadow-[0_0_20px_rgba(34,211,238,0.1)]'
+                  : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
+              }`}
+            >
+              <div
+                className={`flex size-7 items-center justify-center rounded-lg ${
+                  activeSection === 'arcade'
+                    ? 'bg-purple-500/20 text-purple-300'
+                    : 'bg-white/5 text-slate-400 group-hover:text-purple-300'
+                }`}
+              >
+                <Gamepad2 className="size-4" />
+              </div>
+              <div className="flex flex-col">
+                <span className="leading-tight font-semibold text-white">Community Arcade</span>
+                <span className="text-[10px] text-purple-300/80">Play & Upload Code</span>
+              </div>
+              <span className="ml-auto rounded-full bg-purple-500/20 px-1.5 py-0.5 text-[9px] font-black uppercase text-purple-300 border border-purple-500/30">
+                HOT
+              </span>
+            </button>
 
             <div className="pt-2 px-2 text-[10px] font-medium uppercase tracking-wider text-slate-500">
               Other Hub Modules
@@ -72,13 +112,6 @@ export function Sidebar({ activeSection = 'game' }: SidebarProps) {
             >
               <Compass className="size-4" />
               <span>Solaris Deck (Upcoming)</span>
-            </button>
-            <button
-              disabled
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs text-slate-500 cursor-not-allowed opacity-60"
-            >
-              <Gamepad2 className="size-4" />
-              <span>Asteroid Arena (Upcoming)</span>
             </button>
           </nav>
         </div>
