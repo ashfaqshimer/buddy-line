@@ -15,6 +15,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Buddy Line | Community Web Arcade",
   description: "Play, build, and share custom HTML/JS web games with the Buddy Line community.",
+  icons: {
+    icon: "/buddyline-logo.svg",
+    apple: "/buddyline-logo.png",
+  },
 };
 
 export default function RootLayout({

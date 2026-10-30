@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { ShieldCheck, Heart, Terminal, Code2 } from 'lucide-react';
-import { GiGameConsole, GiJoystick, GiTrophyCup } from 'react-icons/gi';
+import { GiJoystick, GiTrophyCup } from 'react-icons/gi';
 import { IoChatbubbles, IoSparkles } from 'react-icons/io5';
+import { BuddyLineLogo } from './buddy-line-logo';
 
 interface FooterProps {
   onOpenUpload?: () => void;
@@ -22,14 +23,22 @@ export function Footer({ onOpenUpload, onSelectTab }: FooterProps) {
           {/* Brand Info */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-400 to-teal-600 text-slate-950 shadow-[0_0_20px_rgba(45,212,191,0.25)]">
-                <GiGameConsole className="size-5.5 text-slate-950 font-black" />
-              </div>
+              <BuddyLineLogo size="md" />
               <div>
-                <span className="text-lg font-black tracking-tight text-white">BUDDY LINE</span>
-                <span className="ml-2 rounded-full bg-teal-500/10 border border-teal-500/20 px-2 py-0.5 text-[10px] font-bold text-teal-400 uppercase tracking-wider">
-                  Arcade Hub
-                </span>
+                <div className="flex items-baseline font-black tracking-tight text-lg leading-none">
+                  <span className="text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
+                    BUDDY
+                  </span>
+                  <span className="relative ml-1.5 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-purple-400 drop-shadow-[0_0_14px_rgba(56,189,248,0.35)] tracking-wide font-black">
+                    LINE
+                  </span>
+                  <span className="inline-block size-1.5 rounded-full bg-cyan-400 ml-1.5 shadow-[0_0_8px_#38bdf8] animate-pulse" />
+                </div>
+                <div className="mt-1">
+                  <span className="rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 text-[10px] font-bold text-cyan-400 uppercase tracking-wider">
+                    Arcade Hub
+                  </span>
+                </div>
               </div>
             </div>
 

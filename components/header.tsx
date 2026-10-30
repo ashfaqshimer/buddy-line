@@ -10,7 +10,7 @@ import {
   Mail,
   Zap,
 } from 'lucide-react';
-import { GiGameConsole } from 'react-icons/gi';
+import { BuddyLineLogo } from './buddy-line-logo';
 import { useAuth } from '@/components/auth-provider';
 import { AuthModal } from './auth-modal';
 import { AdminManagerModal } from './admin-manager-modal';
@@ -78,32 +78,40 @@ export function Header({
           <button
             onClick={() => onSelectTab?.('catalog')}
             className="flex items-center gap-2.5 sm:gap-3 text-left group focus:outline-none shrink-0"
+            title="Buddy Line Arcade - Home"
           >
-            <div className="relative flex size-10 sm:size-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-400 to-teal-600 text-slate-950 shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-transform duration-300 group-hover:scale-105 group-hover:shadow-[0_0_28px_rgba(45,212,191,0.5)] shrink-0">
-              <GiGameConsole className="size-5.5 sm:size-6 text-slate-950" />
-              <span className="absolute -bottom-0.5 -right-0.5 flex size-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
-                <span className="relative inline-flex rounded-full size-2.5 bg-teal-400" />
-              </span>
-            </div>
+            <BuddyLineLogo size="md" />
 
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="text-lg sm:text-xl font-black tracking-tight text-white group-hover:text-teal-400 transition-colors whitespace-nowrap">
-                  BUDDY LINE
-                </span>
-                <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-teal-500/10 border border-teal-500/25 px-2 py-0.5 text-[9px] sm:text-[10px] font-black text-teal-400 tracking-wider shrink-0">
-                  <Zap className="size-2 text-teal-400 fill-teal-400" />
+                {/* Modern Dual-Tone Wordmark */}
+                <div className="flex items-baseline font-black tracking-tight text-lg sm:text-xl leading-none">
+                  <span className="text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] group-hover:text-cyan-200 transition-colors">
+                    BUDDY
+                  </span>
+                  <span className="relative ml-1.5 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-purple-400 drop-shadow-[0_0_14px_rgba(56,189,248,0.35)] tracking-wide font-black">
+                    LINE
+                  </span>
+                  <span className="inline-block size-1 sm:size-1.5 rounded-full bg-cyan-400 ml-1.5 shadow-[0_0_8px_#38bdf8] animate-pulse" />
+                </div>
+
+                {/* High-tech Arcade Pill Badge */}
+                <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 px-2 py-0.5 text-[9px] sm:text-[10px] font-black text-cyan-300 tracking-wider shrink-0 shadow-[0_0_10px_rgba(56,189,248,0.12)]">
+                  <Zap className="size-2 text-cyan-400 fill-cyan-400" />
                   <span>ARCADE</span>
                 </span>
               </div>
 
-              <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-400 whitespace-nowrap">
-                <span>Open Community Games</span>
+              {/* Subtitle & Real-time Indicator */}
+              <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-400 whitespace-nowrap mt-0.5">
+                <span className="font-medium text-slate-400">Community Web Arcade</span>
                 {totalGamesCount !== undefined && totalGamesCount > 0 && (
                   <>
                     <span className="size-1 rounded-full bg-slate-600" />
-                    <span className="text-teal-400 font-semibold">{totalGamesCount} playable</span>
+                    <span className="text-cyan-400 font-semibold flex items-center gap-1">
+                      <span className="size-1.5 rounded-full bg-cyan-400 inline-block animate-pulse" />
+                      {totalGamesCount} playable
+                    </span>
                   </>
                 )}
               </div>
