@@ -54,6 +54,7 @@ interface ArcadeViewProps {
   onGamesLoaded?: (count: number) => void;
   activeNavTab?: NavTabType;
   onSelectNavTab?: (tab: NavTabType) => void;
+  onOpenChat?: (targetPlayerIdOrUsername?: string) => void;
 }
 
 interface CommunityThread {
@@ -120,6 +121,7 @@ export function ArcadeView({
   onGamesLoaded,
   activeNavTab = 'catalog',
   onSelectNavTab,
+  onOpenChat,
 }: ArcadeViewProps) {
   const { session, isPending, isAdmin: authIsAdmin } = useAuth();
   const [games, setGames] = useState<GameRecord[]>([]);
@@ -796,17 +798,25 @@ export function ArcadeView({
 
                   {/* Card Bottom: Creator + Play CTA */}
                   <div className="mt-5 pt-4 border-t border-white/[0.06] flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenChat?.(game.authorId || game.authorUsername);
+                      }}
+                      title={`Message @${game.authorUsername}`}
+                      className="flex items-center gap-2 min-w-0 group/creator text-left hover:opacity-90 transition"
+                    >
                       <span className="text-base shrink-0">{game.authorAvatar || '👾'}</span>
                       <div className="truncate">
-                        <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
-                          Creator
+                        <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold flex items-center gap-1">
+                          <span>Creator</span>
+                          <span className="text-teal-400 opacity-0 group-hover/creator:opacity-100 transition-opacity text-[9px]">💬</span>
                         </div>
-                        <div className="text-xs font-bold text-slate-200 truncate">
+                        <div className="text-xs font-bold text-slate-200 group-hover/creator:text-teal-300 transition-colors truncate">
                           {game.authorUsername}
                         </div>
                       </div>
-                    </div>
+                    </button>
 
                     <button
                       onClick={(e) => {
@@ -855,10 +865,17 @@ export function ArcadeView({
                   </div>
 
                   <div className="flex items-center gap-3 shrink-0">
-                    <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenChat?.(game.authorId || game.authorUsername);
+                      }}
+                      title={`Message @${game.authorUsername}`}
+                      className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 hover:text-teal-300 transition"
+                    >
                       <span>{game.authorAvatar}</span>
-                      <span className="font-semibold text-slate-200">{game.authorUsername}</span>
-                    </div>
+                      <span className="font-semibold text-slate-200 hover:text-teal-300">{game.authorUsername}</span>
+                    </button>
 
                     <button
                       onClick={(e) => {
@@ -1063,16 +1080,25 @@ export function ArcadeView({
                 </p>
               </div>
 
-              <button
-                onClick={() => {
-                  if (!session?.user) setIsAuthOpen(true);
-                  else setIsPostingThread(!isPostingThread);
-                }}
-                className="flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-4 py-2.5 text-xs font-black text-slate-950 shadow-md shadow-teal-500/15 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition"
-              >
-                <Plus className="size-3.5" />
-                <span>Start New Discussion</span>
-              </button>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <button
+                  onClick={() => onOpenChat?.()}
+                  className="flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/10 hover:bg-teal-400/20 px-4 py-2.5 text-xs font-black text-teal-300 transition shadow-[0_0_15px_rgba(45,212,191,0.15)] active:scale-95"
+                >
+                  <IoChatbubbles className="size-3.5 text-teal-400" />
+                  <span>Private Player Chat</span>
+                </button>
+                <button
+                  onClick={() => {
+                    if (!session?.user) setIsAuthOpen(true);
+                    else setIsPostingThread(!isPostingThread);
+                  }}
+                  className="flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-4 py-2.5 text-xs font-black text-slate-950 shadow-md shadow-teal-500/15 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition active:scale-95"
+                >
+                  <Plus className="size-3.5" />
+                  <span>Start New Discussion</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1153,7 +1179,18 @@ export function ArcadeView({
                           {thread.tag}
                         </span>
                         <span className="text-xs text-slate-400">
-                          by <strong className="text-slate-200">{thread.author}</strong> • {thread.timeAgo}
+                          by{' '}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenChat?.(thread.author);
+                            }}
+                            title={`Message @${thread.author}`}
+                            className="font-bold text-slate-200 hover:text-teal-300 transition underline-offset-2 hover:underline"
+                          >
+                            @{thread.author}
+                          </button>{' '}
+                          • {thread.timeAgo}
                         </span>
                       </div>
 

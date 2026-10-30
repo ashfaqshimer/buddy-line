@@ -9,7 +9,9 @@ import {
   Crown,
   Mail,
   Zap,
+  MessageSquare,
 } from 'lucide-react';
+import { IoChatbubbles } from 'react-icons/io5';
 import { BuddyLineLogo } from './buddy-line-logo';
 import { useAuth } from '@/components/auth-provider';
 import { AuthModal } from './auth-modal';
@@ -22,6 +24,8 @@ export type NavTabType = 'catalog' | 'leaderboards' | 'community';
 interface HeaderProps {
   onUploadClick?: () => void;
   onOpenAdminManager?: () => void;
+  onOpenChat?: () => void;
+  chatNotificationCount?: number;
   activeTab?: NavTabType;
   onSelectTab?: (tab: NavTabType) => void;
   totalGamesCount?: number;
@@ -29,6 +33,8 @@ interface HeaderProps {
 
 export function Header({
   onOpenAdminManager,
+  onOpenChat,
+  chatNotificationCount,
   onSelectTab,
   totalGamesCount,
 }: HeaderProps) {
@@ -193,6 +199,25 @@ export function Header({
                         {customEmail || session?.user?.email || 'Buddy Line Member'}
                       </div>
                     </div>
+
+                    {/* Friends & Chat option */}
+                    <button
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        onOpenChat?.();
+                      }}
+                      className="w-full mt-1.5 flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.06] transition text-left"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <IoChatbubbles className="size-3.5 text-teal-400 shrink-0" />
+                        <span>Friends & Chat</span>
+                      </div>
+                      {(chatNotificationCount ?? 0) > 0 && (
+                        <span className="rounded-full bg-teal-400 text-slate-950 px-1.5 py-0.2 text-[9px] font-black">
+                          {chatNotificationCount}
+                        </span>
+                      )}
+                    </button>
 
                     {/* Email management */}
                     <button
