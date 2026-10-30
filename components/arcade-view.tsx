@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Sparkles,
   Search,
@@ -178,11 +178,12 @@ export function ArcadeView({
     setActiveGame(newGame);
   };
 
-  const handlePlayRecorded = (gameId: string, newCount: number) => {
+  const handlePlayRecorded = useCallback((gameId: string, newCount: number) => {
     setGames((prev) =>
       prev.map((g) => (g.id === gameId ? { ...g, playCount: newCount } : g))
     );
-  };
+    setActiveGame((prev) => (prev && prev.id === gameId ? { ...prev, playCount: newCount } : prev));
+  }, []);
 
   const handleUploadClick = () => {
     if (!session?.user) {
@@ -421,7 +422,7 @@ export function ArcadeView({
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-teal-300 font-bold">
                     <GiGameConsole className="size-4 text-teal-400" />
-                    <span>{spotlightGame.playCount} Plays</span>
+                    <span>{spotlightGame.playCount} {spotlightGame.playCount === 1 ? 'Play' : 'Plays'}</span>
                   </div>
                 </div>
 
@@ -815,7 +816,7 @@ export function ArcadeView({
                           {game.title}
                         </h4>
                         <span className="text-[10px] text-teal-300 bg-teal-400/6 px-2 py-0.5 rounded-full border border-teal-400/15 font-bold">
-                          {game.playCount} plays
+                          {game.playCount} {game.playCount === 1 ? 'play' : 'plays'}
                         </span>
                       </div>
                       <p className="text-xs text-slate-400 truncate max-w-md mt-0.5">

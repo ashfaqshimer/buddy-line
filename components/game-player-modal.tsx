@@ -41,17 +41,34 @@ export function GamePlayerModal({
   });
   const [userReacted, setUserReacted] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [currentPlayCount, setCurrentPlayCount] = useState<number>(game?.playCount ?? 0);
+  const recordedGameIdRef = useRef<string | null>(null);
 
   const gameId = game?.id;
 
+  // Keep local play count in sync if game prop updates
   useEffect(() => {
-    if (gameId) {
-      recordGamePlay(gameId).then((count) => {
-        if (count > 0 && onPlayRecorded) {
-          onPlayRecorded(gameId, count);
-        }
-      });
+    if (game?.playCount !== undefined) {
+      setCurrentPlayCount(game.playCount);
     }
+  }, [game?.id, game?.playCount]);
+
+  useEffect(() => {
+    if (!gameId) return;
+    // Guard against multiple increments for the same game session
+    if (recordedGameIdRef.current === gameId) return;
+    recordedGameIdRef.current = gameId;
+
+    recordGamePlay(gameId)
+      .then((count) => {
+        if (count > 0) {
+          setCurrentPlayCount(count);
+          onPlayRecorded?.(gameId, count);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to record game play:', err);
+      });
   }, [gameId, onPlayRecorded]);
 
   // Synchronize fullscreen state with document fullscreen element
@@ -140,7 +157,7 @@ export function GamePlayerModal({
                 {game.title}
               </h3>
               <span className="rounded-full bg-teal-400/8 px-2 py-0.5 text-[10px] font-bold text-teal-300 border border-teal-400/15 shrink-0">
-                {game.playCount + 1} Plays
+                {currentPlayCount} {currentPlayCount === 1 ? 'Play' : 'Plays'}
               </span>
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-400 truncate">

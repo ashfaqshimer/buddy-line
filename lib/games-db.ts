@@ -294,7 +294,7 @@ draw();`,
     authorId: 'creator-buddy',
     authorUsername: 'CaptainCosmo',
     authorAvatar: '👨‍🚀',
-    playCount: 142,
+    playCount: 0,
     createdAt: new Date().toISOString()
   },
   {
@@ -465,7 +465,7 @@ loop();`,
     authorId: 'creator-arcade',
     authorUsername: 'PixelMaster',
     authorAvatar: '🕹️',
-    playCount: 98,
+    playCount: 0,
     createdAt: new Date().toISOString()
   }
 ];
@@ -723,19 +723,20 @@ export async function deleteGame(gameId: string): Promise<boolean> {
 }
 
 export async function incrementPlayCount(gameId: string): Promise<number> {
+  if (!gameId || typeof gameId !== 'string') return 0;
   await ensureGamesTable();
 
   if (dbInstance instanceof Pool) {
     const res = await dbInstance.query<{ play_count: number }>(
-      `UPDATE games SET play_count = play_count + 1 WHERE id = $1 RETURNING play_count`,
+      `UPDATE games SET play_count = COALESCE(play_count, 0) + 1 WHERE id = $1 RETURNING play_count`,
       [gameId]
     );
     return res.rows[0]?.play_count ?? 0;
   } else if (dbInstance instanceof DatabaseSync) {
-    dbInstance.prepare(`UPDATE games SET play_count = play_count + 1 WHERE id = ?`).run(gameId);
+    dbInstance.prepare(`UPDATE games SET play_count = COALESCE(play_count, 0) + 1 WHERE id = ?`).run(gameId);
     const row = dbInstance.prepare(`SELECT play_count FROM games WHERE id = ?`).get(gameId) as { play_count: number } | undefined;
     return row?.play_count ?? 0;
   }
 
-  return 1;
+  return 0;
 }
