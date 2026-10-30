@@ -427,8 +427,16 @@ export function ArcadeView({
                 </div>
 
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="flex size-16 items-center justify-center rounded-2xl bg-teal-500/8 border border-teal-400/20 text-4xl shadow-inner group-hover:scale-105 transition-transform">
-                    {spotlightGame.icon || '🎮'}
+                  <div className="flex size-16 items-center justify-center rounded-2xl bg-teal-500/8 border border-teal-400/20 text-4xl shadow-inner group-hover:scale-105 transition-transform overflow-hidden shrink-0">
+                    {spotlightGame.thumbnailUrl ? (
+                      <img
+                        src={spotlightGame.thumbnailUrl}
+                        alt={spotlightGame.title}
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      spotlightGame.icon || '🎮'
+                    )}
                   </div>
                   <div>
                     <h3 className="text-xl font-black text-white group-hover:text-teal-300 transition-colors">
@@ -712,11 +720,28 @@ export function ArcadeView({
                   {/* Subtle Top Ambient Light */}
                   <div className="absolute -top-16 -right-16 size-32 rounded-full bg-teal-400/6 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
 
+                  {/* Game Thumbnail Banner (if present) */}
+                  {game.thumbnailUrl && (
+                    <div className="relative w-[calc(100%+2.5rem)] h-36 -mx-5 -mt-5 mb-4 overflow-hidden rounded-t-2xl border-b border-white/[0.08] bg-black/40">
+                      <img
+                        src={game.thumbnailUrl}
+                        alt={game.title}
+                        className="size-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  )}
+
                   <div>
                     {/* Top Row: Icon + Badges + Action Menu */}
                     <div className="flex items-start justify-between mb-4">
-                      <div className="flex size-14 items-center justify-center rounded-2xl bg-teal-500/8 border border-teal-400/15 text-3xl shadow-inner group-hover:scale-110 transition-transform">
-                        {game.icon || '🎮'}
+                      <div className="flex size-14 items-center justify-center rounded-2xl bg-teal-500/8 border border-teal-400/15 text-3xl shadow-inner group-hover:scale-110 transition-transform overflow-hidden shrink-0">
+                        {game.thumbnailUrl && !game.icon ? (
+                          <img src={game.thumbnailUrl} alt={game.title} className="size-full object-cover" />
+                        ) : !game.thumbnailUrl && (game.icon?.startsWith('http://') || game.icon?.startsWith('https://')) ? (
+                          <img src={game.icon} alt={game.title} className="size-full object-cover" />
+                        ) : (
+                          game.icon || '🎮'
+                        )}
                       </div>
 
                       <div className="flex items-center gap-1.5">
@@ -807,8 +832,12 @@ export function ArcadeView({
                   className="flex items-center justify-between gap-4 p-4 hover:bg-white/[0.03] transition cursor-pointer"
                 >
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className="flex size-11 items-center justify-center rounded-xl bg-white/[0.04] text-2xl shrink-0">
-                      {game.icon || '🎮'}
+                    <div className="flex size-11 items-center justify-center rounded-xl bg-white/[0.04] text-2xl shrink-0 overflow-hidden">
+                      {game.thumbnailUrl ? (
+                        <img src={game.thumbnailUrl} alt={game.title} className="size-full object-cover rounded-xl" />
+                      ) : (
+                        game.icon || '🎮'
+                      )}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">

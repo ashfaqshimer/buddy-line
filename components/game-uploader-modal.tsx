@@ -12,12 +12,17 @@ import {
   HelpCircle,
   Eye,
   Wand2,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Loader2,
+  Trash2,
 } from 'lucide-react';
 import { GiJoystick, GiSparkles } from 'react-icons/gi';
 import confetti from 'canvas-confetti';
 import { bundleGameSource } from '@/lib/game-bundler';
 import { uploadGame } from '@/app/game-actions';
 import { GameRecord } from '@/lib/games-db';
+import { useUploadThing } from '@/lib/uploadthing';
 
 interface GameUploaderModalProps {
   isOpen: boolean;
@@ -212,6 +217,47 @@ export function GameUploaderModal({
   const [description, setDescription] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('🎮');
 
+  // Thumbnail state (UploadThing or Direct Image URL)
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [thumbnailTab, setThumbnailTab] = useState<'upload' | 'url'>('upload');
+  const [urlInput, setUrlInput] = useState('');
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
+
+  const { startUpload, isUploading: isUploadingThumbnail } = useUploadThing(
+    'gameThumbnailUploader',
+    {
+      onClientUploadComplete: (res) => {
+        if (res && res[0]) {
+          const url = (res[0] as { ufsUrl?: string; url?: string }).ufsUrl || res[0].url;
+          if (url) {
+            setThumbnailUrl(url);
+            setErrorMessage('');
+          }
+        }
+      },
+      onUploadError: (error: Error) => {
+        setErrorMessage(
+          `Thumbnail upload failed: ${error.message}. You can also paste an image URL directly.`
+        );
+      },
+    }
+  );
+
+  const handleThumbnailFileSelected = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('Please select a valid image file (.png, .jpg, .webp, .gif).');
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      setErrorMessage(
+        `Image is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed is 4 MB.`
+      );
+      return;
+    }
+    setErrorMessage('');
+    startUpload([file]);
+  };
+
   // File states (filename, raw text content)
   const [htmlFile, setHtmlFile] = useState<{ name: string; size: string; content: string } | null>(null);
   const [cssFile, setCssFile] = useState<{ name: string; size: string; content: string } | null>(null);
@@ -276,6 +322,8 @@ export function GameUploaderModal({
     setTitle(STARTER_TEMPLATE.title);
     setDescription(STARTER_TEMPLATE.description);
     setSelectedIcon(STARTER_TEMPLATE.icon);
+    setThumbnailUrl('');
+    setUrlInput('');
     setHtmlFile({
       name: 'index.html',
       size: `${(STARTER_TEMPLATE.html.length / 1024).toFixed(1)} KB`,
@@ -316,6 +364,7 @@ export function GameUploaderModal({
         title,
         description: description || 'A fun custom game built for Buddy Line!',
         icon: selectedIcon,
+        thumbnailUrl: thumbnailUrl.trim() || null,
         htmlContent: htmlFile.content,
         cssContent: cssFile?.content || '',
         jsContent: jsFile?.content || '',
@@ -444,36 +493,154 @@ export function GameUploaderModal({
               </div>
             </div>
 
-            {/* Categorized Icon Picker */}
-            <div className="rounded-2xl border border-white/[0.06] bg-[#151920] p-4 max-w-xs shadow-[inset_1px_1px_4px_rgba(0,0,0,0.25)]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                  Game Icon Badge
-                </span>
-                <span className="text-xl">{selectedIcon}</span>
-              </div>
-              <div className="space-y-2">
-                {EMOJI_CATEGORIES.map((cat) => (
-                  <div key={cat.label} className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-slate-500 w-12">{cat.label}</span>
-                    <div className="flex gap-1">
-                      {cat.emojis.map((emoji) => (
-                        <button
-                          key={emoji}
-                          type="button"
-                          onClick={() => setSelectedIcon(emoji)}
-                          className={`size-8 rounded-lg text-base flex items-center justify-center border transition ${
-                            selectedIcon === emoji
-                              ? 'border-teal-400 bg-teal-400/15 scale-110 shadow-sm'
-                              : 'border-white/[0.04] bg-white/[0.02] hover:border-white/15'
-                          }`}
-                        >
-                          {emoji}
-                        </button>
-                      ))}
+            {/* Thumbnail & Icon Picker */}
+            <div className="rounded-2xl border border-white/[0.06] bg-[#151920] p-4 shadow-[inset_1px_1px_4px_rgba(0,0,0,0.25)] flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                    <ImageIcon className="size-3.5 text-teal-400" />
+                    Game Thumbnail
+                  </span>
+                  {thumbnailUrl ? (
+                    <span className="text-[10px] bg-teal-400/10 text-teal-300 font-bold px-1.5 py-0.5 rounded-full border border-teal-400/20">
+                      Active
+                    </span>
+                  ) : (
+                    <span className="text-xl" title="Fallback emoji badge">{selectedIcon}</span>
+                  )}
+                </div>
+
+                {/* If thumbnail is active, show preview */}
+                {thumbnailUrl ? (
+                  <div className="relative w-full h-28 rounded-xl overflow-hidden border border-teal-500/30 bg-black/40 group mb-3">
+                    <img
+                      src={thumbnailUrl}
+                      alt="Game Thumbnail Preview"
+                      className="size-full object-cover"
+                      onError={() => {
+                        setErrorMessage('Could not load image from the provided thumbnail URL');
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setThumbnailUrl('');
+                          setUrlInput('');
+                          if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/90 text-white text-xs font-bold hover:bg-rose-600 transition"
+                      >
+                        <Trash2 className="size-3.5" />
+                        <span>Remove</span>
+                      </button>
                     </div>
                   </div>
-                ))}
+                ) : (
+                  <div className="mb-3">
+                    {/* Mode Toggle Tabs */}
+                    <div className="flex rounded-lg bg-white/[0.04] p-0.5 mb-2 text-[10px] font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setThumbnailTab('upload')}
+                        className={`flex-1 py-1 rounded-md transition flex items-center justify-center gap-1 ${
+                          thumbnailTab === 'upload'
+                            ? 'bg-teal-500/20 text-teal-300 shadow-xs'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <Upload className="size-3" />
+                        <span>Upload</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setThumbnailTab('url')}
+                        className={`flex-1 py-1 rounded-md transition flex items-center justify-center gap-1 ${
+                          thumbnailTab === 'url'
+                            ? 'bg-teal-500/20 text-teal-300 shadow-xs'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <LinkIcon className="size-3" />
+                        <span>Image URL</span>
+                      </button>
+                    </div>
+
+                    {thumbnailTab === 'upload' ? (
+                      <div
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (e.dataTransfer.files?.[0]) handleThumbnailFileSelected(e.dataTransfer.files[0]);
+                        }}
+                        onClick={() => thumbnailInputRef.current?.click()}
+                        className="flex flex-col items-center justify-center p-3 rounded-xl border border-dashed border-teal-500/30 bg-teal-500/[0.03] hover:bg-teal-500/[0.08] hover:border-teal-400/60 transition cursor-pointer text-center min-h-[84px]"
+                      >
+                        <input
+                          ref={thumbnailInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) handleThumbnailFileSelected(e.target.files[0]);
+                          }}
+                        />
+                        {isUploadingThumbnail ? (
+                          <div className="flex items-center gap-2 text-teal-400 text-xs py-2 font-semibold">
+                            <Loader2 className="size-4 animate-spin" />
+                            <span>Uploading...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="size-4 text-teal-400 mb-1" />
+                            <span className="text-[11px] font-bold text-white">Choose Image</span>
+                            <span className="text-[9px] text-slate-400">PNG, JPG, WebP (max 4MB)</span>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <input
+                          type="url"
+                          value={urlInput}
+                          onChange={(e) => {
+                            setUrlInput(e.target.value);
+                            setThumbnailUrl(e.target.value.trim());
+                          }}
+                          placeholder="https://... (Cloudinary, Imgur, etc.)"
+                          className="w-full rounded-xl border border-white/[0.08] bg-[#111419] px-2.5 py-2 text-xs text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none"
+                        />
+                        <span className="text-[9px] text-slate-500 block">Paste direct image URL</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Emoji badge fallback */}
+              <div className="pt-2 border-t border-white/[0.04]">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Badge Icon
+                  </span>
+                  <span className="text-sm">{selectedIcon}</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {EMOJI_CATEGORIES.flatMap((c) => c.emojis).slice(0, 12).map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setSelectedIcon(emoji)}
+                      className={`size-7 rounded-lg text-sm flex items-center justify-center border transition ${
+                        selectedIcon === emoji
+                          ? 'border-teal-400 bg-teal-400/20 scale-105 shadow-sm'
+                          : 'border-white/[0.04] bg-white/[0.02] hover:border-white/15'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

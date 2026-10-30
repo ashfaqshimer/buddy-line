@@ -147,8 +147,12 @@ export function GamePlayerModal({
       <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#1a1f27]/95 backdrop-blur-md px-4 sm:px-6 py-2.5 shrink-0 z-10 shadow-lg">
         {/* Left: Game Branding & Creator Info */}
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-teal-500/10 border border-teal-400/20 text-2xl shadow-inner shrink-0">
-            {game.icon || '🎮'}
+          <div className="flex size-10 items-center justify-center rounded-xl bg-teal-500/10 border border-teal-400/20 text-2xl shadow-inner shrink-0 overflow-hidden">
+            {game.thumbnailUrl ? (
+              <img src={game.thumbnailUrl} alt={game.title} className="size-full object-cover rounded-xl" />
+            ) : (
+              game.icon || '🎮'
+            )}
           </div>
 
           <div className="min-w-0">

@@ -23,7 +23,8 @@ export async function getGames(): Promise<GameRecord[]> {
 export async function uploadGame(payload: {
   title: string;
   description: string;
-  icon: string;
+  icon?: string;
+  thumbnailUrl?: string | null;
   htmlContent: string;
   cssContent?: string;
   jsContent?: string;
@@ -62,6 +63,7 @@ export async function uploadGame(payload: {
       title: payload.title.trim(),
       description: payload.description?.trim() || 'A fun community arcade game!',
       icon: payload.icon || '🎮',
+      thumbnailUrl: payload.thumbnailUrl || null,
       htmlContent: payload.htmlContent,
       cssContent: payload.cssContent || '',
       jsContent: payload.jsContent || '',

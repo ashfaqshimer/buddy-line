@@ -7,6 +7,7 @@ export interface GameRecord {
   title: string;
   description: string;
   icon: string;
+  thumbnailUrl?: string | null;
   htmlContent: string;
   cssContent?: string;
   jsContent?: string;
@@ -22,6 +23,7 @@ interface RawGameRow {
   title: string;
   description: string | null;
   icon: string;
+  thumbnail_url?: string | null;
   html_content: string;
   css_content: string | null;
   js_content: string | null;
@@ -484,6 +486,7 @@ async function ensureGamesTable() {
           title TEXT NOT NULL,
           description TEXT,
           icon TEXT NOT NULL,
+          thumbnail_url TEXT,
           html_content TEXT NOT NULL,
           css_content TEXT,
           js_content TEXT,
@@ -495,18 +498,24 @@ async function ensureGamesTable() {
         );
       `);
 
+      // Add thumbnail_url column if the table already existed without it
+      await migrationDbInstance.query(`
+        ALTER TABLE games ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
+      `);
+
       // Seed demos if table is empty
       const { rowCount } = await migrationDbInstance.query('SELECT 1 FROM games LIMIT 1');
       if (rowCount === 0) {
         for (const game of DEMO_GAMES) {
           await migrationDbInstance.query(
-            `INSERT INTO games (id, title, description, icon, html_content, css_content, js_content, author_id, author_username, author_avatar, play_count, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+            `INSERT INTO games (id, title, description, icon, thumbnail_url, html_content, css_content, js_content, author_id, author_username, author_avatar, play_count, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
             [
               game.id,
               game.title,
               game.description,
               game.icon,
+              game.thumbnailUrl || null,
               game.htmlContent,
               game.cssContent || '',
               game.jsContent || '',
@@ -526,6 +535,7 @@ async function ensureGamesTable() {
           title TEXT NOT NULL,
           description TEXT,
           icon TEXT NOT NULL,
+          thumbnail_url TEXT,
           html_content TEXT NOT NULL,
           css_content TEXT,
           js_content TEXT,
@@ -537,11 +547,21 @@ async function ensureGamesTable() {
         );
       `);
 
+      // Add thumbnail_url column if it doesn't exist
+      try {
+        const cols = dbInstance.prepare(`PRAGMA table_info(games)`).all() as { name: string }[];
+        if (!cols.some(c => c.name === 'thumbnail_url')) {
+          dbInstance.exec(`ALTER TABLE games ADD COLUMN thumbnail_url TEXT;`);
+        }
+      } catch (colErr) {
+        console.warn('SQLite thumbnail_url migration notice:', colErr);
+      }
+
       const check = dbInstance.prepare('SELECT COUNT(*) as count FROM games').get() as { count: number };
       if (!check || check.count === 0) {
         const insert = dbInstance.prepare(`
-          INSERT INTO games (id, title, description, icon, html_content, css_content, js_content, author_id, author_username, author_avatar, play_count, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO games (id, title, description, icon, thumbnail_url, html_content, css_content, js_content, author_id, author_username, author_avatar, play_count, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
         for (const game of DEMO_GAMES) {
           insert.run(
@@ -549,6 +569,7 @@ async function ensureGamesTable() {
             game.title,
             game.description,
             game.icon,
+            game.thumbnailUrl || null,
             game.htmlContent,
             game.cssContent || '',
             game.jsContent || '',
@@ -578,6 +599,7 @@ export async function getAllGames(): Promise<GameRecord[]> {
       title: row.title,
       description: row.description || '',
       icon: row.icon,
+      thumbnailUrl: row.thumbnail_url || null,
       htmlContent: row.html_content,
       cssContent: row.css_content || '',
       jsContent: row.js_content || '',
@@ -594,6 +616,7 @@ export async function getAllGames(): Promise<GameRecord[]> {
       title: row.title,
       description: row.description || '',
       icon: row.icon,
+      thumbnailUrl: row.thumbnail_url || null,
       htmlContent: row.html_content,
       cssContent: row.css_content || '',
       jsContent: row.js_content || '',
@@ -624,13 +647,14 @@ export async function createGame(game: Omit<GameRecord, 'id' | 'playCount' | 'cr
 
   if (dbInstance instanceof Pool) {
     await dbInstance.query(
-      `INSERT INTO games (id, title, description, icon, html_content, css_content, js_content, author_id, author_username, author_avatar, play_count, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+      `INSERT INTO games (id, title, description, icon, thumbnail_url, html_content, css_content, js_content, author_id, author_username, author_avatar, play_count, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
       [
         newGame.id,
         newGame.title,
         newGame.description,
         newGame.icon,
+        newGame.thumbnailUrl || null,
         newGame.htmlContent,
         newGame.cssContent || '',
         newGame.jsContent || '',
@@ -643,13 +667,14 @@ export async function createGame(game: Omit<GameRecord, 'id' | 'playCount' | 'cr
     );
   } else if (dbInstance instanceof DatabaseSync) {
     dbInstance.prepare(`
-      INSERT INTO games (id, title, description, icon, html_content, css_content, js_content, author_id, author_username, author_avatar, play_count, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO games (id, title, description, icon, thumbnail_url, html_content, css_content, js_content, author_id, author_username, author_avatar, play_count, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       newGame.id,
       newGame.title,
       newGame.description,
       newGame.icon,
+      newGame.thumbnailUrl || null,
       newGame.htmlContent,
       newGame.cssContent || '',
       newGame.jsContent || '',
@@ -676,6 +701,7 @@ export async function getGameById(gameId: string): Promise<GameRecord | null> {
       title: row.title,
       description: row.description || '',
       icon: row.icon,
+      thumbnailUrl: row.thumbnail_url || null,
       htmlContent: row.html_content,
       cssContent: row.css_content || '',
       jsContent: row.js_content || '',
@@ -693,6 +719,7 @@ export async function getGameById(gameId: string): Promise<GameRecord | null> {
       title: row.title,
       description: row.description || '',
       icon: row.icon,
+      thumbnailUrl: row.thumbnail_url || null,
       htmlContent: row.html_content,
       cssContent: row.css_content || '',
       jsContent: row.js_content || '',
