@@ -111,6 +111,12 @@ export function BottomChatWidget({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const selectedFriendIdRef = useRef<string | null>(null);
+  const handledTargetRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    selectedFriendIdRef.current = selectedFriend?.id || null;
+  }, [selectedFriend?.id]);
 
   const scrollToBottom = useCallback((smooth = true) => {
     if (messagesEndRef.current) {
@@ -133,9 +139,23 @@ export function BottomChatWidget({
         setIncomingRequests(res.incomingRequests || []);
         setOutgoingRequests(res.outgoingRequests || []);
 
-        if (selectedFriend) {
-          const updated = res.friends?.find((f) => f.id === selectedFriend.id);
-          if (updated) setSelectedFriend(updated);
+        const activeId = selectedFriendIdRef.current;
+        if (activeId) {
+          const updated = res.friends?.find((f) => f.id === activeId);
+          if (updated) {
+            setSelectedFriend((prev) => {
+              if (
+                prev &&
+                prev.id === updated.id &&
+                prev.unreadCount === updated.unreadCount &&
+                prev.username === updated.username &&
+                prev.lastMessage?.id === updated.lastMessage?.id
+              ) {
+                return prev;
+              }
+              return updated;
+            });
+          }
         }
       }
     } catch (err) {
@@ -143,7 +163,7 @@ export function BottomChatWidget({
     } finally {
       if (!silent) setLoadingFriends(false);
     }
-  }, [currentUserId, selectedFriend]);
+  }, [currentUserId]);
 
   // Load conversation messages
   const loadConversation = useCallback(
@@ -155,7 +175,25 @@ export function BottomChatWidget({
       try {
         const res = await getConversationAction(friendId);
         if (res.success && res.messages) {
-          setMessages(res.messages);
+          setMessages((prev) => {
+            // Keep any pending optimistic messages that haven't been resolved yet
+            const pendingOptimistic = prev.filter((m) => m.id.startsWith('temp-'));
+            if (pendingOptimistic.length === 0) {
+              return res.messages!;
+            }
+            // Filter out pending messages that already appear in res.messages
+            const stillPending = pendingOptimistic.filter(
+              (p) =>
+                !res.messages!.some(
+                  (s) =>
+                    s.senderId === p.senderId &&
+                    s.content === p.content &&
+                    Math.abs(new Date(s.createdAt).getTime() - new Date(p.createdAt).getTime()) < 15000
+                )
+            );
+            return [...res.messages!, ...stillPending];
+          });
+
           if (!silent) {
             setTimeout(() => scrollToBottom(false), 50);
           }
@@ -186,7 +224,8 @@ export function BottomChatWidget({
 
   // Handle targetFriendId prop (e.g. clicked on an author from arcade view)
   useEffect(() => {
-    if (targetFriendId) {
+    if (targetFriendId && handledTargetRef.current !== targetFriendId) {
+      handledTargetRef.current = targetFriendId;
       onToggle(true);
       if (friends.length > 0) {
         const found = friends.find(
@@ -198,7 +237,6 @@ export function BottomChatWidget({
           setSelectedFriend(found);
           loadConversation(found.id);
         } else {
-          // If not friends yet, open Add Friend tab with target pre-filled
           setActiveTab('add');
           setAddFriendInput(targetFriendId);
         }
@@ -207,28 +245,31 @@ export function BottomChatWidget({
         setAddFriendInput(targetFriendId);
       }
       onClearTarget?.();
+    } else if (!targetFriendId) {
+      handledTargetRef.current = null;
     }
   }, [targetFriendId, friends, onToggle, onClearTarget, loadConversation]);
 
   // Live polling for messages when conversation is active
   useEffect(() => {
-    if (isOpen && selectedFriend) {
-      pollingRef.current = setInterval(() => {
-        loadConversation(selectedFriend.id, true);
-        loadFriendsData(true);
-      }, 3000);
-    }
+    if (!isOpen || !selectedFriend?.id) return;
+    const friendId = selectedFriend.id;
+
+    const interval = setInterval(() => {
+      loadConversation(friendId, true);
+      loadFriendsData(true);
+    }, 3000);
 
     return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
+      clearInterval(interval);
     };
-  }, [isOpen, selectedFriend, loadConversation, loadFriendsData]);
+  }, [isOpen, selectedFriend?.id, loadConversation, loadFriendsData]);
 
   // Select a friend to chat
   const handleSelectFriend = (friend: FriendSummary) => {
+    if (selectedFriend?.id !== friend.id) {
+      setMessages([]);
+    }
     setSelectedFriend(friend);
     loadConversation(friend.id);
     setTimeout(() => {
@@ -261,7 +302,16 @@ export function BottomChatWidget({
     try {
       const res = await sendPrivateMessageAction(selectedFriend.id, textToSend);
       if (res.success && res.message) {
-        setMessages((prev) => prev.map((m) => (m.id === tempId ? res.message! : m)));
+        setMessages((prev) => {
+          const hasTemp = prev.some((m) => m.id === tempId);
+          if (hasTemp) {
+            return prev.map((m) => (m.id === tempId ? res.message! : m));
+          }
+          if (prev.some((m) => m.id === res.message!.id)) {
+            return prev;
+          }
+          return [...prev, res.message!];
+        });
         loadFriendsData(true);
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
@@ -566,12 +616,12 @@ export function BottomChatWidget({
               <div className="flex-1 flex flex-col bg-[#151920] overflow-hidden">
                 {/* Messages Feed */}
                 <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
-                  {loadingConversation ? (
+                  {loadingConversation && messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-2">
                       <Loader2 className="size-5 animate-spin text-teal-400" />
                       <span className="text-xs">Loading messages...</span>
                     </div>
-                  ) : conversationError ? (
+                  ) : conversationError && messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full p-4 text-center">
                       <AlertCircle className="size-5 text-rose-400 mb-2" />
                       <p className="text-xs text-rose-300">{conversationError}</p>
