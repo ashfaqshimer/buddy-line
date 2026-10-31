@@ -18,13 +18,18 @@ export function bundleGameSource(
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Game</title>
 </head>
 <body>
 ${finalHtml}
 </body>
 </html>`;
+  } else if (!/<meta[\s]+name=["']viewport["']/i.test(finalHtml)) {
+    // Inject mobile viewport if missing in user's head
+    if (finalHtml.includes('<head>')) {
+      finalHtml = finalHtml.replace('<head>', '<head>\n  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">');
+    }
   }
 
   // Inject CSS if provided
@@ -39,14 +44,42 @@ ${finalHtml}
     }
   }
 
-  // Inject JS if provided
-  if (jsContent && jsContent.trim()) {
-    const scriptSnippet = `\n<script>\n// Community Game Logic\ntry {\n${jsContent}\n} catch (err) {\n  console.error("Game Runtime Error:", err);\n}\n</script>\n`;
-    if (finalHtml.includes('</body>')) {
-      finalHtml = finalHtml.replace('</body>', `${scriptSnippet}</body>`);
-    } else {
-      finalHtml = `${finalHtml}${scriptSnippet}`;
+  // Inject Mobile Virtual Keyboard postMessage bridge & JS
+  const virtualControlsBridge = `
+<script>
+// Buddy Line Mobile Virtual Controller Bridge
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'BUDDY_LINE_KEY_EVENT') {
+    try {
+      var action = event.data.action || 'keydown';
+      var keyData = {
+        key: event.data.key,
+        code: event.data.code,
+        keyCode: event.data.keyCode,
+        which: event.data.keyCode,
+        bubbles: true,
+        cancelable: true
+      };
+      var keyEvent = new KeyboardEvent(action, keyData);
+      window.dispatchEvent(keyEvent);
+      document.dispatchEvent(keyEvent);
+      if (document.activeElement && typeof document.activeElement.dispatchEvent === 'function') {
+        document.activeElement.dispatchEvent(keyEvent);
+      }
+    } catch (e) {
+      console.warn('Virtual controller bridge error:', e);
     }
+  }
+});
+</script>
+`;
+
+  // Inject JS if provided, along with the bridge
+  const scriptSnippet = `\n${virtualControlsBridge}\n<script>\n// Community Game Logic\ntry {\n${jsContent}\n} catch (err) {\n  console.error("Game Runtime Error:", err);\n}\n</script>\n`;
+  if (finalHtml.includes('</body>')) {
+    finalHtml = finalHtml.replace('</body>', `${scriptSnippet}</body>`);
+  } else {
+    finalHtml = `${finalHtml}${scriptSnippet}`;
   }
 
   return finalHtml;
