@@ -410,41 +410,42 @@ export function GameUploaderModal({
     : '';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="relative flex max-h-[92vh] w-full max-w-4xl flex-col rounded-2xl border border-white/[0.08] bg-[#1c2028] shadow-[6px_6px_20px_rgba(0,0,0,0.5)] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-3 sm:p-4 animate-in fade-in duration-200">
+      <div className="relative flex max-h-[92dvh] w-full max-w-4xl flex-col rounded-2xl border border-white/[0.08] bg-[#1c2028] shadow-[6px_6px_20px_rgba(0,0,0,0.5)] overflow-hidden pb-[env(safe-area-inset-bottom,0px)]">
         {/* Top Header */}
-        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4 bg-[#181c24]">
-          <div className="flex items-center gap-3">
-            <div className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-400 to-teal-600 text-slate-950 shadow-lg shadow-teal-500/25">
-              <GiJoystick className="size-6 text-slate-950 font-black" />
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-4 sm:px-6 py-3.5 sm:py-4 bg-[#181c24] gap-2">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="flex size-10 sm:size-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-400 to-teal-600 text-slate-950 shadow-lg shadow-teal-500/25 shrink-0">
+              <GiJoystick className="size-5 sm:size-6 text-slate-950 font-black" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-black text-white tracking-tight">Game Creator Studio</h2>
-                <span className="rounded-full bg-teal-400/10 border border-teal-400/20 px-2 py-0.5 text-[10px] font-bold text-teal-400">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h2 className="text-base sm:text-xl font-black text-white tracking-tight truncate">Game Creator Studio</h2>
+                <span className="hidden xs:inline-block rounded-full bg-teal-400/10 border border-teal-400/20 px-2 py-0.5 text-[10px] font-bold text-teal-400 shrink-0">
                   HTML5 Sandboxed
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
-                Upload your code files and publish your game to the community in seconds!
+              <p className="text-[11px] sm:text-xs text-slate-400 truncate">
+                Upload your code files and publish your game to the community!
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
               onClick={loadStarterTemplate}
-              className="hidden sm:flex items-center gap-1.5 rounded-full border border-teal-400/20 bg-teal-400/8 px-3.5 py-1.5 text-xs font-bold text-teal-300 hover:bg-teal-400/15 transition"
+              className="flex items-center gap-1.5 rounded-full border border-teal-400/20 bg-teal-400/8 px-2.5 sm:px-3.5 py-1.5 text-[11px] sm:text-xs font-bold text-teal-300 hover:bg-teal-400/15 transition"
               title="Autofill with starter game template"
             >
-              <Wand2 className="size-3.5" />
-              <span>Load Starter Template</span>
+              <Wand2 className="size-3.5 shrink-0" />
+              <span className="hidden xs:inline">Starter Template</span>
+              <span className="xs:hidden">Template</span>
             </button>
 
             <button
               onClick={onClose}
-              className="rounded-xl p-2 text-slate-400 hover:bg-white/[0.08] hover:text-white transition"
+              className="rounded-xl p-1.5 sm:p-2 text-slate-400 hover:bg-white/[0.08] hover:text-white transition"
             >
               <X className="size-5" />
             </button>
@@ -488,7 +489,7 @@ export function GameUploaderModal({
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="e.g. Press Spacebar to jump and dodge asteroids! Arrow keys to move."
                   maxLength={120}
-                  className="w-full rounded-2xl border border-white/[0.08] bg-[#151920] px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 shadow-[inset_2px_2px_6px_rgba(0,0,0,0.3)]"
+                  className="w-full rounded-2xl border border-white/[0.08] bg-[#151920] px-4 py-2.5 text-base sm:text-xs text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 shadow-[inset_2px_2px_6px_rgba(0,0,0,0.3)]"
                 />
               </div>
             </div>
@@ -608,7 +609,7 @@ export function GameUploaderModal({
                             setThumbnailUrl(e.target.value.trim());
                           }}
                           placeholder="https://... (Cloudinary, Imgur, etc.)"
-                          className="w-full rounded-xl border border-white/[0.08] bg-[#111419] px-2.5 py-2 text-xs text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none"
+                          className="w-full rounded-xl border border-white/[0.08] bg-[#111419] px-2.5 py-2 text-base sm:text-xs text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none"
                         />
                         <span className="text-[9px] text-slate-500 block">Paste direct image URL</span>
                       </div>
@@ -886,11 +887,11 @@ export function GameUploaderModal({
         </div>
 
         {/* Modal Footer Controls */}
-        <div className="flex items-center justify-between border-t border-white/[0.06] bg-[#181c24] px-6 py-4">
+        <div className="flex items-center justify-between border-t border-white/[0.06] bg-[#181c24] px-4 sm:px-6 py-3.5 sm:py-4 gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition"
+            className="rounded-full px-3.5 sm:px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition"
           >
             Cancel
           </button>
@@ -899,7 +900,7 @@ export function GameUploaderModal({
             type="button"
             disabled={!htmlFile || isSubmitting}
             onClick={handlePublish}
-            className="flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-6 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-teal-500/20 hover:shadow-[0_0_24px_rgba(45,212,191,0.35)] transition transform active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-black text-slate-950 shadow-lg shadow-teal-500/20 hover:shadow-[0_0_24px_rgba(45,212,191,0.35)] transition transform active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <>
@@ -908,8 +909,9 @@ export function GameUploaderModal({
               </>
             ) : (
               <>
-                <GiSparkles className="size-4" />
-                <span>Publish Game to Community Arcade 🚀</span>
+                <GiSparkles className="size-4 shrink-0" />
+                <span className="hidden sm:inline">Publish Game to Community Arcade 🚀</span>
+                <span className="sm:hidden">Publish Game 🚀</span>
               </>
             )}
           </button>

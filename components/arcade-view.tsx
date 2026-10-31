@@ -899,14 +899,14 @@ export function ArcadeView({
       {activeNavTab === 'leaderboards' && (
         <div className="space-y-8 animate-in fade-in duration-200">
           {/* Leaderboard Header */}
-          <div className="rounded-2xl border border-teal-400/15 bg-gradient-to-r from-teal-500/8 via-[#1c2028] to-teal-400/5 p-6 sm:p-8 shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="rounded-2xl border border-teal-400/15 bg-gradient-to-r from-teal-500/8 via-[#1c2028] to-teal-400/5 p-4 sm:p-8 shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/20 bg-teal-400/8 px-3 py-1 text-[11px] font-black uppercase text-teal-300 mb-2">
-                  <GiTrophyCup className="size-4 text-teal-400" />
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-teal-400/20 bg-teal-400/8 px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-black uppercase text-teal-300 mb-2">
+                  <GiTrophyCup className="size-3.5 sm:size-4 text-teal-400" />
                   <span>COMMUNITY ARCADE LEADERBOARD</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-white">
+                <h2 className="text-xl sm:text-3xl font-black text-white">
                   Hall of Champions 👑
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
@@ -914,12 +914,12 @@ export function ArcadeView({
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
                 <button
                   onClick={() => {
                     if (games[0]) setActiveGame(games[0]);
                   }}
-                  className="flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-4 py-2.5 text-xs font-black text-slate-950 shadow-md shadow-teal-500/15 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition"
+                  className="w-full sm:w-auto justify-center flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-4 py-2.5 text-xs font-black text-slate-950 shadow-md shadow-teal-500/15 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition"
                 >
                   <Play className="size-3.5 fill-current" />
                   <span>Play Featured Champion Game</span>
@@ -1014,34 +1014,34 @@ export function ArcadeView({
               {leaderboardsData.map((row, index) => (
                 <div
                   key={row.game.id}
-                  className="flex items-center justify-between p-4 hover:bg-white/[0.02] transition"
+                  className="flex items-center justify-between p-3.5 sm:p-4 hover:bg-white/[0.02] transition gap-2 sm:gap-4"
                 >
-                  <div className="flex items-center gap-4">
-                    <span className="w-6 text-center text-xs font-black text-slate-400">
+                  <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
+                    <span className="w-5 sm:w-6 text-center text-xs font-black text-slate-400 shrink-0">
                       #{index + 1}
                     </span>
-                    <div className="text-2xl">{row.avatar}</div>
-                    <div>
-                      <div className="text-sm font-bold text-white flex items-center gap-1.5">
-                        <span>{row.champion}</span>
+                    <div className="text-xl sm:text-2xl shrink-0">{row.avatar}</div>
+                    <div className="min-w-0">
+                      <div className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
+                        <span className="truncate">{row.champion}</span>
                         {index === 0 && (
-                          <span className="rounded bg-teal-400/12 text-teal-300 text-[9px] font-black px-1.5 py-0.2">
+                          <span className="rounded bg-teal-400/12 text-teal-300 text-[8px] sm:text-[9px] font-black px-1.5 py-0.2 shrink-0">
                             RECORD
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-slate-400">
+                      <div className="text-[11px] sm:text-xs text-slate-400 truncate max-w-[130px] xs:max-w-[200px] sm:max-w-none">
                         Played in <span className="text-teal-400 font-semibold">{row.game.title}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
                     <div className="text-right">
-                      <div className="text-sm font-black text-teal-300">
+                      <div className="text-xs sm:text-sm font-black text-teal-300">
                         {row.topScore.toLocaleString()} PTS
                       </div>
-                      <div className="text-[10px] text-slate-500 uppercase font-semibold">
+                      <div className="text-[9px] sm:text-[10px] text-slate-500 uppercase font-semibold">
                         High Score
                       </div>
                     </div>
@@ -1065,14 +1065,14 @@ export function ArcadeView({
       {activeNavTab === 'community' && (
         <div className="space-y-6 animate-in fade-in duration-200">
           {/* Community Lounge Banner */}
-          <div className="rounded-2xl border border-teal-400/15 bg-gradient-to-r from-teal-500/8 via-[#1c2028] to-teal-400/5 p-6 sm:p-8 shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="rounded-2xl border border-teal-400/15 bg-gradient-to-r from-teal-500/8 via-[#1c2028] to-teal-400/5 p-4 sm:p-8 shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/20 bg-teal-400/8 px-3 py-1 text-[11px] font-black uppercase text-teal-300 mb-2">
-                  <IoChatbubbles className="size-4 text-teal-400" />
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-teal-400/20 bg-teal-400/8 px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-black uppercase text-teal-300 mb-2">
+                  <IoChatbubbles className="size-3.5 sm:size-4 text-teal-400" />
                   <span>COMMUNITY DISCUSSIONS & CHAT</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-white">
+                <h2 className="text-xl sm:text-3xl font-black text-white">
                   Arcade Lounge & Chat Threads
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
@@ -1080,10 +1080,10 @@ export function ArcadeView({
                 </p>
               </div>
 
-              <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap w-full sm:w-auto">
                 <button
                   onClick={() => onOpenChat?.()}
-                  className="flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/10 hover:bg-teal-400/20 px-4 py-2.5 text-xs font-black text-teal-300 transition shadow-[0_0_15px_rgba(45,212,191,0.15)] active:scale-95"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/10 hover:bg-teal-400/20 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-black text-teal-300 transition shadow-[0_0_15px_rgba(45,212,191,0.15)] active:scale-95"
                 >
                   <IoChatbubbles className="size-3.5 text-teal-400" />
                   <span>Private Player Chat</span>
@@ -1093,7 +1093,7 @@ export function ArcadeView({
                     if (!session?.user) setIsAuthOpen(true);
                     else setIsPostingThread(!isPostingThread);
                   }}
-                  className="flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-4 py-2.5 text-xs font-black text-slate-950 shadow-md shadow-teal-500/15 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition active:scale-95"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-black text-slate-950 shadow-md shadow-teal-500/15 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition active:scale-95"
                 >
                   <Plus className="size-3.5" />
                   <span>Start New Discussion</span>
@@ -1106,7 +1106,7 @@ export function ArcadeView({
           {isPostingThread && (
             <form
               onSubmit={handlePostThread}
-              className="rounded-2xl border border-teal-400/20 bg-[#1c2028] p-5 space-y-4 animate-in fade-in duration-150 shadow-[6px_6px_16px_rgba(0,0,0,0.4)]"
+              className="rounded-2xl border border-teal-400/20 bg-[#1c2028] p-4 sm:p-5 space-y-4 animate-in fade-in duration-150 shadow-[6px_6px_16px_rgba(0,0,0,0.4)]"
             >
               <h3 className="text-sm font-black text-white">Create a Community Discussion Thread</h3>
               <div>
@@ -1115,7 +1115,7 @@ export function ArcadeView({
                   value={newThreadTitle}
                   onChange={(e) => setNewThreadTitle(e.target.value)}
                   placeholder="What's on your mind? (e.g. Can someone make a retro platformer?)"
-                  className="w-full rounded-xl border border-white/[0.08] bg-[#151920] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none"
+                  className="w-full rounded-xl border border-white/[0.08] bg-[#151920] px-4 py-2.5 text-base sm:text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none"
                   autoFocus
                 />
               </div>

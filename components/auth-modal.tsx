@@ -96,7 +96,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#1c2028] p-6 shadow-2xl shadow-black/40">
+      <div className="relative w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#1c2028] p-5 sm:p-6 shadow-2xl shadow-black/40 max-h-[90dvh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -194,7 +194,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
                 placeholder={mode === 'signup' ? 'e.g. AstroKid or PixelHero' : 'Enter your nickname or email'}
                 maxLength={40}
                 required
-                className="w-full rounded-xl border border-white/[0.08] bg-[#151920] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="w-full rounded-xl border border-white/[0.08] bg-[#151920] py-2.5 pl-10 pr-4 text-base sm:text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
               />
             </div>
           </div>
@@ -217,7 +217,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="e.g. you@example.com"
-                  className="w-full rounded-xl border border-white/[0.08] bg-[#151920] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                  className="w-full rounded-xl border border-white/[0.08] bg-[#151920] py-2.5 pl-10 pr-4 text-base sm:text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
                 />
               </div>
               <p className="mt-1 text-[10px] text-slate-500">
@@ -239,7 +239,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full rounded-xl border border-white/[0.08] bg-[#151920] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="w-full rounded-xl border border-white/[0.08] bg-[#151920] py-2.5 pl-10 pr-4 text-base sm:text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
               />
             </div>
           </div>

@@ -109,8 +109,8 @@ export function AdminManagerModal({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl rounded-2xl border border-white/[0.08] bg-[#1c2028] shadow-2xl shadow-black/40 overflow-hidden flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3.5 sm:p-4 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl rounded-2xl border border-white/[0.08] bg-[#1c2028] shadow-2xl shadow-black/40 overflow-hidden flex flex-col max-h-[85dvh] pb-[env(safe-area-inset-bottom,0px)]">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#181c24] px-6 py-4">
           <div className="flex items-center gap-3">
@@ -166,7 +166,7 @@ export function AdminManagerModal({
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
                 placeholder="Search username, name, or email..."
-                className="w-full rounded-xl border border-white/[0.08] bg-[#151920] py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none"
+                className="w-full rounded-xl border border-white/[0.08] bg-[#151920] py-2 pl-9 pr-3 text-base sm:text-xs text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none"
               />
             </div>
 

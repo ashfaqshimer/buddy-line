@@ -449,9 +449,19 @@ export function BottomChatWidget({
       {/* =========================================================================
           FACEBOOK-STYLE BOTTOM DOCKED BAR / PILL (ALWAYS ON BOTTOM-RIGHT)
          ========================================================================= */}
-      <div className="fixed bottom-0 right-3 sm:right-6 z-40 select-none">
+      {/* Backdrop for mobile bottom sheet */}
+      {isOpen && (
+        <div
+          onClick={() => onToggle(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 sm:hidden animate-in fade-in duration-200"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* DOCKED BAR OR EXPANDED WINDOW */}
+      <div className={`select-none ${isOpen ? 'fixed inset-x-0 bottom-0 sm:inset-x-auto sm:right-6 sm:bottom-0 z-50' : 'fixed bottom-0 right-3 sm:right-6 z-40'}`}>
         {!isOpen ? (
-          /* COLLAPSED BOTTOM BAR (Like Facebook chat dock) */
+          /* COLLAPSED BOTTOM BAR (Hidden on mobile as mobile bottom nav covers Chat) */
           <button
             onClick={() => {
               if (!isLoggedIn) {
@@ -461,7 +471,7 @@ export function BottomChatWidget({
                 loadFriendsData();
               }
             }}
-            className="flex items-center gap-2.5 rounded-t-2xl border-t border-x border-teal-400/30 bg-[#1a1f27] hover:bg-[#22272f] px-4 py-2.5 shadow-[0_-4px_24px_rgba(0,0,0,0.5),0_0_20px_rgba(45,212,191,0.18)] transition-all duration-200 group active:translate-y-0.5"
+            className="hidden sm:flex items-center gap-2.5 rounded-t-2xl border-t border-x border-teal-400/30 bg-[#1a1f27] hover:bg-[#22272f] px-4 py-2.5 shadow-[0_-4px_24px_rgba(0,0,0,0.5),0_0_20px_rgba(45,212,191,0.18)] transition-all duration-200 group active:translate-y-0.5"
             title="Open Player Chat & Friends"
           >
             <div className="relative">
@@ -488,17 +498,20 @@ export function BottomChatWidget({
           </button>
         ) : (
           /* =========================================================================
-             EXPANDED FACEBOOK-STYLE POPUP WINDOW (ANCHORED AT BOTTOM-RIGHT)
+             EXPANDED WINDOW (Mobile Bottom Sheet / Desktop Floating Window)
              ========================================================================= */
           <div
-            className={`flex flex-col bg-[#161a22] border-t border-x sm:border border-teal-400/30 rounded-t-3xl sm:rounded-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.7),0_0_28px_rgba(45,212,191,0.18)] transition-all duration-200 overflow-hidden ${
+            className={`flex flex-col bg-[#161a22] border-t border-x sm:border border-teal-400/30 rounded-t-3xl sm:rounded-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.7),0_0_28px_rgba(45,212,191,0.18)] transition-all duration-200 overflow-hidden pb-[env(safe-area-inset-bottom,0px)] ${
               isExpanded
-                ? 'w-[96vw] max-w-3xl h-[88vh] max-h-[720px]'
-                : 'w-[96vw] sm:w-[380px] md:w-[410px] h-[540px] max-h-[82vh]'
+                ? 'w-full sm:w-[96vw] sm:max-w-3xl h-[88dvh] sm:h-[88vh] sm:max-h-[720px]'
+                : 'w-full sm:w-[380px] md:w-[410px] h-[82dvh] sm:h-[540px] max-h-[85dvh] sm:max-h-[82vh]'
             }`}
           >
+            {/* Mobile Drag Pill */}
+            <div className="w-12 h-1 bg-white/20 rounded-full mx-auto my-1.5 sm:hidden shrink-0" />
+
             {/* Top Widget Bar */}
-            <div className="flex items-center justify-between border-b border-white/[0.08] bg-[#1a1f27] px-3.5 py-2.5 shrink-0 select-none">
+            <div className="flex items-center justify-between border-b border-white/[0.08] bg-[#1a1f27] px-3.5 py-2 sm:py-2.5 shrink-0 select-none">
               {/* Left Title / Context */}
               <div className="flex items-center gap-2 min-w-0">
                 {selectedFriend ? (
@@ -716,7 +729,7 @@ export function BottomChatWidget({
                 {/* Input Bar */}
                 <div className="border-t border-white/[0.08] bg-[#1a1f27] p-2.5 shrink-0">
                   {/* Quick Reactions */}
-                  <div className="flex items-center gap-1 overflow-x-auto pb-1.5 scrollbar-none">
+                  <div className="flex items-center gap-1 overflow-x-auto pb-1.5 no-scrollbar shrink-0">
                     {QUICK_REACTIONS.map((quick) => (
                       <button
                         key={quick}
@@ -724,7 +737,7 @@ export function BottomChatWidget({
                           setInputMessage(quick);
                           inputRef.current?.focus();
                         }}
-                        className="rounded-full bg-white/[0.04] hover:bg-teal-400/10 hover:text-teal-300 border border-white/[0.04] px-2 py-0.5 text-[10px] text-slate-400 whitespace-nowrap transition"
+                        className="rounded-full bg-white/[0.04] hover:bg-teal-400/10 hover:text-teal-300 border border-white/[0.04] px-2.5 py-1 text-[11px] text-slate-400 whitespace-nowrap transition shrink-0"
                       >
                         {quick}
                       </button>
@@ -745,7 +758,7 @@ export function BottomChatWidget({
                       }}
                       placeholder={`Message @${selectedFriend.username}...`}
                       maxLength={2000}
-                      className="flex-1 rounded-xl border border-white/[0.08] bg-[#111419] px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                      className="flex-1 rounded-xl border border-white/[0.08] bg-[#111419] px-3.5 py-2 text-base sm:text-xs text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
                     />
 
                     <button
@@ -830,7 +843,7 @@ export function BottomChatWidget({
                           value={friendsFilter}
                           onChange={(e) => setFriendsFilter(e.target.value)}
                           placeholder="Search friends..."
-                          className="w-full rounded-xl border border-white/[0.06] bg-[#111419] pl-7 pr-2.5 py-1 text-xs text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none"
+                          className="w-full rounded-xl border border-white/[0.06] bg-[#111419] pl-7 pr-2.5 py-1 text-base sm:text-xs text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -1015,7 +1028,7 @@ export function BottomChatWidget({
                           value={addFriendInput}
                           onChange={(e) => setAddFriendInput(e.target.value)}
                           placeholder="e.g. PixelMaster"
-                          className="w-full rounded-lg border border-white/[0.08] bg-[#111419] px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none"
+                          className="w-full rounded-lg border border-white/[0.08] bg-[#111419] px-3 py-1.5 text-base sm:text-xs text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none"
                         />
 
                         <button

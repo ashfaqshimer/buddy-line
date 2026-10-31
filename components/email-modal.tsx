@@ -114,7 +114,7 @@ export function EmailModal({
                 onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="e.g. you@example.com"
                 required
-                className="w-full rounded-xl border border-white/[0.08] bg-[#151920] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="w-full rounded-xl border border-white/[0.08] bg-[#151920] py-2.5 pl-10 pr-4 text-base sm:text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
               />
             </div>
             <p className="mt-1.5 text-[10px] text-slate-400 leading-relaxed">
