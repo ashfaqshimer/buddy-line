@@ -6,6 +6,7 @@ import { ArcadeView } from '@/components/arcade-view';
 import { AdminManagerModal } from '@/components/admin-manager-modal';
 import { BottomChatWidget } from '@/components/chat/bottom-chat-widget';
 import { Footer } from '@/components/footer';
+import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 import { AuthProvider, SessionType, useAuth } from '@/components/auth-provider';
 import { getChatNotificationSummaryAction } from '@/app/chat-actions';
 
@@ -70,7 +71,7 @@ function BuddyLineAppContent() {
       />
 
       {/* Main Arcade Experience */}
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+      <main className="flex-1 p-3.5 sm:p-6 lg:p-8 pb-24 sm:pb-8 max-w-7xl w-full mx-auto">
         <ArcadeView
           isUploaderOpen={isUploaderOpen}
           setIsUploaderOpen={setIsUploaderOpen}
@@ -85,6 +86,15 @@ function BuddyLineAppContent() {
       <Footer
         onOpenUpload={() => setIsUploaderOpen(true)}
         onSelectTab={setActiveTab}
+      />
+
+      {/* Mobile Sticky Bottom Navigation Bar */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        onUploadClick={() => setIsUploaderOpen(true)}
+        onOpenChat={() => handleOpenChat()}
+        chatNotificationCount={chatNotificationCount}
       />
 
       {/* Admin Manager Modal */}

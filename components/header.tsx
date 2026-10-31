@@ -78,12 +78,12 @@ export function Header({
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#1a1f27]/90 backdrop-blur-xl transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[4.5rem] flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#1a1f27]/90 backdrop-blur-xl transition-all pt-[env(safe-area-inset-top,0px)]">
+        <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 min-h-[4rem] sm:min-h-[4.5rem] flex items-center justify-between gap-3 sm:gap-4">
           {/* Left: Brand Identity */}
           <button
             onClick={() => onSelectTab?.('catalog')}
-            className="flex items-center gap-2.5 sm:gap-3 text-left group focus:outline-none shrink-0"
+            className="flex items-center gap-2 sm:gap-3 text-left group focus:outline-none shrink-0 py-1"
             title="Buddy Line Arcade - Home"
           >
             <BuddyLineLogo size="md" />
@@ -91,18 +91,18 @@ export function Header({
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {/* Modern Dual-Tone Wordmark */}
-                <div className="flex items-baseline font-black tracking-tight text-lg sm:text-xl leading-none">
+                <div className="flex items-baseline font-black tracking-tight text-base sm:text-xl leading-none">
                   <span className="text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] group-hover:text-cyan-200 transition-colors">
                     BUDDY
                   </span>
-                  <span className="relative ml-1.5 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-purple-400 drop-shadow-[0_0_14px_rgba(56,189,248,0.35)] tracking-wide font-black">
+                  <span className="relative ml-1 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-purple-400 drop-shadow-[0_0_14px_rgba(56,189,248,0.35)] tracking-wide font-black">
                     LINE
                   </span>
-                  <span className="inline-block size-1 sm:size-1.5 rounded-full bg-cyan-400 ml-1.5 shadow-[0_0_8px_#38bdf8] animate-pulse" />
+                  <span className="inline-block size-1 sm:size-1.5 rounded-full bg-cyan-400 ml-1 shadow-[0_0_8px_#38bdf8] animate-pulse" />
                 </div>
 
                 {/* High-tech Arcade Pill Badge */}
-                <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 px-2 py-0.5 text-[9px] sm:text-[10px] font-black text-cyan-300 tracking-wider shrink-0 shadow-[0_0_10px_rgba(56,189,248,0.12)]">
+                <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px] font-black text-cyan-300 tracking-wider shrink-0 shadow-[0_0_10px_rgba(56,189,248,0.12)]">
                   <Zap className="size-2 text-cyan-400 fill-cyan-400" />
                   <span>ARCADE</span>
                 </span>
@@ -138,7 +138,8 @@ export function Header({
               <div className="relative">
                 <button
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                  className="flex items-center gap-2 rounded-xl p-1 hover:bg-white/[0.06] transition shrink-0"
+                  className="flex items-center gap-2 rounded-xl p-1.5 hover:bg-white/[0.06] transition shrink-0 min-h-[44px] min-w-[44px]"
+                  aria-label="User profile menu"
                 >
                   <div className="relative shrink-0">
                     <div className="flex size-8 sm:size-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 text-sm shadow-[0_0_12px_rgba(45,212,191,0.2)] font-black text-white">
@@ -180,7 +181,7 @@ export function Header({
 
                 {/* Profile Dropdown */}
                 {isProfileMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-white/[0.08] bg-[#1c2028] p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-white/[0.08] bg-[#1c2028] p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                     <div className="px-3 py-2.5 border-b border-white/[0.06]">
                       <div className="flex items-center justify-between gap-1">
                         <div className="text-xs font-bold text-white truncate">{userDisplayName}</div>
@@ -269,7 +270,7 @@ export function Header({
             ) : (
               <button
                 onClick={() => setIsAuthOpen(true)}
-                className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-teal-400/10 border border-teal-400/25 px-4 py-2 text-xs font-black text-teal-400 hover:bg-teal-400 hover:text-slate-950 transition active:scale-95 shadow-sm whitespace-nowrap"
+                className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-teal-400/10 border border-teal-400/25 px-3.5 sm:px-4 py-2 sm:py-2 min-h-[40px] sm:min-h-[44px] text-xs font-black text-teal-400 hover:bg-teal-400 hover:text-slate-950 transition active:scale-95 shadow-sm whitespace-nowrap"
               >
                 <Sparkles className="size-3.5 shrink-0" />
                 <span>Sign In</span>

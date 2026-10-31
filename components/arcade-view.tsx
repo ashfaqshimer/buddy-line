@@ -344,68 +344,68 @@ export function ArcadeView({
   return (
     <div className="space-y-10 animate-in fade-in duration-300">
       {/* 1. Cinematic Hero Section — Dark Neumorphic with Teal Accent */}
-      <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1c2028] p-6 sm:p-8 lg:p-10 shadow-[6px_6px_16px_rgba(0,0,0,0.45),-4px_-4px_12px_rgba(255,255,255,0.02)]">
+      <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1c2028] p-4 sm:p-8 lg:p-10 shadow-[6px_6px_16px_rgba(0,0,0,0.45),-4px_-4px_12px_rgba(255,255,255,0.02)]">
         {/* Glow Spheres */}
         <div className="absolute -right-16 -top-16 size-80 rounded-full bg-teal-500/8 blur-3xl pointer-events-none" />
         <div className="absolute right-1/3 -bottom-16 size-80 rounded-full bg-teal-400/5 blur-3xl pointer-events-none" />
 
-        <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
           {/* Left Column: Heading & Value Prop */}
-          <div className="lg:col-span-7 space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/20 bg-teal-400/6 px-3.5 py-1 text-[11px] font-black uppercase tracking-[0.2em] text-teal-300">
-              <GiJoystick className="size-4 text-teal-400" />
+          <div className="lg:col-span-7 space-y-3.5 sm:space-y-4">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-teal-400/20 bg-teal-400/6 px-3 py-1 text-[10px] sm:text-[11px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] text-teal-300">
+              <GiJoystick className="size-3.5 sm:size-4 text-teal-400 shrink-0" />
               <span>THE OPEN WEB ARCADE COMMUNITY</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-[1.1]">
+            <h1 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-[1.15] sm:leading-[1.1]">
               Code It. Play It. <br />
               <span className="bg-gradient-to-r from-teal-400 to-teal-300 bg-clip-text text-transparent">
                 Share With Everyone.
               </span>
             </h1>
 
-            <p className="text-sm sm:text-base text-slate-300 max-w-xl leading-relaxed">
+            <p className="text-xs sm:text-base text-slate-300 max-w-xl leading-relaxed">
               Anyone can upload custom HTML5, CSS, and JavaScript games and let players around the globe jump right into the action with zero install or setup required.
             </p>
 
             {/* Hero CTAs */}
-            <div className="pt-2 flex flex-wrap items-center gap-3.5">
+            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <button
                 onClick={handleUploadClick}
-                className="group flex items-center gap-2.5 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-6 py-3.5 text-xs sm:text-sm font-black text-slate-950 shadow-[0_0_25px_rgba(45,212,191,0.25)] hover:shadow-[0_0_35px_rgba(45,212,191,0.45)] transition-all transform active:scale-95"
+                className="group flex items-center justify-center gap-2.5 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-5 sm:px-6 py-3 sm:py-3.5 text-xs sm:text-sm font-black text-slate-950 shadow-[0_0_25px_rgba(45,212,191,0.25)] hover:shadow-[0_0_35px_rgba(45,212,191,0.45)] transition-all transform active:scale-95"
               >
-                <Upload className="size-4.5 transition-transform group-hover:-translate-y-0.5" />
+                <Upload className="size-4 transition-transform group-hover:-translate-y-0.5" />
                 <span>Upload Your Game</span>
               </button>
 
               {spotlightGame && (
                 <button
                   onClick={() => setActiveGame(spotlightGame)}
-                  className="flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] px-5 py-3.5 text-xs sm:text-sm font-black text-white transition active:scale-95"
+                  className="flex items-center justify-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] px-4 sm:px-5 py-3 sm:py-3.5 text-xs sm:text-sm font-black text-white transition active:scale-95 truncate"
                 >
-                  <Play className="size-4 fill-teal-400 text-teal-400" />
-                  <span>Play Top Pick: {spotlightGame.title}</span>
+                  <Play className="size-3.5 sm:size-4 fill-teal-400 text-teal-400 shrink-0" />
+                  <span className="truncate">Play Top Pick: {spotlightGame.title}</span>
                 </button>
               )}
             </div>
 
             {/* Community Live Stats Strip */}
-            <div className="pt-6 border-t border-white/[0.06] grid grid-cols-3 gap-4">
+            <div className="pt-4 sm:pt-6 border-t border-white/[0.06] grid grid-cols-3 gap-2 sm:gap-4 text-center sm:text-left">
               <div>
-                <div className="text-xl sm:text-2xl font-black text-white">{games.length}</div>
-                <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <div className="text-lg sm:text-2xl font-black text-white">{games.length}</div>
+                <div className="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
                   Arcade Games
                 </div>
               </div>
               <div>
-                <div className="text-xl sm:text-2xl font-black text-teal-400">{totalPlays}</div>
-                <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <div className="text-lg sm:text-2xl font-black text-teal-400">{totalPlays}</div>
+                <div className="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
                   Total Plays
                 </div>
               </div>
               <div>
-                <div className="text-xl sm:text-2xl font-black text-teal-300">{totalCreators}</div>
-                <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <div className="text-lg sm:text-2xl font-black text-teal-300">{totalCreators}</div>
+                <div className="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
                   Game Creators
                 </div>
               </div>
@@ -415,21 +415,21 @@ export function ArcadeView({
           {/* Right Column: Featured Spotlight Card */}
           <div className="lg:col-span-5">
             {spotlightGame ? (
-              <div className="relative rounded-2xl border border-teal-400/20 bg-[#22272f] p-6 shadow-[6px_6px_16px_rgba(0,0,0,0.4),-3px_-3px_10px_rgba(255,255,255,0.02)] group hover:border-teal-400/40 transition-all duration-300">
+              <div className="relative rounded-2xl border border-teal-400/20 bg-[#22272f] p-4 sm:p-6 shadow-[6px_6px_16px_rgba(0,0,0,0.4),-3px_-3px_10px_rgba(255,255,255,0.02)] group hover:border-teal-400/40 transition-all duration-300">
                 {/* Spotlight Tag */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/8 border border-amber-400/20 px-3 py-1 text-[10px] font-black uppercase text-amber-300 tracking-wider">
-                    <IoFlame className="size-3.5 text-amber-400 fill-amber-400" />
-                    <span>Featured Community Pick</span>
+                <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/8 border border-amber-400/20 px-2.5 sm:px-3 py-1 text-[9px] sm:text-[10px] font-black uppercase text-amber-300 tracking-wider truncate">
+                    <IoFlame className="size-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                    <span className="truncate">Featured Community Pick</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-teal-300 font-bold">
-                    <GiGameConsole className="size-4 text-teal-400" />
+                  <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-teal-300 font-bold shrink-0">
+                    <GiGameConsole className="size-3.5 sm:size-4 text-teal-400" />
                     <span>{spotlightGame.playCount} {spotlightGame.playCount === 1 ? 'Play' : 'Plays'}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex size-16 items-center justify-center rounded-2xl bg-teal-500/8 border border-teal-400/20 text-4xl shadow-inner group-hover:scale-105 transition-transform overflow-hidden shrink-0">
+                <div className="flex items-center gap-3.5 sm:gap-4 mb-3 sm:mb-4">
+                  <div className="flex size-14 sm:size-16 items-center justify-center rounded-2xl bg-teal-500/8 border border-teal-400/20 text-3xl sm:text-4xl shadow-inner group-hover:scale-105 transition-transform overflow-hidden shrink-0">
                     {spotlightGame.thumbnailUrl ? (
                       <img
                         src={spotlightGame.thumbnailUrl}
@@ -440,20 +440,20 @@ export function ArcadeView({
                       spotlightGame.icon || '🎮'
                     )}
                   </div>
-                  <div>
-                    <h3 className="text-xl font-black text-white group-hover:text-teal-300 transition-colors">
+                  <div className="min-w-0">
+                    <h3 className="text-lg sm:text-xl font-black text-white group-hover:text-teal-300 transition-colors truncate">
                       {spotlightGame.title}
                     </h3>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1 truncate">
                       <span>Created by</span>
-                      <span className="font-semibold text-slate-200">
+                      <span className="font-semibold text-slate-200 truncate">
                         {spotlightGame.authorAvatar} {spotlightGame.authorUsername}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed mb-5">
+                <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed mb-4 sm:mb-5">
                   {spotlightGame.description}
                 </p>
 
@@ -466,8 +466,8 @@ export function ArcadeView({
                 </button>
               </div>
             ) : (
-              <div className="rounded-2xl border border-white/[0.06] bg-[#22272f] p-8 text-center shadow-[6px_6px_16px_rgba(0,0,0,0.4),-3px_-3px_10px_rgba(255,255,255,0.02)]">
-                <div className="text-4xl mb-2">🕹️</div>
+              <div className="rounded-2xl border border-white/[0.06] bg-[#22272f] p-6 sm:p-8 text-center shadow-[6px_6px_16px_rgba(0,0,0,0.4),-3px_-3px_10px_rgba(255,255,255,0.02)]">
+                <div className="text-3xl sm:text-4xl mb-2">🕹️</div>
                 <div className="text-sm font-bold text-white">Be The First Creator!</div>
                 <p className="text-xs text-slate-400 mt-1">
                   Upload an HTML game to take the featured spotlight spot!
@@ -479,12 +479,12 @@ export function ArcadeView({
       </div>
 
       {/* 2. Platform Navigation Tabs */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-white/[0.06] pb-4">
+      <div id="arcade-main-content" className="scroll-mt-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 border-b border-white/[0.06] pb-3 sm:pb-4">
         {/* Main Section Tabs */}
-        <div className="flex items-center gap-2 rounded-full bg-[#1c2028] p-1.5 border border-white/[0.06] shadow-[inset_2px_2px_6px_rgba(0,0,0,0.3),inset_-1px_-1px_4px_rgba(255,255,255,0.01)]">
+        <div className="flex items-center gap-1.5 sm:gap-2 rounded-2xl sm:rounded-full bg-[#1c2028] p-1.5 border border-white/[0.06] overflow-x-auto max-w-full no-scrollbar shadow-[inset_2px_2px_6px_rgba(0,0,0,0.3),inset_-1px_-1px_4px_rgba(255,255,255,0.01)]">
           <button
             onClick={() => onSelectNavTab?.('catalog')}
-            className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition-all ${
+            className={`flex items-center gap-2 rounded-xl sm:rounded-full px-3.5 sm:px-4 py-2 text-xs font-black transition-all shrink-0 ${
               activeNavTab === 'catalog'
                 ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/20'
                 : 'text-slate-400 hover:text-white'
@@ -499,7 +499,7 @@ export function ArcadeView({
 
           <button
             onClick={() => onSelectNavTab?.('leaderboards')}
-            className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition-all ${
+            className={`flex items-center gap-2 rounded-xl sm:rounded-full px-3.5 sm:px-4 py-2 text-xs font-black transition-all shrink-0 ${
               activeNavTab === 'leaderboards'
                 ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/20'
                 : 'text-slate-400 hover:text-white'
@@ -514,7 +514,7 @@ export function ArcadeView({
 
           <button
             onClick={() => onSelectNavTab?.('community')}
-            className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition-all ${
+            className={`flex items-center gap-2 rounded-xl sm:rounded-full px-3.5 sm:px-4 py-2 text-xs font-black transition-all shrink-0 ${
               activeNavTab === 'community'
                 ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/20'
                 : 'text-slate-400 hover:text-white'
@@ -528,9 +528,9 @@ export function ArcadeView({
           </button>
         </div>
 
-        {/* View Mode Toggle */}
+        {/* View Mode Toggle (Shown on desktop/tablet) */}
         {activeNavTab === 'catalog' && (
-          <div className="flex items-center gap-2 self-end sm:self-auto">
+          <div className="hidden sm:flex items-center gap-2 self-end sm:self-auto shrink-0">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">
               Layout
             </span>
@@ -568,7 +568,7 @@ export function ArcadeView({
       {activeNavTab === 'catalog' && (
         <div className="space-y-6">
           {/* Search & Genre Filters */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 sm:gap-4">
             {/* Search Input */}
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-3 size-4 text-slate-400" />
@@ -577,12 +577,12 @@ export function ArcadeView({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search games, tags, or creators..."
-                className="w-full rounded-full border border-white/[0.08] bg-[#1c2028] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 transition shadow-[inset_2px_2px_6px_rgba(0,0,0,0.3)]"
+                className="w-full rounded-full border border-white/[0.08] bg-[#1c2028] py-2.5 pl-10 pr-9 text-base sm:text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 transition shadow-[inset_2px_2px_6px_rgba(0,0,0,0.3)]"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-white"
+                  className="absolute right-3 top-2.5 size-5 flex items-center justify-center rounded-full text-xs text-slate-400 hover:text-white"
                 >
                   ✕
                 </button>
@@ -590,10 +590,10 @@ export function ArcadeView({
             </div>
 
             {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 rounded-full bg-[#1c2028] p-1 border border-white/[0.06] overflow-x-auto max-w-full">
+            <div className="flex items-center gap-1.5 rounded-full bg-[#1c2028] p-1 border border-white/[0.06] overflow-x-auto max-w-full no-scrollbar">
               <button
                 onClick={() => setFilter('all')}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap ${
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap shrink-0 ${
                   activeFilter === 'all'
                     ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/15'
                     : 'text-slate-400 hover:text-white'
@@ -603,7 +603,7 @@ export function ArcadeView({
               </button>
               <button
                 onClick={() => setFilter('popular')}
-                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap ${
+                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap shrink-0 ${
                   activeFilter === 'popular'
                     ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/15'
                     : 'text-slate-400 hover:text-white'
@@ -614,7 +614,7 @@ export function ArcadeView({
               </button>
               <button
                 onClick={() => setFilter('newest')}
-                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap ${
+                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap shrink-0 ${
                   activeFilter === 'newest'
                     ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/15'
                     : 'text-slate-400 hover:text-white'
@@ -625,7 +625,7 @@ export function ArcadeView({
               </button>
               <button
                 onClick={() => setFilter('action')}
-                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap ${
+                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap shrink-0 ${
                   activeFilter === 'action'
                     ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/15'
                     : 'text-slate-400 hover:text-white'
@@ -636,7 +636,7 @@ export function ArcadeView({
               </button>
               <button
                 onClick={() => setFilter('retro')}
-                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap ${
+                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap shrink-0 ${
                   activeFilter === 'retro'
                     ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/15'
                     : 'text-slate-400 hover:text-white'
@@ -653,7 +653,7 @@ export function ArcadeView({
                     setFilter('my-games');
                   }
                 }}
-                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap ${
+                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap shrink-0 ${
                   activeFilter === 'my-games'
                     ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/15'
                     : 'text-slate-400 hover:text-white'
