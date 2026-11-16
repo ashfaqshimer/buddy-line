@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { IoChatbubbles, IoGameController } from 'react-icons/io5';
 import { useAuth } from '@/components/auth-provider';
+import { UserAvatar } from '@/components/user-avatar';
 import {
   FriendSummary,
   FriendRequestItem,
@@ -880,11 +881,11 @@ export function BottomChatWidget({
                             className="w-full flex items-center gap-2.5 p-2.5 rounded-xl text-left hover:bg-white/[0.04] transition group"
                           >
                             <div className="relative shrink-0">
-                              <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 text-xs font-black text-white shadow-sm">
-                                {friend.avatar.length <= 2
-                                  ? friend.avatar
-                                  : friend.username.slice(0, 2).toUpperCase()}
-                              </div>
+                              <UserAvatar
+                                avatar={friend.avatar}
+                                name={friend.username}
+                                className="size-9 rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 text-xs font-black text-white shadow-sm"
+                              />
                               <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full border-2 border-[#181d25] bg-emerald-400" />
                             </div>
 
@@ -943,9 +944,11 @@ export function BottomChatWidget({
                               className="rounded-xl border border-white/[0.06] bg-[#1c2028] p-2.5 shadow-sm"
                             >
                               <div className="flex items-center gap-2 mb-2">
-                                <div className="flex size-7 items-center justify-center rounded-lg bg-teal-500/20 text-xs">
-                                  {req.avatar.length <= 2 ? req.avatar : req.username.slice(0, 2).toUpperCase()}
-                                </div>
+                                <UserAvatar
+                                  avatar={req.avatar}
+                                  name={req.username}
+                                  className="size-7 rounded-lg bg-teal-500/20 text-xs"
+                                />
                                 <div className="min-w-0">
                                   <div className="text-xs font-bold text-white truncate">@{req.username}</div>
                                   <div className="text-[10px] text-slate-400 truncate">{req.name}</div>
@@ -1069,11 +1072,11 @@ export function BottomChatWidget({
                               className="flex items-center justify-between gap-2 p-2 rounded-xl border border-white/[0.04] bg-[#1c2028]"
                             >
                               <div className="flex items-center gap-2 min-w-0">
-                                <div className="flex size-7 items-center justify-center rounded-lg bg-white/[0.04] text-xs">
-                                  {player.image?.length && player.image.length <= 2
-                                    ? player.image
-                                    : player.username.slice(0, 2).toUpperCase()}
-                                </div>
+                                <UserAvatar
+                                  avatar={player.image}
+                                  name={player.username}
+                                  className="size-7 rounded-lg bg-white/[0.04] text-xs"
+                                />
                                 <span className="text-xs font-bold text-white truncate">
                                   @{player.username}
                                 </span>

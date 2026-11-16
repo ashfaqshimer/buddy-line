@@ -10,6 +10,7 @@ import {
   Mail,
   Zap,
   MessageSquare,
+  Smile,
 } from 'lucide-react';
 import { IoChatbubbles } from 'react-icons/io5';
 import { BuddyLineLogo } from './buddy-line-logo';
@@ -17,6 +18,8 @@ import { useAuth } from '@/components/auth-provider';
 import { AuthModal } from './auth-modal';
 import { AdminManagerModal } from './admin-manager-modal';
 import { EmailModal } from './email-modal';
+import { AvatarModal } from './avatar-modal';
+import { UserAvatar } from './user-avatar';
 import { checkIsRootUserAction } from '@/app/admin-actions';
 
 export type NavTabType = 'catalog' | 'leaderboards' | 'community';
@@ -38,11 +41,13 @@ export function Header({
   onSelectTab,
   totalGamesCount,
 }: HeaderProps) {
-  const { session, user, isLoggedIn, isPending, isAdmin: authIsAdmin, isRoot: authIsRoot, signOut } = useAuth();
+  const { session, user, isLoggedIn, isPending, isAdmin: authIsAdmin, isRoot: authIsRoot, signOut, refetch } = useAuth();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [customAvatar, setCustomAvatar] = useState<string | null>(null);
   const [extraIsRoot, setExtraIsRoot] = useState(false);
   const [customEmail, setCustomEmail] = useState<string | null>(null);
 
@@ -74,7 +79,7 @@ export function Header({
   const userRole = effectiveIsRoot ? 'root' : userObj?.role;
   const isAdmin = authIsAdmin || effectiveIsRoot || userRole === 'admin';
   const userDisplayName = userObj?.username || userObj?.name || 'Buddy Gamer';
-  const userAvatar = userObj?.image || '👾';
+  const userAvatar = customAvatar || userObj?.image || '👾';
 
   return (
     <>
@@ -142,9 +147,11 @@ export function Header({
                   aria-label="User profile menu"
                 >
                   <div className="relative shrink-0">
-                    <div className="flex size-8 sm:size-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 text-sm shadow-[0_0_12px_rgba(45,212,191,0.2)] font-black text-white">
-                      {userAvatar.length <= 2 ? userAvatar : userDisplayName.slice(0, 2).toUpperCase()}
-                    </div>
+                    <UserAvatar
+                      avatar={userAvatar}
+                      name={userDisplayName}
+                      className="size-8 sm:size-9 rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 text-sm shadow-[0_0_12px_rgba(45,212,191,0.2)] font-black text-white"
+                    />
                     <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full border-2 border-[#1a1f27] bg-teal-400" />
                     {effectiveIsRoot && (
                       <span
@@ -200,6 +207,18 @@ export function Header({
                         {customEmail || session?.user?.email || 'Buddy Line Member'}
                       </div>
                     </div>
+
+                    {/* Avatar management */}
+                    <button
+                      onClick={() => {
+                        setIsAvatarModalOpen(true);
+                        setIsProfileMenuOpen(false);
+                      }}
+                      className="w-full mt-1.5 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.06] transition text-left"
+                    >
+                      <Smile className="size-3.5 text-teal-400 shrink-0" />
+                      <span>Change Avatar</span>
+                    </button>
 
                     {/* Friends & Chat option */}
                     <button
@@ -292,6 +311,18 @@ export function Header({
         isOpen={isAdminModalOpen}
         onClose={() => setIsAdminModalOpen(false)}
         currentUser={session?.user}
+      />
+
+      {/* Avatar Picker Modal */}
+      <AvatarModal
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        currentAvatar={userAvatar}
+        displayName={userDisplayName}
+        onAvatarUpdated={(updated) => {
+          setCustomAvatar(updated);
+          refetch();
+        }}
       />
 
       {/* Email Link & Update Modal */}

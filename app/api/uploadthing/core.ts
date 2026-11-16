@@ -1,4 +1,5 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
+import { UploadThingError } from "uploadthing/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
@@ -25,6 +26,27 @@ export const ourFileRouter = {
         // Allow guest uploads or fallback gracefully
       }
       return { userId };
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      const fileUrl = file.ufsUrl || file.url;
+      return { uploadedBy: metadata.userId, url: fileUrl };
+    }),
+
+  // FileRoute for user profile avatars (signed-in users only, images resized client-side)
+  avatarUploader: f({
+    image: {
+      maxFileSize: "2MB",
+      maxFileCount: 1,
+    },
+  })
+    .middleware(async () => {
+      const session = await auth.api.getSession({
+        headers: await headers(),
+      });
+      if (!session?.user?.id) {
+        throw new UploadThingError("You must be signed in to upload an avatar.");
+      }
+      return { userId: session.user.id };
     })
     .onUploadComplete(async ({ metadata, file }) => {
       const fileUrl = file.ufsUrl || file.url;

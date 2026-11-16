@@ -37,6 +37,7 @@ import {
   IoHardwareChip,
 } from 'react-icons/io5';
 import { GameRecord } from '@/lib/games-db';
+import { UserAvatar } from './user-avatar';
 import { getGames, deleteGameAction } from '@/app/game-actions';
 import { GamePlayerModal } from './game-player-modal';
 import { GameUploaderModal } from './game-uploader-modal';
@@ -446,8 +447,9 @@ export function ArcadeView({
                     </h3>
                     <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1 truncate">
                       <span>Created by</span>
-                      <span className="font-semibold text-slate-200 truncate">
-                        {spotlightGame.authorAvatar} {spotlightGame.authorUsername}
+                      <span className="font-semibold text-slate-200 truncate inline-flex items-center gap-1">
+                        <UserAvatar inline avatar={spotlightGame.authorAvatar} name={spotlightGame.authorUsername} className="size-4 rounded-full" />
+                        {spotlightGame.authorUsername}
                       </span>
                     </div>
                   </div>
@@ -806,7 +808,7 @@ export function ArcadeView({
                       title={`Message @${game.authorUsername}`}
                       className="flex items-center gap-2 min-w-0 group/creator text-left hover:opacity-90 transition"
                     >
-                      <span className="text-base shrink-0">{game.authorAvatar || '👾'}</span>
+                      <UserAvatar inline avatar={game.authorAvatar} name={game.authorUsername} className="size-6 rounded-lg text-base" />
                       <div className="truncate">
                         <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold flex items-center gap-1">
                           <span>Creator</span>
@@ -873,7 +875,7 @@ export function ArcadeView({
                       title={`Message @${game.authorUsername}`}
                       className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 hover:text-teal-300 transition"
                     >
-                      <span>{game.authorAvatar}</span>
+                      <UserAvatar inline avatar={game.authorAvatar} name={game.authorUsername} className="size-4 rounded-full" />
                       <span className="font-semibold text-slate-200 hover:text-teal-300">{game.authorUsername}</span>
                     </button>
 
@@ -937,7 +939,7 @@ export function ArcadeView({
                   #2
                 </div>
                 <div className="pt-2">
-                  <div className="text-4xl mb-2">{leaderboardsData[1]?.avatar || '👾'}</div>
+                  <UserAvatar avatar={leaderboardsData[1]?.avatar || '👾'} name={leaderboardsData[1]?.champion} className="size-12 rounded-2xl text-4xl mb-2" />
                   <h4 className="text-base font-black text-white">{leaderboardsData[1]?.champion}</h4>
                   <div className="text-xs text-slate-400 mt-0.5">{leaderboardsData[1]?.game.title}</div>
                   <div className="mt-3 text-2xl font-black text-slate-200">
@@ -959,7 +961,7 @@ export function ArcadeView({
                   <span>Grand Champion</span>
                 </div>
                 <div className="pt-4">
-                  <div className="text-5xl mb-2">{leaderboardsData[0]?.avatar || '👑'}</div>
+                  <UserAvatar avatar={leaderboardsData[0]?.avatar || '👑'} name={leaderboardsData[0]?.champion} className="size-14 rounded-2xl text-5xl mb-2" />
                   <h4 className="text-lg font-black text-teal-300">{leaderboardsData[0]?.champion}</h4>
                   <div className="text-xs text-slate-300 mt-0.5">{leaderboardsData[0]?.game.title}</div>
                   <div className="mt-3 text-3xl font-black text-white">
@@ -980,7 +982,7 @@ export function ArcadeView({
                   #3
                 </div>
                 <div className="pt-2">
-                  <div className="text-4xl mb-2">{leaderboardsData[2]?.avatar || '🚀'}</div>
+                  <UserAvatar avatar={leaderboardsData[2]?.avatar || '🚀'} name={leaderboardsData[2]?.champion} className="size-12 rounded-2xl text-4xl mb-2" />
                   <h4 className="text-base font-black text-white">{leaderboardsData[2]?.champion || 'CadetLeo'}</h4>
                   <div className="text-xs text-slate-400 mt-0.5">
                     {leaderboardsData[2]?.game.title || 'Space Runner'}
@@ -1020,7 +1022,7 @@ export function ArcadeView({
                     <span className="w-5 sm:w-6 text-center text-xs font-black text-slate-400 shrink-0">
                       #{index + 1}
                     </span>
-                    <div className="text-xl sm:text-2xl shrink-0">{row.avatar}</div>
+                    <UserAvatar avatar={row.avatar} name={row.champion} className="size-7 sm:size-8 rounded-lg text-xl sm:text-2xl" />
                     <div className="min-w-0">
                       <div className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
                         <span className="truncate">{row.champion}</span>
@@ -1165,9 +1167,7 @@ export function ArcadeView({
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3.5">
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-white/[0.04] text-xl shrink-0">
-                      {thread.avatar}
-                    </div>
+                    <UserAvatar avatar={thread.avatar} className="size-10 rounded-xl bg-white/[0.04] text-xl" />
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         {thread.pinned && (

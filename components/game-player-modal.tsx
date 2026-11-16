@@ -16,6 +16,7 @@ import { GameRecord } from '@/lib/games-db';
 import { bundleGameSource } from '@/lib/game-bundler';
 import { recordGamePlay } from '@/app/game-actions';
 import { VirtualGamepad } from './virtual-gamepad';
+import { UserAvatar } from './user-avatar';
 
 interface GamePlayerModalProps {
   game: GameRecord | null;
@@ -209,7 +210,7 @@ export function GamePlayerModal({
             <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-slate-400 truncate">
               <span>By</span>
               <span className="font-semibold text-slate-200 flex items-center gap-1 truncate max-w-[90px] xs:max-w-[130px] sm:max-w-none">
-                <span>{game.authorAvatar}</span>
+                <UserAvatar inline avatar={game.authorAvatar} name={game.authorUsername} className="size-4 rounded-full" />
                 <span className="truncate">{game.authorUsername}</span>
               </span>
             </div>

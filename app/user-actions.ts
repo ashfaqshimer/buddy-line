@@ -4,6 +4,57 @@ import { auth, dbInstance } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { Pool } from 'pg';
 import { DatabaseSync } from 'node:sqlite';
+import { isAllowedAvatarImageUrl, isPresetAvatar } from '@/lib/avatars';
+
+/**
+ * Update the signed-in user's avatar. Accepts either a preset icon or an
+ * UploadThing-hosted image URL (from the `avatarUploader` route).
+ */
+export async function updateCurrentUserAvatarAction(avatar: string): Promise<{
+  success: boolean;
+  avatar?: string;
+  error?: string;
+}> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: 'You must be signed in to change your avatar.' };
+    }
+
+    const value = (avatar || '').trim();
+    if (!isPresetAvatar(value) && !isAllowedAvatarImageUrl(value)) {
+      return { success: false, error: 'Please pick one of the icons or upload an image.' };
+    }
+
+    const userId = session.user.id;
+
+    if (dbInstance instanceof Pool) {
+      await dbInstance.query('UPDATE "user" SET image = $1, "updatedAt" = NOW() WHERE id = $2', [value, userId]);
+      // Keep the author avatar shown on this user's published games in sync
+      await dbInstance
+        .query('UPDATE games SET author_avatar = $1 WHERE author_id = $2', [value, userId])
+        .catch((err) => console.warn('Could not sync game author avatars:', err?.message || err));
+    } else if (dbInstance instanceof DatabaseSync) {
+      dbInstance.prepare('UPDATE user SET image = ? WHERE id = ?').run(value, userId);
+      try {
+        dbInstance.prepare('UPDATE games SET author_avatar = ? WHERE author_id = ?').run(value, userId);
+      } catch (err) {
+        console.warn('Could not sync game author avatars:', err instanceof Error ? err.message : err);
+      }
+    }
+
+    return { success: true, avatar: value };
+  } catch (err: unknown) {
+    console.error('Failed to update avatar:', err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Could not update avatar. Please try again.',
+    };
+  }
+}
 
 export async function updateCurrentUserEmailAction(newEmail: string): Promise<{
   success: boolean;

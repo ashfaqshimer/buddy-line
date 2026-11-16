@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 import { authClient } from '@/lib/auth-client';
+import { PRESET_AVATARS } from '@/lib/avatars';
 import { X, Sparkles, User, Lock, Rocket, AlertCircle, Mail } from 'lucide-react';
 
-const AVATAR_OPTIONS = ['🚀', '👾', '🕹️', '🐱', '🤖', '🦊', '⚡', '🍕', '🛸', '🦄', '🏆', '⭐'];
+// More icons and custom image uploads are available later via "Change Avatar"
+const AVATAR_OPTIONS = PRESET_AVATARS.slice(0, 12);
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -18,7 +20,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState('🚀');
+  const [selectedAvatar, setSelectedAvatar] = useState<string>(AVATAR_OPTIONS[0]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
