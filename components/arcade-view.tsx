@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  Sparkles,
   Search,
   Upload,
   Play,
@@ -16,25 +15,13 @@ import {
   Check,
   LayoutGrid,
   List,
-  ThumbsUp,
-  Send,
-  Zap,
 } from 'lucide-react';
 import {
   GiJoystick,
   GiGameConsole,
-  GiTrophyCup,
-  GiGamepadCross,
-  GiGalaxy,
-  GiSwordClash,
-  GiPartyPopper,
 } from 'react-icons/gi';
 import {
   IoFlame,
-  IoRocket,
-  IoFlash,
-  IoChatbubbles,
-  IoHardwareChip,
 } from 'react-icons/io5';
 import { GameRecord } from '@/lib/games-db';
 import { UserAvatar } from './user-avatar';
@@ -43,9 +30,8 @@ import { GamePlayerModal } from './game-player-modal';
 import { GameUploaderModal } from './game-uploader-modal';
 import { AuthModal } from './auth-modal';
 import { useAuth } from '@/components/auth-provider';
-import { NavTabType } from './header';
 
-export type ArcadeFilterType = 'all' | 'popular' | 'newest' | 'action' | 'puzzle' | 'retro' | 'my-games';
+export type ArcadeFilterType = 'all' | 'popular' | 'newest' | 'my-games';
 
 interface ArcadeViewProps {
   filter?: ArcadeFilterType;
@@ -53,66 +39,8 @@ interface ArcadeViewProps {
   isUploaderOpen?: boolean;
   setIsUploaderOpen?: (open: boolean) => void;
   onGamesLoaded?: (count: number) => void;
-  activeNavTab?: NavTabType;
-  onSelectNavTab?: (tab: NavTabType) => void;
   onOpenChat?: (targetPlayerIdOrUsername?: string) => void;
 }
-
-interface CommunityThread {
-  id: string;
-  title: string;
-  author: string;
-  avatar: string;
-  tag: string;
-  replies: number;
-  likes: number;
-  timeAgo: string;
-  pinned?: boolean;
-}
-
-const SEED_THREADS: CommunityThread[] = [
-  {
-    id: 't-1',
-    title: '🏆 Weekly High Score Bounty: Space Blaster 3000 (Target: 3,500 pts)',
-    author: 'CaptainCosmo',
-    avatar: '👨‍🚀',
-    tag: 'Bounty',
-    replies: 18,
-    likes: 42,
-    timeAgo: '2h ago',
-    pinned: true,
-  },
-  {
-    id: 't-2',
-    title: '💡 Idea Thread: What arcade games do you want someone to code next?',
-    author: 'PixelNinja',
-    avatar: '🐱',
-    tag: 'Game Ideas',
-    replies: 27,
-    likes: 31,
-    timeAgo: '4h ago',
-  },
-  {
-    id: 't-3',
-    title: '🛠️ Canvas 2D Tutorial: Adding smooth touch controls for mobile screens',
-    author: 'CodeWizard',
-    avatar: '🧙‍♂️',
-    tag: 'Dev Tips',
-    replies: 12,
-    likes: 24,
-    timeAgo: '1d ago',
-  },
-  {
-    id: 't-4',
-    title: '🎉 Just uploaded "Neon Cyber Pong"! Let me know how the AI paddle feels.',
-    author: 'NeonKnight',
-    avatar: '⚡',
-    tag: 'Showcase',
-    replies: 9,
-    likes: 19,
-    timeAgo: '1d ago',
-  },
-];
 
 export function ArcadeView({
   filter = 'all',
@@ -120,8 +48,6 @@ export function ArcadeView({
   isUploaderOpen: externalIsUploaderOpen,
   setIsUploaderOpen: externalSetIsUploaderOpen,
   onGamesLoaded,
-  activeNavTab = 'catalog',
-  onSelectNavTab,
   onOpenChat,
 }: ArcadeViewProps) {
   const { session, isPending, isAdmin: authIsAdmin } = useAuth();
@@ -131,12 +57,6 @@ export function ArcadeView({
   const [internalFilter, setInternalFilter] = useState<ArcadeFilterType>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [copiedGameId, setCopiedGameId] = useState<string | null>(null);
-
-  // Community discussion state
-  const [threads, setThreads] = useState<CommunityThread[]>(SEED_THREADS);
-  const [newThreadTitle, setNewThreadTitle] = useState('');
-  const [newThreadTag, setNewThreadTag] = useState('Game Ideas');
-  const [isPostingThread, setIsPostingThread] = useState(false);
 
   const activeFilter = onFilterChange ? filter : internalFilter;
   const setFilter = (nextFilter: ArcadeFilterType) => {
@@ -167,6 +87,10 @@ export function ArcadeView({
       if (isMounted) {
         setGames(fetched);
         setLoading(false);
+        // Shared links look like /#<gameId>: open that game straight away.
+        const sharedId = decodeURIComponent(window.location.hash.slice(1));
+        const shared = sharedId ? fetched.find((g) => g.id === sharedId) : undefined;
+        if (shared) setActiveGame(shared);
         onGamesLoaded?.(fetched.length);
       }
     });
@@ -199,7 +123,7 @@ export function ArcadeView({
   const handleShare = (game: GameRecord, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const url = window.location.href;
+      const url = window.location.href.split('#')[0];
       navigator.clipboard.writeText(`${url}#${game.id}`);
       setCopiedGameId(game.id);
       setTimeout(() => setCopiedGameId(null), 2000);
@@ -266,31 +190,6 @@ export function ArcadeView({
           if (g.authorId !== session.user.id) return false;
         }
 
-        if (activeFilter === 'action') {
-          const isAction =
-            g.title.toLowerCase().includes('blaster') ||
-            g.title.toLowerCase().includes('space') ||
-            g.description.toLowerCase().includes('laser') ||
-            g.description.toLowerCase().includes('action');
-          if (!isAction) return false;
-        }
-        if (activeFilter === 'retro') {
-          const isRetro =
-            g.title.toLowerCase().includes('pong') ||
-            g.title.toLowerCase().includes('cyber') ||
-            g.title.toLowerCase().includes('snake') ||
-            g.description.toLowerCase().includes('retro');
-          if (!isRetro) return false;
-        }
-        if (activeFilter === 'puzzle') {
-          const isPuzzle =
-            g.title.toLowerCase().includes('puzzle') ||
-            g.description.toLowerCase().includes('puzzle') ||
-            g.description.toLowerCase().includes('think') ||
-            g.description.toLowerCase().includes('match');
-          if (!isPuzzle) return false;
-        }
-
         const matchSearch =
           g.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           g.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -304,43 +203,6 @@ export function ArcadeView({
         return 0;
       });
   }, [games, activeFilter, searchQuery, session?.user]);
-
-  const leaderboardsData = useMemo(() => {
-    return games.map((game, idx) => {
-      const topScore = Math.max(1200, (game.playCount || 1) * 85 + 320);
-      return {
-        game,
-        topScore,
-        champion: idx === 0 ? 'CadetAce ⚡' : idx === 1 ? 'CosmoPro 🚀' : game.authorUsername,
-        avatar: idx === 0 ? '👾' : idx === 1 ? '👨‍🚀' : game.authorAvatar || '🎮',
-      };
-    }).sort((a, b) => b.topScore - a.topScore);
-  }, [games]);
-
-  const handlePostThread = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newThreadTitle.trim()) return;
-    if (!session?.user) {
-      setIsAuthOpen(true);
-      return;
-    }
-
-    const u = session.user as { username?: string; name?: string; image?: string | null };
-    const newThread: CommunityThread = {
-      id: `t-${Date.now()}`,
-      title: newThreadTitle.trim(),
-      author: u.username || u.name || 'ArcadeFan',
-      avatar: u.image || '👾',
-      tag: newThreadTag,
-      replies: 0,
-      likes: 1,
-      timeAgo: 'Just now',
-    };
-
-    setThreads((prev) => [newThread, ...prev]);
-    setNewThreadTitle('');
-    setIsPostingThread(false);
-  };
 
   return (
     <div className="space-y-10 animate-in fade-in duration-300">
@@ -480,58 +342,16 @@ export function ArcadeView({
         </div>
       </div>
 
-      {/* 2. Platform Navigation Tabs */}
-      <div id="arcade-main-content" className="scroll-mt-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 border-b border-white/[0.06] pb-3 sm:pb-4">
-        {/* Main Section Tabs */}
-        <div className="flex items-center gap-1.5 sm:gap-2 rounded-2xl sm:rounded-full bg-[#1c2028] p-1.5 border border-white/[0.06] overflow-x-auto max-w-full no-scrollbar shadow-[inset_2px_2px_6px_rgba(0,0,0,0.3),inset_-1px_-1px_4px_rgba(255,255,255,0.01)]">
-          <button
-            onClick={() => onSelectNavTab?.('catalog')}
-            className={`flex items-center gap-2 rounded-xl sm:rounded-full px-3.5 sm:px-4 py-2 text-xs font-black transition-all shrink-0 ${
-              activeNavTab === 'catalog'
-                ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/20'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <GiJoystick className="size-4" />
-            <span>Games Catalog</span>
-            <span className="rounded-md bg-black/20 px-1.5 py-0.2 text-[10px]">
-              {games.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => onSelectNavTab?.('leaderboards')}
-            className={`flex items-center gap-2 rounded-xl sm:rounded-full px-3.5 sm:px-4 py-2 text-xs font-black transition-all shrink-0 ${
-              activeNavTab === 'leaderboards'
-                ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/20'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <GiTrophyCup className="size-4" />
-            <span>High Scores</span>
-            <span className="rounded-md bg-black/20 px-1.5 py-0.2 text-[10px]">
-              TOP
-            </span>
-          </button>
-
-          <button
-            onClick={() => onSelectNavTab?.('community')}
-            className={`flex items-center gap-2 rounded-xl sm:rounded-full px-3.5 sm:px-4 py-2 text-xs font-black transition-all shrink-0 ${
-              activeNavTab === 'community'
-                ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/20'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <IoChatbubbles className="size-4" />
-            <span>Community Lounge</span>
-            <span className="rounded-md bg-black/20 px-1.5 py-0.2 text-[10px]">
-              {threads.length}
-            </span>
-          </button>
-        </div>
+      {/* 2. Catalog Heading */}
+      <div id="arcade-main-content" className="scroll-mt-20 flex items-center justify-between gap-3 sm:gap-4 border-b border-white/[0.06] pb-3 sm:pb-4">
+        <h2 className="flex items-center gap-2 text-lg sm:text-xl font-black text-white">
+          <GiJoystick className="size-5 text-teal-400" />
+          <span>Games Catalog</span>
+          <span className="rounded-md bg-white/[0.06] px-2 py-0.5 text-xs font-bold text-slate-300">{games.length}</span>
+        </h2>
 
         {/* View Mode Toggle (Shown on desktop/tablet) */}
-        {activeNavTab === 'catalog' && (
+        {(
           <div className="hidden sm:flex items-center gap-2 self-end sm:self-auto shrink-0">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">
               Layout
@@ -564,10 +384,8 @@ export function ArcadeView({
         )}
       </div>
 
-      {/* 3. CONDITIONAL TAB CONTENT */}
-
-      {/* === TAB 1: GAMES CATALOG === */}
-      {activeNavTab === 'catalog' && (
+      {/* 3. GAMES CATALOG */}
+      {(
         <div className="space-y-6">
           {/* Search & Genre Filters */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 sm:gap-4">
@@ -624,28 +442,6 @@ export function ArcadeView({
               >
                 <Clock className="size-3" />
                 <span>Newest</span>
-              </button>
-              <button
-                onClick={() => setFilter('action')}
-                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap shrink-0 ${
-                  activeFilter === 'action'
-                    ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/15'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <GiSwordClash className="size-3.5" />
-                <span>Action</span>
-              </button>
-              <button
-                onClick={() => setFilter('retro')}
-                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap shrink-0 ${
-                  activeFilter === 'retro'
-                    ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/15'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <GiGamepadCross className="size-3.5" />
-                <span>Retro 2D</span>
               </button>
               <button
                 onClick={() => {
@@ -894,336 +690,6 @@ export function ArcadeView({
               ))}
             </div>
           )}
-        </div>
-      )}
-
-      {/* === TAB 2: HIGH SCORE LEADERBOARDS === */}
-      {activeNavTab === 'leaderboards' && (
-        <div className="space-y-8 animate-in fade-in duration-200">
-          {/* Leaderboard Header */}
-          <div className="rounded-2xl border border-teal-400/15 bg-gradient-to-r from-teal-500/8 via-[#1c2028] to-teal-400/5 p-4 sm:p-8 shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
-              <div>
-                <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-teal-400/20 bg-teal-400/8 px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-black uppercase text-teal-300 mb-2">
-                  <GiTrophyCup className="size-3.5 sm:size-4 text-teal-400" />
-                  <span>COMMUNITY ARCADE LEADERBOARD</span>
-                </div>
-                <h2 className="text-xl sm:text-3xl font-black text-white">
-                  Hall of Champions 👑
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
-                  Compete for the highest scores across community games. Can you beat the top score records?
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <button
-                  onClick={() => {
-                    if (games[0]) setActiveGame(games[0]);
-                  }}
-                  className="w-full sm:w-auto justify-center flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-4 py-2.5 text-xs font-black text-slate-950 shadow-md shadow-teal-500/15 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition"
-                >
-                  <Play className="size-3.5 fill-current" />
-                  <span>Play Featured Champion Game</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Top 3 Podium */}
-          {leaderboardsData.length >= 2 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-              {/* Rank #2 Silver */}
-              <div className="order-2 md:order-1 rounded-2xl border border-slate-400/15 bg-[#1c2028] p-5 text-center relative flex flex-col justify-between shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
-                <div className="absolute top-3 left-3 size-7 rounded-full bg-slate-300 text-slate-950 font-black text-xs flex items-center justify-center">
-                  #2
-                </div>
-                <div className="pt-2">
-                  <UserAvatar avatar={leaderboardsData[1]?.avatar || '👾'} name={leaderboardsData[1]?.champion} className="size-12 rounded-2xl text-4xl mb-2" />
-                  <h4 className="text-base font-black text-white">{leaderboardsData[1]?.champion}</h4>
-                  <div className="text-xs text-slate-400 mt-0.5">{leaderboardsData[1]?.game.title}</div>
-                  <div className="mt-3 text-2xl font-black text-slate-200">
-                    {leaderboardsData[1]?.topScore.toLocaleString()} pts
-                  </div>
-                </div>
-                <button
-                  onClick={() => setActiveGame(leaderboardsData[1].game)}
-                  className="mt-4 w-full py-2 rounded-full bg-white/[0.05] hover:bg-white/[0.1] text-xs font-bold text-white transition"
-                >
-                  Challenge Score
-                </button>
-              </div>
-
-              {/* Rank #1 Gold */}
-              <div className="order-1 md:order-2 rounded-2xl border-2 border-teal-400/40 bg-gradient-to-b from-[#22272f] to-[#1c2028] p-6 text-center relative -translate-y-2 shadow-xl shadow-teal-500/8 flex flex-col justify-between">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-3 py-0.5 text-[10px] font-black uppercase text-slate-950">
-                  <GiTrophyCup className="size-3.5 text-slate-950" />
-                  <span>Grand Champion</span>
-                </div>
-                <div className="pt-4">
-                  <UserAvatar avatar={leaderboardsData[0]?.avatar || '👑'} name={leaderboardsData[0]?.champion} className="size-14 rounded-2xl text-5xl mb-2" />
-                  <h4 className="text-lg font-black text-teal-300">{leaderboardsData[0]?.champion}</h4>
-                  <div className="text-xs text-slate-300 mt-0.5">{leaderboardsData[0]?.game.title}</div>
-                  <div className="mt-3 text-3xl font-black text-white">
-                    {leaderboardsData[0]?.topScore.toLocaleString()} pts
-                  </div>
-                </div>
-                <button
-                  onClick={() => setActiveGame(leaderboardsData[0].game)}
-                  className="mt-4 w-full py-2.5 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 text-xs font-black text-slate-950 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] shadow-md shadow-teal-400/15 transition"
-                >
-                  Play Champion Game
-                </button>
-              </div>
-
-              {/* Rank #3 Bronze */}
-              <div className="order-3 rounded-2xl border border-amber-700/20 bg-[#1c2028] p-5 text-center relative flex flex-col justify-between shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
-                <div className="absolute top-3 left-3 size-7 rounded-full bg-amber-700 text-amber-100 font-black text-xs flex items-center justify-center">
-                  #3
-                </div>
-                <div className="pt-2">
-                  <UserAvatar avatar={leaderboardsData[2]?.avatar || '🚀'} name={leaderboardsData[2]?.champion} className="size-12 rounded-2xl text-4xl mb-2" />
-                  <h4 className="text-base font-black text-white">{leaderboardsData[2]?.champion || 'CadetLeo'}</h4>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    {leaderboardsData[2]?.game.title || 'Space Runner'}
-                  </div>
-                  <div className="mt-3 text-2xl font-black text-amber-600">
-                    {(leaderboardsData[2]?.topScore || 950).toLocaleString()} pts
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    if (leaderboardsData[2]) setActiveGame(leaderboardsData[2].game);
-                  }}
-                  className="mt-4 w-full py-2 rounded-full bg-white/[0.05] hover:bg-white/[0.1] text-xs font-bold text-white transition"
-                >
-                  Challenge Score
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Full High Score Ranking Table */}
-          <div className="rounded-2xl border border-white/[0.06] bg-[#1c2028] overflow-hidden shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
-            <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
-              <h3 className="text-sm font-black text-white uppercase tracking-wider">
-                Full Arcade Standings
-              </h3>
-              <span className="text-xs text-slate-400">Real-time leaderboard</span>
-            </div>
-
-            <div className="divide-y divide-white/[0.06]">
-              {leaderboardsData.map((row, index) => (
-                <div
-                  key={row.game.id}
-                  className="flex items-center justify-between p-3.5 sm:p-4 hover:bg-white/[0.02] transition gap-2 sm:gap-4"
-                >
-                  <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
-                    <span className="w-5 sm:w-6 text-center text-xs font-black text-slate-400 shrink-0">
-                      #{index + 1}
-                    </span>
-                    <UserAvatar avatar={row.avatar} name={row.champion} className="size-7 sm:size-8 rounded-lg text-xl sm:text-2xl" />
-                    <div className="min-w-0">
-                      <div className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
-                        <span className="truncate">{row.champion}</span>
-                        {index === 0 && (
-                          <span className="rounded bg-teal-400/12 text-teal-300 text-[8px] sm:text-[9px] font-black px-1.5 py-0.2 shrink-0">
-                            RECORD
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[11px] sm:text-xs text-slate-400 truncate max-w-[130px] xs:max-w-[200px] sm:max-w-none">
-                        Played in <span className="text-teal-400 font-semibold">{row.game.title}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
-                    <div className="text-right">
-                      <div className="text-xs sm:text-sm font-black text-teal-300">
-                        {row.topScore.toLocaleString()} PTS
-                      </div>
-                      <div className="text-[9px] sm:text-[10px] text-slate-500 uppercase font-semibold">
-                        High Score
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setActiveGame(row.game)}
-                      className="hidden sm:flex items-center gap-1 rounded-full bg-white/[0.04] hover:bg-white/[0.08] px-3 py-1.5 text-xs font-bold text-slate-200 transition"
-                    >
-                      <Play className="size-3 fill-current" />
-                      <span>Play</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* === TAB 3: COMMUNITY LOUNGE & CHAT THREADS === */}
-      {activeNavTab === 'community' && (
-        <div className="space-y-6 animate-in fade-in duration-200">
-          {/* Community Lounge Banner */}
-          <div className="rounded-2xl border border-teal-400/15 bg-gradient-to-r from-teal-500/8 via-[#1c2028] to-teal-400/5 p-4 sm:p-8 shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
-              <div>
-                <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-teal-400/20 bg-teal-400/8 px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-black uppercase text-teal-300 mb-2">
-                  <IoChatbubbles className="size-3.5 sm:size-4 text-teal-400" />
-                  <span>COMMUNITY DISCUSSIONS & CHAT</span>
-                </div>
-                <h2 className="text-xl sm:text-3xl font-black text-white">
-                  Arcade Lounge & Chat Threads
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
-                  Connect with fellow game creators, share strategies, submit game requests, and join high score bounties!
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap w-full sm:w-auto">
-                <button
-                  onClick={() => onOpenChat?.()}
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/10 hover:bg-teal-400/20 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-black text-teal-300 transition shadow-[0_0_15px_rgba(45,212,191,0.15)] active:scale-95"
-                >
-                  <IoChatbubbles className="size-3.5 text-teal-400" />
-                  <span>Private Player Chat</span>
-                </button>
-                <button
-                  onClick={() => {
-                    if (!session?.user) setIsAuthOpen(true);
-                    else setIsPostingThread(!isPostingThread);
-                  }}
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-black text-slate-950 shadow-md shadow-teal-500/15 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition active:scale-95"
-                >
-                  <Plus className="size-3.5" />
-                  <span>Start New Discussion</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* New Discussion Composer */}
-          {isPostingThread && (
-            <form
-              onSubmit={handlePostThread}
-              className="rounded-2xl border border-teal-400/20 bg-[#1c2028] p-4 sm:p-5 space-y-4 animate-in fade-in duration-150 shadow-[6px_6px_16px_rgba(0,0,0,0.4)]"
-            >
-              <h3 className="text-sm font-black text-white">Create a Community Discussion Thread</h3>
-              <div>
-                <input
-                  type="text"
-                  value={newThreadTitle}
-                  onChange={(e) => setNewThreadTitle(e.target.value)}
-                  placeholder="What's on your mind? (e.g. Can someone make a retro platformer?)"
-                  className="w-full rounded-xl border border-white/[0.08] bg-[#151920] px-4 py-2.5 text-base sm:text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none"
-                  autoFocus
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400">Category:</span>
-                  <select
-                    value={newThreadTag}
-                    onChange={(e) => setNewThreadTag(e.target.value)}
-                    className="rounded-lg bg-[#151920] border border-white/[0.08] px-2 py-1 text-xs text-white"
-                  >
-                    <option value="Game Ideas">Game Ideas</option>
-                    <option value="Bounty">Bounty</option>
-                    <option value="Dev Tips">Dev Tips</option>
-                    <option value="Feedback">Feedback</option>
-                    <option value="General">General</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsPostingThread(false)}
-                    className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex items-center gap-1.5 rounded-full bg-teal-400 px-4 py-1.5 text-xs font-bold text-slate-950 hover:shadow-[0_0_15px_rgba(45,212,191,0.3)]"
-                  >
-                    <Send className="size-3" />
-                    <span>Post Thread</span>
-                  </button>
-                </div>
-              </div>
-            </form>
-          )}
-
-          {/* Thread List */}
-          <div className="space-y-3">
-            {threads.map((thread) => (
-              <div
-                key={thread.id}
-                className="rounded-2xl border border-white/[0.06] bg-[#1c2028] p-5 hover:border-teal-400/25 hover:bg-[#22272f] transition-all group shadow-[6px_6px_16px_rgba(0,0,0,0.4),-3px_-3px_10px_rgba(255,255,255,0.01)]"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3.5">
-                    <UserAvatar avatar={thread.avatar} className="size-10 rounded-xl bg-white/[0.04] text-xl" />
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {thread.pinned && (
-                          <span className="rounded bg-amber-400/12 text-amber-300 text-[9px] font-black uppercase px-1.5 py-0.5 border border-amber-400/20">
-                            PINNED
-                          </span>
-                        )}
-                        <span className="rounded bg-teal-400/8 text-teal-300 text-[10px] font-bold px-2 py-0.5 border border-teal-400/15">
-                          {thread.tag}
-                        </span>
-                        <span className="text-xs text-slate-400">
-                          by{' '}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onOpenChat?.(thread.author);
-                            }}
-                            title={`Message @${thread.author}`}
-                            className="font-bold text-slate-200 hover:text-teal-300 transition underline-offset-2 hover:underline"
-                          >
-                            @{thread.author}
-                          </button>{' '}
-                          • {thread.timeAgo}
-                        </span>
-                      </div>
-
-                      <h4 className="text-sm sm:text-base font-bold text-white mt-1 group-hover:text-teal-300 transition-colors">
-                        {thread.title}
-                      </h4>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    <button
-                      onClick={() => {
-                        setThreads((prev) =>
-                          prev.map((t) =>
-                            t.id === thread.id ? { ...t, likes: t.likes + 1 } : t
-                          )
-                        );
-                      }}
-                      className="flex items-center gap-1 rounded-full bg-white/[0.04] px-2.5 py-1 text-xs text-slate-300 hover:text-teal-300 hover:bg-teal-500/8 transition"
-                    >
-                      <ThumbsUp className="size-3" />
-                      <span>{thread.likes}</span>
-                    </button>
-
-                    <div className="flex items-center gap-1 text-xs text-slate-400">
-                      <IoChatbubbles className="size-3.5" />
-                      <span>{thread.replies}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 

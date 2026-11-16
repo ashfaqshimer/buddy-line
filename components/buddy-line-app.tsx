@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Header, NavTabType } from '@/components/header';
+import { Header } from '@/components/header';
 import { ArcadeView } from '@/components/arcade-view';
 import { AdminManagerModal } from '@/components/admin-manager-modal';
 import { BottomChatWidget } from '@/components/chat/bottom-chat-widget';
@@ -21,7 +21,6 @@ function BuddyLineAppContent() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatTargetFriendId, setChatTargetFriendId] = useState<string | null>(null);
   const [chatNotificationCount, setChatNotificationCount] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState<NavTabType>('catalog');
   const [totalGamesCount, setTotalGamesCount] = useState<number>(0);
   const { session } = useAuth();
 
@@ -65,8 +64,6 @@ function BuddyLineAppContent() {
         onOpenAdminManager={() => setIsAdminModalOpen(true)}
         onOpenChat={() => handleOpenChat()}
         chatNotificationCount={chatNotificationCount}
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
         totalGamesCount={totalGamesCount}
       />
 
@@ -75,8 +72,6 @@ function BuddyLineAppContent() {
         <ArcadeView
           isUploaderOpen={isUploaderOpen}
           setIsUploaderOpen={setIsUploaderOpen}
-          activeNavTab={activeTab}
-          onSelectNavTab={setActiveTab}
           onGamesLoaded={setTotalGamesCount}
           onOpenChat={handleOpenChat}
         />
@@ -85,13 +80,10 @@ function BuddyLineAppContent() {
       {/* Footer */}
       <Footer
         onOpenUpload={() => setIsUploaderOpen(true)}
-        onSelectTab={setActiveTab}
       />
 
       {/* Mobile Sticky Bottom Navigation Bar */}
       <MobileBottomNav
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
         onUploadClick={() => setIsUploaderOpen(true)}
         onOpenChat={() => handleOpenChat()}
         chatNotificationCount={chatNotificationCount}

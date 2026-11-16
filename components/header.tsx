@@ -22,15 +22,11 @@ import { AvatarModal } from './avatar-modal';
 import { UserAvatar } from './user-avatar';
 import { checkIsRootUserAction } from '@/app/admin-actions';
 
-export type NavTabType = 'catalog' | 'leaderboards' | 'community';
-
 interface HeaderProps {
   onUploadClick?: () => void;
   onOpenAdminManager?: () => void;
   onOpenChat?: () => void;
   chatNotificationCount?: number;
-  activeTab?: NavTabType;
-  onSelectTab?: (tab: NavTabType) => void;
   totalGamesCount?: number;
 }
 
@@ -38,7 +34,6 @@ export function Header({
   onOpenAdminManager,
   onOpenChat,
   chatNotificationCount,
-  onSelectTab,
   totalGamesCount,
 }: HeaderProps) {
   const { session, user, isLoggedIn, isPending, isAdmin: authIsAdmin, isRoot: authIsRoot, signOut, refetch } = useAuth();
@@ -87,7 +82,7 @@ export function Header({
         <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 min-h-[4rem] sm:min-h-[4.5rem] flex items-center justify-between gap-3 sm:gap-4">
           {/* Left: Brand Identity */}
           <button
-            onClick={() => onSelectTab?.('catalog')}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex items-center gap-2 sm:gap-3 text-left group focus:outline-none shrink-0 py-1"
             title="Buddy Line Arcade - Home"
           >

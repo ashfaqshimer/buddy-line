@@ -3,15 +3,14 @@
 import React from 'react';
 import { ShieldCheck, Heart, Terminal, Code2 } from 'lucide-react';
 import { GiJoystick, GiTrophyCup } from 'react-icons/gi';
-import { IoChatbubbles, IoSparkles } from 'react-icons/io5';
+import { IoSparkles } from 'react-icons/io5';
 import { BuddyLineLogo } from './buddy-line-logo';
 
 interface FooterProps {
   onOpenUpload?: () => void;
-  onSelectTab?: (tab: 'catalog' | 'leaderboards' | 'community') => void;
 }
 
-export function Footer({ onOpenUpload, onSelectTab }: FooterProps) {
+export function Footer({ onOpenUpload }: FooterProps) {
   return (
     <footer className="mt-20 border-t border-white/[0.06] bg-[#1a1f27]/90 backdrop-blur-xl relative overflow-hidden">
       {/* Background glow effects */}
@@ -47,11 +46,6 @@ export function Footer({ onOpenUpload, onSelectTab }: FooterProps) {
             </p>
 
             <div className="flex items-center gap-4 text-xs text-slate-400 pt-2">
-              <div className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full bg-teal-400 animate-pulse" />
-                <span className="text-[11px] font-medium text-teal-400/90">Arcade Online</span>
-              </div>
-              <span>•</span>
               <div className="flex items-center gap-1">
                 <ShieldCheck className="size-3.5 text-teal-400" />
                 <span className="text-[11px]">Sandboxed Iframe Security</span>
@@ -67,29 +61,11 @@ export function Footer({ onOpenUpload, onSelectTab }: FooterProps) {
             <ul className="space-y-2 text-xs">
               <li>
                 <button
-                  onClick={() => onSelectTab?.('catalog')}
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                   className="text-slate-400 hover:text-teal-300 transition flex items-center gap-1.5"
                 >
                   <GiJoystick className="size-3.5 text-teal-400" />
                   <span>Games Catalog</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onSelectTab?.('leaderboards')}
-                  className="text-slate-400 hover:text-teal-300 transition flex items-center gap-1.5"
-                >
-                  <GiTrophyCup className="size-3.5 text-teal-400" />
-                  <span>High Score Podium</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onSelectTab?.('community')}
-                  className="text-slate-400 hover:text-teal-300 transition flex items-center gap-1.5"
-                >
-                  <IoChatbubbles className="size-3.5 text-teal-400" />
-                  <span>Community Lounge</span>
                 </button>
               </li>
               <li>

@@ -36,13 +36,6 @@ export function GamePlayerModal({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [reactions, setReactions] = useState<{ [key: string]: number }>({
-    '🔥': 14,
-    '🚀': 9,
-    '🕹️': 23,
-    '⭐': 18,
-  });
-  const [userReacted, setUserReacted] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [currentPlayCount, setCurrentPlayCount] = useState<number>(game?.playCount ?? 0);
@@ -158,21 +151,12 @@ export function GamePlayerModal({
 
   const handleShare = () => {
     try {
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(`${window.location.href.split("#")[0]}#${game.id}`);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
     } catch {
       // ignore
     }
-  };
-
-  const handleReaction = (emoji: string) => {
-    if (userReacted === emoji) return;
-    setReactions((prev) => ({
-      ...prev,
-      [emoji]: (prev[emoji] || 0) + 1,
-    }));
-    setUserReacted(emoji);
   };
 
   const bundledHtml = bundleGameSource(
@@ -232,24 +216,6 @@ export function GamePlayerModal({
             <Gamepad2 className="size-3.5" />
             <span className="hidden sm:inline">Touch Keys</span>
           </button>
-
-          {/* Community Reactions Quick Pill (Desktop/Tablet) */}
-          <div className="hidden lg:flex items-center gap-1 rounded-xl bg-white/[0.03] p-1 border border-white/[0.06]">
-            {Object.entries(reactions).map(([emoji, count]) => (
-              <button
-                key={emoji}
-                onClick={() => handleReaction(emoji)}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition ${
-                  userReacted === emoji
-                    ? 'bg-teal-400/15 text-teal-300 border border-teal-400/20'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <span>{emoji}</span>
-                <span className="text-[10px] font-bold">{count}</span>
-              </button>
-            ))}
-          </div>
 
           {/* Share Button */}
           <button
