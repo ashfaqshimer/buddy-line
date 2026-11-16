@@ -13,6 +13,7 @@ import {
   getConversation,
   sendPrivateMessage,
   getChatNotificationSummary,
+  getPlayerWithRelationship,
   FriendSummary,
   FriendRequestItem,
   PrivateMessageRecord,
@@ -257,6 +258,31 @@ export async function getChatNotificationSummaryAction(): Promise<{
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Failed to get notification summary.',
+    };
+  }
+}
+
+export async function getPlayerProfileAction(idOrUsername: string): Promise<{
+  success: boolean;
+  player?: PlayerProfile & { relationship: 'none' | 'pending_incoming' | 'pending_outgoing' | 'friend' };
+  error?: string;
+}> {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) {
+      return { success: false, error: 'Authentication required.' };
+    }
+
+    const player = await getPlayerWithRelationship(user.id, idOrUsername);
+    if (!player) {
+      return { success: false, error: "This creator doesn't have a player account to chat with." };
+    }
+    return { success: true, player };
+  } catch (err: unknown) {
+    console.error('Failed to look up player:', err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Failed to look up player.',
     };
   }
 }

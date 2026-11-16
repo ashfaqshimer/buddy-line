@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/header';
 import { ArcadeView } from '@/components/arcade-view';
 import { AdminManagerModal } from '@/components/admin-manager-modal';
@@ -24,30 +24,38 @@ function BuddyLineAppContent() {
   const [totalGamesCount, setTotalGamesCount] = useState<number>(0);
   const { session } = useAuth();
 
-  // Poll for unread messages and incoming friend requests
-  useEffect(() => {
-    if (!session?.user?.id) {
-      setChatNotificationCount(0);
-      return;
-    }
+  const userId = session?.user?.id;
+  const badgeCount = userId ? chatNotificationCount : 0;
 
-    const checkNotifications = async () => {
-      try {
-        const res = await getChatNotificationSummaryAction();
-        if (res.success && res.summary) {
-          setChatNotificationCount(
-            res.summary.totalUnreadMessages + res.summary.incomingRequestsCount
-          );
-        }
-      } catch (err) {
-        console.warn('Chat notification check notice:', err);
+  // Single source of truth for chat badges (header, mobile nav, collapsed chat bar)
+  const refreshChatNotifications = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const res = await getChatNotificationSummaryAction();
+      if (res.success && res.summary) {
+        setChatNotificationCount(res.summary.totalUnreadMessages + res.summary.incomingRequestsCount);
       }
-    };
+    } catch (err) {
+      console.warn('Chat notification check notice:', err);
+    }
+  }, [userId]);
 
-    checkNotifications();
-    const interval = setInterval(checkNotifications, 10000);
-    return () => clearInterval(interval);
-  }, [session?.user?.id]);
+  // Poll for unread messages and incoming friend requests (setTimeout chain so requests never overlap)
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = async () => {
+      if (cancelled) return;
+      if (document.visibilityState === 'visible') await refreshChatNotifications();
+      if (!cancelled) timer = setTimeout(tick, 10000);
+    };
+    tick();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [userId, refreshChatNotifications]);
 
   const handleOpenChat = (targetPlayerIdOrUsername?: string) => {
     if (targetPlayerIdOrUsername) {
@@ -63,7 +71,7 @@ function BuddyLineAppContent() {
         onUploadClick={() => setIsUploaderOpen(true)}
         onOpenAdminManager={() => setIsAdminModalOpen(true)}
         onOpenChat={() => handleOpenChat()}
-        chatNotificationCount={chatNotificationCount}
+        chatNotificationCount={badgeCount}
         totalGamesCount={totalGamesCount}
       />
 
@@ -86,7 +94,7 @@ function BuddyLineAppContent() {
       <MobileBottomNav
         onUploadClick={() => setIsUploaderOpen(true)}
         onOpenChat={() => handleOpenChat()}
-        chatNotificationCount={chatNotificationCount}
+        chatNotificationCount={badgeCount}
       />
 
       {/* Admin Manager Modal */}
@@ -102,6 +110,8 @@ function BuddyLineAppContent() {
         onToggle={setIsChatOpen}
         targetFriendId={chatTargetFriendId}
         onClearTarget={() => setChatTargetFriendId(null)}
+        notificationCount={badgeCount}
+        onNotificationsChanged={refreshChatNotifications}
       />
     </div>
   );

@@ -40,8 +40,8 @@ import {
   respondToFriendRequestAction,
   removeFriendAction,
   cancelFriendRequestAction,
-  searchPlayersAction,
   getSuggestedPlayersAction,
+  getPlayerProfileAction,
   getConversationAction,
   sendPrivateMessageAction,
 } from '@/app/chat-actions';
@@ -52,17 +52,30 @@ interface BottomChatWidgetProps {
   onToggle: (open: boolean) => void;
   targetFriendId?: string | null;
   onClearTarget?: () => void;
+  /** Shared unread + request count from the app shell (used for the collapsed bar badge). */
+  notificationCount?: number;
+  /** Ask the app shell to refresh its shared notification count (after reading / responding). */
+  onNotificationsChanged?: () => void;
 }
 
 type TabType = 'friends' | 'requests' | 'add';
+type PlayerWithRelationship = PlayerProfile & {
+  relationship: 'none' | 'pending_incoming' | 'pending_outgoing' | 'friend';
+};
 
 const QUICK_REACTIONS = ['GG! 🎮', 'Ready to play? 🚀', 'Nice score! 🏆', '🕹️', '🔥', '👾'];
+
+const CONVERSATION_POLL_MS = 3000;
+const FRIENDS_POLL_MS = 10000;
+const NEAR_BOTTOM_PX = 80;
 
 export function BottomChatWidget({
   isOpen,
   onToggle,
   targetFriendId,
   onClearTarget,
+  notificationCount,
+  onNotificationsChanged,
 }: BottomChatWidgetProps) {
   const { session, isLoggedIn } = useAuth();
   const currentUserId = session?.user?.id;
@@ -79,15 +92,9 @@ export function BottomChatWidget({
   const [outgoingRequests, setOutgoingRequests] = useState<FriendRequestItem[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
 
-  // Search & suggestions
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<
-    Array<PlayerProfile & { relationship: 'none' | 'pending_incoming' | 'pending_outgoing' | 'friend' }>
-  >([]);
-  const [suggestedPlayers, setSuggestedPlayers] = useState<
-    Array<PlayerProfile & { relationship: 'none' | 'pending_incoming' | 'pending_outgoing' | 'friend' }>
-  >([]);
-  const [isSearching, setIsSearching] = useState(false);
+  // Suggestions & targeted player (e.g. "message creator" from a game card)
+  const [suggestedPlayers, setSuggestedPlayers] = useState<PlayerWithRelationship[]>([]);
+  const [targetPlayer, setTargetPlayer] = useState<PlayerWithRelationship | null>(null);
   const [addFriendInput, setAddFriendInput] = useState('');
   const [addFriendStatus, setAddFriendStatus] = useState<{
     type: 'idle' | 'loading' | 'success' | 'error';
@@ -100,6 +107,7 @@ export function BottomChatWidget({
   const [inputMessage, setInputMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [conversationError, setConversationError] = useState<string | null>(null);
+  const [hasNewBelow, setHasNewBelow] = useState(false);
 
   // Confirm friend removal
   const [friendToRemove, setFriendToRemove] = useState<FriendSummary | null>(null);
@@ -110,59 +118,87 @@ export function BottomChatWidget({
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const selectedFriendIdRef = useRef<string | null>(null);
-  const handledTargetRef = useRef<string | null>(null);
+  const isNearBottomRef = useRef(true);
+  const lastRenderedMessageIdRef = useRef<string | null>(null);
+  const lastServerMessageIdRef = useRef<string | null>(null);
+  // Bumped whenever conversation state changes locally (friend switch, message sent) so
+  // responses from requests started before that change are discarded instead of
+  // overwriting newer state.
+  const conversationSeqRef = useRef(0);
+  const friendsSeqRef = useRef(0);
 
-  useEffect(() => {
-    selectedFriendIdRef.current = selectedFriend?.id || null;
-  }, [selectedFriend?.id]);
-
-  const scrollToBottom = useCallback((smooth = true) => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({
-        behavior: smooth ? 'smooth' : 'auto',
-        block: 'end',
-      });
+  /** Change the open conversation. Updates the ref synchronously so in-flight responses can be checked against it. */
+  const selectFriend = useCallback((friend: FriendSummary | null) => {
+    if (selectedFriendIdRef.current !== (friend?.id ?? null)) {
+      conversationSeqRef.current++;
+      lastRenderedMessageIdRef.current = null;
+      lastServerMessageIdRef.current = null;
+      isNearBottomRef.current = true;
+      setMessages([]);
+      setHasNewBelow(false);
+      setConversationError(null);
     }
+    selectedFriendIdRef.current = friend?.id ?? null;
+    setSelectedFriend(friend);
   }, []);
 
-  // Fetch friends and requests
-  const loadFriendsData = useCallback(async (silent = false) => {
-    if (!currentUserId) return;
+  const scrollToBottom = useCallback((smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: smooth ? 'smooth' : 'auto',
+      block: 'end',
+    });
+  }, []);
+
+  const handleMessagesScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
+    isNearBottomRef.current = nearBottom;
+    if (nearBottom) setHasNewBelow(false);
+  };
+
+  // Fetch friends and requests (returns the fresh friends list, or null if discarded/failed)
+  const loadFriendsData = useCallback(async (silent = false): Promise<FriendSummary[] | null> => {
+    if (!currentUserId) return null;
+    const seq = ++friendsSeqRef.current;
     if (!silent) setLoadingFriends(true);
 
     try {
       const res = await getFriendsAndRequestsAction();
-      if (res.success) {
-        setFriends(res.friends || []);
-        setIncomingRequests(res.incomingRequests || []);
-        setOutgoingRequests(res.outgoingRequests || []);
+      // A newer request was started meanwhile; its result wins
+      if (seq !== friendsSeqRef.current) return null;
+      if (!res.success) return null;
 
-        const activeId = selectedFriendIdRef.current;
-        if (activeId) {
-          const updated = res.friends?.find((f) => f.id === activeId);
-          if (updated) {
-            setSelectedFriend((prev) => {
-              if (
-                prev &&
-                prev.id === updated.id &&
-                prev.unreadCount === updated.unreadCount &&
-                prev.username === updated.username &&
-                prev.lastMessage?.id === updated.lastMessage?.id
-              ) {
-                return prev;
-              }
-              return updated;
-            });
-          }
+      const freshFriends = res.friends || [];
+      setFriends(freshFriends);
+      setIncomingRequests(res.incomingRequests || []);
+      setOutgoingRequests(res.outgoingRequests || []);
+
+      const activeId = selectedFriendIdRef.current;
+      if (activeId) {
+        const updated = freshFriends.find((f) => f.id === activeId);
+        if (updated) {
+          setSelectedFriend((prev) =>
+            prev &&
+            prev.id === updated.id &&
+            prev.unreadCount === updated.unreadCount &&
+            prev.username === updated.username &&
+            prev.avatar === updated.avatar &&
+            prev.lastMessage?.id === updated.lastMessage?.id
+              ? prev
+              : updated
+          );
         }
       }
+      return freshFriends;
     } catch (err) {
       console.error('Failed to load friends data:', err);
+      return null;
     } finally {
-      if (!silent) setLoadingFriends(false);
+      if (!silent && seq === friendsSeqRef.current) setLoadingFriends(false);
     }
   }, [currentUserId]);
 
@@ -170,108 +206,168 @@ export function BottomChatWidget({
   const loadConversation = useCallback(
     async (friendId: string, silent = false) => {
       if (!currentUserId) return;
+      const seq = ++conversationSeqRef.current;
       if (!silent) setLoadingConversation(true);
-      setConversationError(null);
 
       try {
         const res = await getConversationAction(friendId);
+        // Discard responses for a different conversation, or ones overtaken by newer local changes
+        if (seq !== conversationSeqRef.current || selectedFriendIdRef.current !== friendId) return;
+
         if (res.success && res.messages) {
+          const serverMessages = res.messages;
+          setConversationError(null);
           setMessages((prev) => {
             // Keep any pending optimistic messages that haven't been resolved yet
             const pendingOptimistic = prev.filter((m) => m.id.startsWith('temp-'));
-            if (pendingOptimistic.length === 0) {
-              return res.messages!;
-            }
-            // Filter out pending messages that already appear in res.messages
+            if (pendingOptimistic.length === 0) return serverMessages;
             const stillPending = pendingOptimistic.filter(
               (p) =>
-                !res.messages!.some(
+                !serverMessages.some(
                   (s) =>
                     s.senderId === p.senderId &&
                     s.content === p.content &&
                     Math.abs(new Date(s.createdAt).getTime() - new Date(p.createdAt).getTime()) < 15000
                 )
             );
-            return [...res.messages!, ...stillPending];
+            return [...serverMessages, ...stillPending];
           });
 
-          if (!silent) {
-            setTimeout(() => scrollToBottom(false), 50);
-          }
+          // Flag new incoming messages that arrived while the user is scrolled up
+          const latest = serverMessages[serverMessages.length - 1];
+          const previousLatestId = lastServerMessageIdRef.current;
+          lastServerMessageIdRef.current = latest?.id ?? null;
+          const hasNewIncoming =
+            !!latest && previousLatestId !== null && latest.id !== previousLatestId && latest.senderId !== currentUserId;
+          if (hasNewIncoming && !isNearBottomRef.current) setHasNewBelow(true);
+
+          // Opening a conversation (or receiving new messages in it) marks messages read; refresh the shared badge
+          if (!silent || hasNewIncoming) onNotificationsChanged?.();
         } else if (res.error) {
           setConversationError(res.error);
         }
       } catch (err) {
         console.error('Failed to load conversation:', err);
-        setConversationError('Could not load messages.');
+        if (seq === conversationSeqRef.current) setConversationError('Could not load messages.');
       } finally {
-        if (!silent) setLoadingConversation(false);
+        if (!silent && seq === conversationSeqRef.current) setLoadingConversation(false);
       }
     },
-    [currentUserId, scrollToBottom]
+    [currentUserId, onNotificationsChanged]
   );
+
+  // Keep the feed pinned to the bottom when a new message arrives and the user is already
+  // at the bottom (or sent it themselves). DOM-only: no state updates here.
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (!last || last.id === lastRenderedMessageIdRef.current) return;
+    const isFirstRender = lastRenderedMessageIdRef.current === null;
+    lastRenderedMessageIdRef.current = last.id;
+    if (isFirstRender || last.senderId === currentUserId || isNearBottomRef.current) {
+      requestAnimationFrame(() => scrollToBottom(!isFirstRender));
+    }
+  }, [messages, currentUserId, scrollToBottom]);
 
   // Initial load when logged in
   useEffect(() => {
-    if (isLoggedIn) {
-      loadFriendsData(true);
-      getSuggestedPlayersAction().then((res) => {
-        if (res.success && res.players) {
-          setSuggestedPlayers(res.players);
-        }
-      });
-    }
+    if (!isLoggedIn) return;
+    loadFriendsData(true);
+    getSuggestedPlayersAction().then((res) => {
+      if (res.success && res.players) setSuggestedPlayers(res.players);
+    });
   }, [isLoggedIn, loadFriendsData]);
 
-  // Handle targetFriendId prop (e.g. clicked on an author from arcade view)
-  useEffect(() => {
-    if (targetFriendId && handledTargetRef.current !== targetFriendId) {
-      handledTargetRef.current = targetFriendId;
-      onToggle(true);
-      if (friends.length > 0) {
-        const found = friends.find(
-          (f) =>
-            f.id === targetFriendId ||
-            f.username.toLowerCase() === targetFriendId.toLowerCase()
-        );
-        if (found) {
-          setSelectedFriend(found);
-          loadConversation(found.id);
-        } else {
-          setActiveTab('add');
-          setAddFriendInput(targetFriendId);
-        }
-      } else {
-        setActiveTab('add');
-        setAddFriendInput(targetFriendId);
-      }
-      onClearTarget?.();
-    } else if (!targetFriendId) {
-      handledTargetRef.current = null;
-    }
-  }, [targetFriendId, friends, onToggle, onClearTarget, loadConversation]);
+  // Open the widget on a specific player (e.g. "message creator" on a game card)
+  const openTargetPlayer = useCallback(
+    async (target: string) => {
+      const res = await getPlayerProfileAction(target);
+      setTargetPlayer(null);
+      setAddFriendStatus({ type: 'idle' });
 
-  // Live polling for messages when conversation is active
+      // Clicked on your own game: just show your friends list
+      if (target === currentUserId || res.player?.id === currentUserId) {
+        selectFriend(null);
+        setActiveTab('friends');
+        return;
+      }
+
+      if (!res.success || !res.player) {
+        selectFriend(null);
+        setActiveTab('add');
+        setAddFriendStatus({ type: 'error', message: res.error || 'Player not found.' });
+        return;
+      }
+
+      const player = res.player;
+      if (player.relationship === 'friend') {
+        const fresh = (await loadFriendsData(true)) ?? friends;
+        const found = fresh.find((f) => f.id === player.id);
+        if (found) {
+          selectFriend(found);
+          loadConversation(found.id);
+          return;
+        }
+      }
+
+      selectFriend(null);
+      setTargetPlayer(player);
+      setActiveTab('add');
+    },
+    [currentUserId, friends, loadConversation, loadFriendsData, selectFriend]
+  );
+
+  useEffect(() => {
+    if (!targetFriendId) return;
+    // The app shell opens the widget when it sets a target
+    openTargetPlayer(targetFriendId);
+    onClearTarget?.();
+    // Only react to a new target; the callbacks change identity on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetFriendId]);
+
+  // Poll the open conversation. A setTimeout chain (not setInterval) so a new request only
+  // starts after the previous one finished, which keeps responses in order.
   useEffect(() => {
     if (!isOpen || !selectedFriend?.id) return;
     const friendId = selectedFriend.id;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
 
-    const interval = setInterval(() => {
-      loadConversation(friendId, true);
-      loadFriendsData(true);
-    }, 3000);
+    const tick = async () => {
+      if (cancelled) return;
+      if (document.visibilityState === 'visible') await loadConversation(friendId, true);
+      if (!cancelled) timer = setTimeout(tick, CONVERSATION_POLL_MS);
+    };
+    timer = setTimeout(tick, CONVERSATION_POLL_MS);
 
     return () => {
-      clearInterval(interval);
+      cancelled = true;
+      clearTimeout(timer);
     };
-  }, [isOpen, selectedFriend?.id, loadConversation, loadFriendsData]);
+  }, [isOpen, selectedFriend?.id, loadConversation]);
+
+  // Poll friends, unread counts and requests whenever the widget is open (any view)
+  useEffect(() => {
+    if (!isOpen || !isLoggedIn) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const tick = async () => {
+      if (cancelled) return;
+      if (document.visibilityState === 'visible') await loadFriendsData(true);
+      if (!cancelled) timer = setTimeout(tick, FRIENDS_POLL_MS);
+    };
+    timer = setTimeout(tick, FRIENDS_POLL_MS);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [isOpen, isLoggedIn, loadFriendsData]);
 
   // Select a friend to chat
   const handleSelectFriend = (friend: FriendSummary) => {
-    if (selectedFriend?.id !== friend.id) {
-      setMessages([]);
-    }
-    setSelectedFriend(friend);
+    selectFriend(friend);
     loadConversation(friend.id);
     setTimeout(() => {
       inputRef.current?.focus();
@@ -283,6 +379,7 @@ export function BottomChatWidget({
     if (e) e.preventDefault();
     if (!selectedFriend || !inputMessage.trim() || sendingMessage) return;
 
+    const friendId = selectedFriend.id;
     const textToSend = inputMessage.trim();
     setInputMessage('');
     setSendingMessage(true);
@@ -291,27 +388,26 @@ export function BottomChatWidget({
     const optimisticMsg: PrivateMessageRecord = {
       id: tempId,
       senderId: currentUserId!,
-      receiverId: selectedFriend.id,
+      receiverId: friendId,
       content: textToSend,
       isRead: false,
       readAt: null,
       createdAt: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimisticMsg]);
-    setTimeout(() => scrollToBottom(true), 20);
 
     try {
-      const res = await sendPrivateMessageAction(selectedFriend.id, textToSend);
+      const res = await sendPrivateMessageAction(friendId, textToSend);
+      if (selectedFriendIdRef.current !== friendId) return; // user switched conversations
+
       if (res.success && res.message) {
+        // Invalidate polls started before the server had this message
+        conversationSeqRef.current++;
+        const sent = res.message;
         setMessages((prev) => {
-          const hasTemp = prev.some((m) => m.id === tempId);
-          if (hasTemp) {
-            return prev.map((m) => (m.id === tempId ? res.message! : m));
-          }
-          if (prev.some((m) => m.id === res.message!.id)) {
-            return prev;
-          }
-          return [...prev, res.message!];
+          if (prev.some((m) => m.id === sent.id)) return prev.filter((m) => m.id !== tempId);
+          if (prev.some((m) => m.id === tempId)) return prev.map((m) => (m.id === tempId ? sent : m));
+          return [...prev, sent];
         });
         loadFriendsData(true);
       } else {
@@ -319,7 +415,7 @@ export function BottomChatWidget({
         setConversationError(res.error || 'Failed to send message.');
         setInputMessage(textToSend);
       }
-    } catch (err) {
+    } catch {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setConversationError('Network error while sending message.');
       setInputMessage(textToSend);
@@ -329,36 +425,48 @@ export function BottomChatWidget({
     }
   };
 
-  // Add friend
+  // Add friend (or accept, if the other player already sent a request)
   const handleAddFriend = async (targetUsernameOrId: string) => {
     setAddFriendStatus({ type: 'loading' });
     try {
       const res = await sendFriendRequestAction(targetUsernameOrId);
       if (res.success) {
+        const relationship: PlayerWithRelationship['relationship'] =
+          res.status === 'accepted' ? 'friend' : 'pending_outgoing';
+        const matches = (p: PlayerWithRelationship) =>
+          p.id === targetUsernameOrId || p.username.toLowerCase() === targetUsernameOrId.toLowerCase();
+
         setAddFriendStatus({
           type: 'success',
           message: res.message || 'Friend request sent successfully!',
         });
         setAddFriendInput('');
-        loadFriendsData(true);
-        setSuggestedPlayers((prev) =>
-          prev.map((p) =>
-            p.username.toLowerCase() === targetUsernameOrId.toLowerCase() || p.id === targetUsernameOrId
-              ? { ...p, relationship: res.status === 'accepted' ? 'friend' : 'pending_outgoing' }
-              : p
-          )
-        );
+        setSuggestedPlayers((prev) => prev.map((p) => (matches(p) ? { ...p, relationship } : p)));
+        setTargetPlayer((prev) => (prev && matches(prev) ? { ...prev, relationship } : prev));
+        await loadFriendsData(true);
+        if (res.status === 'accepted') onNotificationsChanged?.();
       } else {
         setAddFriendStatus({
           type: 'error',
           message: res.error || 'Failed to send friend request.',
         });
       }
-    } catch (err) {
+    } catch {
       setAddFriendStatus({
         type: 'error',
         message: 'An unexpected error occurred.',
       });
+    }
+  };
+
+  // Jump from the targeted player card into the conversation once you're friends
+  const handleMessageTargetPlayer = async () => {
+    if (!targetPlayer) return;
+    const fresh = (await loadFriendsData(true)) ?? friends;
+    const found = fresh.find((f) => f.id === targetPlayer.id);
+    if (found) {
+      setTargetPlayer(null);
+      handleSelectFriend(found);
     }
   };
 
@@ -368,6 +476,7 @@ export function BottomChatWidget({
       const res = await respondToFriendRequestAction(friendshipId, action);
       if (res.success) {
         await loadFriendsData();
+        onNotificationsChanged?.();
       }
     } catch (err) {
       console.error('Failed to respond to request:', err);
@@ -383,6 +492,7 @@ export function BottomChatWidget({
         setSuggestedPlayers((prev) =>
           prev.map((p) => (p.id === targetUserId ? { ...p, relationship: 'none' } : p))
         );
+        setTargetPlayer((prev) => (prev?.id === targetUserId ? { ...prev, relationship: 'none' } : prev));
       }
     } catch (err) {
       console.error('Failed to cancel request:', err);
@@ -397,8 +507,7 @@ export function BottomChatWidget({
       const res = await removeFriendAction(friendToRemove.id);
       if (res.success) {
         if (selectedFriend?.id === friendToRemove.id) {
-          setSelectedFriend(null);
-          setMessages([]);
+          selectFriend(null);
         }
         setFriendToRemove(null);
         await loadFriendsData();
@@ -410,34 +519,9 @@ export function BottomChatWidget({
     }
   };
 
-  // Search debounce
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      setIsSearching(false);
-      return;
-    }
-
-    setIsSearching(true);
-    const timer = setTimeout(async () => {
-      try {
-        const res = await searchPlayersAction(searchQuery);
-        if (res.success && res.players) {
-          setSearchResults(res.players);
-        }
-      } catch (err) {
-        console.error('Failed to search players:', err);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 250);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  // Derived notification count
+  // Derived notification counts
   const totalUnreadMessages = friends.reduce((sum, f) => sum + (f.unreadCount || 0), 0);
-  const totalNotifications = totalUnreadMessages + incomingRequests.length;
+  const collapsedBadgeCount = notificationCount ?? totalUnreadMessages + incomingRequests.length;
 
   const filteredFriends = friends.filter((f) => {
     if (!friendsFilter.trim()) return true;
@@ -477,9 +561,9 @@ export function BottomChatWidget({
           >
             <div className="relative">
               <IoChatbubbles className="size-4 text-teal-400 group-hover:scale-110 transition-transform" />
-              {totalNotifications > 0 && (
+              {collapsedBadgeCount > 0 && (
                 <span className="absolute -top-1.5 -right-2 flex size-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white shadow-[0_0_8px_rgba(244,63,94,0.7)] animate-pulse">
-                  {totalNotifications > 9 ? '9+' : totalNotifications}
+                  {collapsedBadgeCount > 9 ? '9+' : collapsedBadgeCount}
                 </span>
               )}
             </div>
@@ -517,10 +601,7 @@ export function BottomChatWidget({
               <div className="flex items-center gap-2 min-w-0">
                 {selectedFriend ? (
                   <button
-                    onClick={() => {
-                      setSelectedFriend(null);
-                      setMessages([]);
-                    }}
+                    onClick={() => selectFriend(null)}
                     className="rounded-lg p-1 text-slate-400 hover:bg-white/[0.06] hover:text-white transition"
                     title="Back to friends list"
                   >
@@ -595,7 +676,7 @@ export function BottomChatWidget({
                 <button
                   onClick={() => {
                     onToggle(false);
-                    setSelectedFriend(null);
+                    selectFriend(null);
                   }}
                   className="rounded-lg p-1.5 hover:bg-rose-500/10 hover:text-rose-400 transition"
                   title="Close chat"
@@ -629,7 +710,11 @@ export function BottomChatWidget({
                  =================================================================== */
               <div className="flex-1 flex flex-col bg-[#151920] overflow-hidden">
                 {/* Messages Feed */}
-                <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+                <div
+                  ref={scrollContainerRef}
+                  onScroll={handleMessagesScroll}
+                  className="flex-1 overflow-y-auto p-3.5 space-y-3"
+                >
                   {loadingConversation && messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-2">
                       <Loader2 className="size-5 animate-spin text-teal-400" />
@@ -670,7 +755,7 @@ export function BottomChatWidget({
                     <>
                       <div className="text-center my-1">
                         <span className="rounded-full bg-white/[0.04] border border-white/[0.06] px-2.5 py-0.5 text-[9px] font-semibold text-slate-400">
-                          End-to-End Private Channel
+                          Private conversation
                         </span>
                       </div>
 
@@ -726,6 +811,22 @@ export function BottomChatWidget({
                     </>
                   )}
                 </div>
+
+                {hasNewBelow && (
+                  <div className="relative h-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHasNewBelow(false);
+                        scrollToBottom(true);
+                      }}
+                      className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full bg-teal-400 px-3 py-1 text-[11px] font-black text-slate-950 shadow-[0_0_14px_rgba(45,212,191,0.45)] transition active:scale-95"
+                    >
+                      <span>New messages</span>
+                      <ChevronDown className="size-3" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Input Bar */}
                 <div className="border-t border-white/[0.08] bg-[#1a1f27] p-2.5 shrink-0">
@@ -1010,6 +1111,74 @@ export function BottomChatWidget({
                 {/* TAB 3: ADD FRIEND */}
                 {activeTab === 'add' && (
                   <div className="flex-1 overflow-y-auto p-3 space-y-3.5">
+                    {/* Targeted player (from "message creator") */}
+                    {targetPlayer && (
+                      <div className="rounded-xl border border-teal-400/30 bg-teal-400/5 p-3">
+                        <div className="flex items-center gap-2.5 mb-2.5">
+                          <UserAvatar
+                            avatar={targetPlayer.image}
+                            name={targetPlayer.username}
+                            className="size-9 rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 text-base font-black text-white"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-bold text-white truncate">@{targetPlayer.username}</div>
+                            <div className="text-[10px] text-slate-400">
+                              {targetPlayer.relationship === 'friend'
+                                ? "You're friends now!"
+                                : targetPlayer.relationship === 'pending_outgoing'
+                                  ? 'Request sent. You can chat once they accept.'
+                                  : targetPlayer.relationship === 'pending_incoming'
+                                    ? 'They already sent you a friend request.'
+                                    : 'Add them as a friend to start chatting.'}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setTargetPlayer(null)}
+                            className="rounded-lg p-1 text-slate-400 hover:bg-white/[0.06] hover:text-white transition"
+                            aria-label="Dismiss"
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </div>
+
+                        {targetPlayer.relationship === 'friend' ? (
+                          <button
+                            type="button"
+                            onClick={handleMessageTargetPlayer}
+                            className="w-full flex items-center justify-center gap-1 rounded-lg bg-teal-400 py-1.5 text-xs font-black text-slate-950 shadow-[0_0_12px_rgba(45,212,191,0.25)] transition"
+                          >
+                            <MessageSquare className="size-3" />
+                            <span>Open Chat</span>
+                          </button>
+                        ) : targetPlayer.relationship === 'pending_outgoing' ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCancelOutgoing(targetPlayer.id)}
+                            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/[0.08] transition"
+                          >
+                            Cancel Request
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleAddFriend(targetPlayer.id)}
+                            disabled={addFriendStatus.type === 'loading'}
+                            className="w-full flex items-center justify-center gap-1 rounded-lg bg-teal-400 py-1.5 text-xs font-black text-slate-950 shadow-[0_0_12px_rgba(45,212,191,0.25)] transition disabled:opacity-50"
+                          >
+                            {addFriendStatus.type === 'loading' ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : targetPlayer.relationship === 'pending_incoming' ? (
+                              <Check className="size-3" />
+                            ) : (
+                              <UserPlus className="size-3" />
+                            )}
+                            <span>{targetPlayer.relationship === 'pending_incoming' ? 'Accept Request' : 'Add Friend'}</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+
                     {/* Add Form */}
                     <div className="rounded-xl border border-teal-400/20 bg-[#1c2028] p-3 space-y-2">
                       <span className="text-xs font-black text-teal-300 flex items-center gap-1">

@@ -126,10 +126,118 @@ export async function ensureChatTables(): Promise<void> {
       `);
     }
   } catch (err) {
+    // Leave the flag unset so the next call retries (e.g. Neon waking from scale-to-zero)
     console.warn('ensureChatTables notice:', err);
+    return;
   }
 
+  await ensureFriendshipPairIndex();
   chatTablesInitialized = true;
+}
+
+/**
+ * Enforce one friendship row per user pair regardless of direction, so two players
+ * adding each other at the same moment cannot create both (A→B) and (B→A).
+ * Existing duplicates are collapsed first, keeping an accepted row when there is one.
+ */
+async function ensureFriendshipPairIndex(): Promise<void> {
+  try {
+    if (migrationDbInstance instanceof Pool) {
+      await migrationDbInstance.query(`
+        DELETE FROM public.friendships WHERE id IN (
+          SELECT id FROM (
+            SELECT id, ROW_NUMBER() OVER (
+              PARTITION BY LEAST(user_id, friend_id), GREATEST(user_id, friend_id)
+              ORDER BY (status = 'accepted') DESC, created_at ASC, id ASC
+            ) AS rn
+            FROM public.friendships
+          ) ranked WHERE rn > 1
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS uniq_friendship_pair
+          ON public.friendships (LEAST(user_id, friend_id), GREATEST(user_id, friend_id));
+      `);
+    } else if (dbInstance instanceof DatabaseSync) {
+      dbInstance.exec(`
+        DELETE FROM friendships WHERE id IN (
+          SELECT id FROM (
+            SELECT id, ROW_NUMBER() OVER (
+              PARTITION BY MIN(user_id, friend_id), MAX(user_id, friend_id)
+              ORDER BY (status = 'accepted') DESC, created_at ASC, id ASC
+            ) AS rn
+            FROM friendships
+          ) WHERE rn > 1
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS uniq_friendship_pair
+          ON friendships (MIN(user_id, friend_id), MAX(user_id, friend_id));
+      `);
+    }
+  } catch (err) {
+    // Non-fatal: chat still works without the index, only the race protection is lost
+    console.warn('ensureFriendshipPairIndex notice:', err);
+  }
+}
+
+type Relationship = 'none' | 'pending_incoming' | 'pending_outgoing' | 'friend';
+
+/**
+ * Look up a player by id or username along with their relationship to the current user.
+ */
+export async function getPlayerWithRelationship(
+  currentUserId: string,
+  idOrUsername: string
+): Promise<(PlayerProfile & { relationship: Relationship }) | null> {
+  await ensureChatTables();
+  const key = idOrUsername.trim();
+  if (!key) return null;
+
+  let player: PlayerProfile | null = null;
+  let rel: { user_id: string; status: string } | null = null;
+
+  if (dbInstance instanceof Pool) {
+    const res = await dbInstance.query<PlayerProfile>(
+      `SELECT id, name, username, image, role FROM "user"
+       WHERE id = $1 OR LOWER(username) = LOWER($1) LIMIT 1`,
+      [key]
+    );
+    player = res.rows[0] ?? null;
+    if (player) {
+      const relRes = await dbInstance.query<{ user_id: string; status: string }>(
+        `SELECT user_id, status FROM public.friendships
+         WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1) LIMIT 1`,
+        [currentUserId, player.id]
+      );
+      rel = relRes.rows[0] ?? null;
+    }
+  } else if (dbInstance instanceof DatabaseSync) {
+    player =
+      (dbInstance
+        .prepare(`SELECT id, name, username, image, role FROM user WHERE id = ? OR LOWER(username) = LOWER(?) LIMIT 1`)
+        .get(key, key) as unknown as PlayerProfile | undefined) ?? null;
+    if (player) {
+      rel =
+        (dbInstance
+          .prepare(
+            `SELECT user_id, status FROM friendships
+             WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?) LIMIT 1`
+          )
+          .get(currentUserId, player.id, player.id, currentUserId) as { user_id: string; status: string } | undefined) ??
+        null;
+    }
+  }
+
+  if (!player) return null;
+
+  let relationship: Relationship = 'none';
+  if (rel?.status === 'accepted') relationship = 'friend';
+  else if (rel?.status === 'pending') {
+    relationship = rel.user_id === currentUserId ? 'pending_outgoing' : 'pending_incoming';
+  }
+
+  return {
+    ...player,
+    username: player.username || player.name.toLowerCase().replace(/\s+/g, ''),
+    relationship,
+  };
 }
 
 /**
@@ -165,7 +273,8 @@ export async function areFriends(userId1: string, userId2: string): Promise<bool
  */
 export async function sendFriendRequest(
   currentUserId: string,
-  targetUsernameOrId: string
+  targetUsernameOrId: string,
+  isRetry = false
 ): Promise<{ success: boolean; status?: 'pending' | 'accepted'; error?: string; message?: string }> {
   await ensureChatTables();
 
@@ -284,17 +393,28 @@ export async function sendFriendRequest(
     };
   }
 
-  // Insert fresh friend request
+  // Insert fresh friend request. If the other player inserted a request for this pair
+  // concurrently, the unique pair index makes this a no-op; re-run once so the
+  // existing-row logic above auto-accepts it.
   const newId = randomUUID();
+  let inserted = true;
   if (dbInstance instanceof Pool) {
-    await dbInstance.query(
-      `INSERT INTO public.friendships (id, user_id, friend_id, status) VALUES ($1, $2, $3, 'pending')`,
+    const res = await dbInstance.query(
+      `INSERT INTO public.friendships (id, user_id, friend_id, status) VALUES ($1, $2, $3, 'pending')
+       ON CONFLICT DO NOTHING`,
       [newId, currentUserId, targetId]
     );
+    inserted = (res.rowCount ?? 0) > 0;
   } else if (dbInstance instanceof DatabaseSync) {
-    dbInstance
-      .prepare(`INSERT INTO friendships (id, user_id, friend_id, status) VALUES (?, ?, ?, 'pending')`)
+    const info = dbInstance
+      .prepare(`INSERT OR IGNORE INTO friendships (id, user_id, friend_id, status) VALUES (?, ?, ?, 'pending')`)
       .run(newId, currentUserId, targetId);
+    inserted = Number(info.changes) > 0;
+  }
+
+  if (!inserted) {
+    if (!isRetry) return sendFriendRequest(currentUserId, targetId, true);
+    return { success: false, error: 'Could not send friend request. Please try again.' };
   }
 
   return {
@@ -954,12 +1074,13 @@ export async function getConversation(
       `SELECT id, sender_id, receiver_id, content, is_read, read_at, created_at
        FROM public.private_messages
        WHERE (sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1)
-       ORDER BY created_at ASC
+       ORDER BY created_at DESC, id DESC
        LIMIT $3`,
       [currentUserId, friendId, limit]
     );
 
-    const messages: PrivateMessageRecord[] = res.rows.map((row) => ({
+    // Fetched newest-first so the latest messages are always included; display oldest-first
+    const messages: PrivateMessageRecord[] = res.rows.reverse().map((row) => ({
       id: row.id,
       senderId: row.sender_id,
       receiverId: row.receiver_id,
@@ -984,7 +1105,7 @@ export async function getConversation(
         `SELECT id, sender_id, receiver_id, content, is_read, read_at, created_at
          FROM private_messages
          WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
-         ORDER BY created_at ASC
+         ORDER BY created_at DESC, id DESC
          LIMIT ?`
       )
       .all(currentUserId, friendId, friendId, currentUserId, limit) as Array<{
@@ -997,7 +1118,7 @@ export async function getConversation(
       created_at: string;
     }>;
 
-    const messages: PrivateMessageRecord[] = rows.map((row) => ({
+    const messages: PrivateMessageRecord[] = rows.reverse().map((row) => ({
       id: row.id,
       senderId: row.sender_id,
       receiverId: row.receiver_id,
