@@ -3,7 +3,21 @@
 import React, { useState } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { PRESET_AVATARS } from '@/lib/avatars';
-import { X, Sparkles, User, Lock, Rocket, AlertCircle, Mail } from 'lucide-react';
+import {
+  X,
+  Sparkles,
+  User,
+  Lock,
+  Rocket,
+  AlertCircle,
+  Mail,
+  KeyRound,
+  ArrowLeft,
+  CheckCircle2,
+} from 'lucide-react';
+
+// Better Auth's default minimum
+const MIN_PASSWORD_LENGTH = 8;
 
 // More icons and custom image uploads are available later via "Change Avatar"
 const AVATAR_OPTIONS = PRESET_AVATARS.slice(0, 12);
@@ -24,11 +38,75 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Admin-issued reset code flow
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [notice, setNotice] = useState('');
+
   if (!isOpen) return null;
+
+  const openReset = () => {
+    setIsResetting(true);
+    setError('');
+    setNotice('');
+    setResetCode('');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
+  const closeReset = () => {
+    setIsResetting(false);
+    setError('');
+  };
+
+  const handleResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    // Codes are displayed as XXXX-XXXX; accept any case, spaces or dashes
+    const token = resetCode.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (token.length !== 8) {
+      setError('Reset codes are 8 characters, like ABCD-2345.');
+      return;
+    }
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      setError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters long.`);
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Passwords don't match.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await authClient.resetPassword({ token, newPassword });
+      if (res.error) {
+        setError(
+          res.error.code === 'INVALID_TOKEN'
+            ? 'That code is invalid, already used, or expired. Ask an admin for a new one.'
+            : res.error.message || 'Could not reset your password. Try again.'
+        );
+        return;
+      }
+      setIsResetting(false);
+      setMode('signin');
+      setPassword('');
+      setNotice('Password updated. Sign in with your new password.');
+    } catch (err: unknown) {
+      console.error('Password reset error:', err);
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again!');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setNotice('');
 
     const cleanIdentifier = username.trim();
     if (!cleanIdentifier) {
@@ -110,23 +188,112 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
         {/* Modal Header */}
         <div className="text-center mb-6">
           <div className="inline-flex size-14 items-center justify-center rounded-xl bg-teal-400 text-3xl shadow-lg mb-3">
-            {mode === 'signup' ? selectedAvatar : '🚀'}
+            {isResetting ? <KeyRound className="size-6 text-zinc-950" /> : mode === 'signup' ? selectedAvatar : '🚀'}
           </div>
           <h2 className="text-2xl font-semibold text-white tracking-tight">
-            {mode === 'signup' ? 'Join Buddy Line!' : 'Welcome back'}
+            {isResetting ? 'Reset your password' : mode === 'signup' ? 'Join Buddy Line!' : 'Welcome back'}
           </h2>
           <p className="text-xs text-zinc-400 mt-1">
-            {mode === 'signup'
+            {isResetting
+              ? 'Ask a Buddy Line admin for a reset code, then pick a new password'
+              : mode === 'signup'
               ? 'Pick an avatar and nickname to play & share games'
               : 'Sign in to access your game creations and rank'}
           </p>
         </div>
 
+        {isResetting ? (
+          <>
+            {error && (
+              <div className="mb-4 flex items-center gap-2 rounded-xl bg-rose-500/8 border border-rose-500/20 p-3 text-xs text-rose-300">
+                <AlertCircle className="size-4 shrink-0 text-rose-400" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleResetSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-1.5">
+                  Reset Code
+                </label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3.5 top-3 size-4 text-zinc-400" />
+                  <input
+                    type="text"
+                    value={resetCode}
+                    onChange={(e) => setResetCode(e.target.value)}
+                    placeholder="ABCD-2345"
+                    autoComplete="one-time-code"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    maxLength={12}
+                    required
+                    className="w-full rounded-xl border border-white/[0.08] bg-background py-2.5 pl-10 pr-4 font-mono text-base sm:text-sm uppercase tracking-widest text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-1.5">
+                  New Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-3 size-4 text-zinc-400" />
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
+                    autoComplete="new-password"
+                    required
+                    className="w-full rounded-xl border border-white/[0.08] bg-background py-2.5 pl-10 pr-4 text-base sm:text-sm text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-1.5">
+                  Confirm New Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-3 size-4 text-zinc-400" />
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    required
+                    className="w-full rounded-xl border border-white/[0.08] bg-background py-2.5 pl-10 pr-4 text-base sm:text-sm text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full mt-2 flex items-center justify-center gap-2 rounded-full bg-teal-400 py-3 text-sm font-semibold text-zinc-950 shadow-lg transition transform active:scale-95 disabled:opacity-50"
+              >
+                {loading ? <span className="animate-spin text-lg">⚙️</span> : <span>Set New Password</span>}
+              </button>
+
+              <button
+                type="button"
+                onClick={closeReset}
+                className="w-full flex items-center justify-center gap-1.5 py-1 text-xs font-semibold text-zinc-400 hover:text-white transition"
+              >
+                <ArrowLeft className="size-3.5" />
+                <span>Back to sign in</span>
+              </button>
+            </form>
+          </>
+        ) : (
+        <>
         {/* Mode Switcher Tabs */}
         <div className="flex rounded-xl bg-background p-1 mb-5 border border-white/[0.06]">
           <button
             type="button"
-            onClick={() => { setMode('signup'); setError(''); }}
+            onClick={() => { setMode('signup'); setError(''); setNotice(''); }}
             className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
               mode === 'signup'
                 ? 'bg-teal-400 text-zinc-950 shadow-md'
@@ -137,7 +304,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
           </button>
           <button
             type="button"
-            onClick={() => { setMode('signin'); setError(''); }}
+            onClick={() => { setMode('signin'); setError(''); setNotice(''); }}
             className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
               mode === 'signin'
                 ? 'bg-teal-400 text-zinc-950 shadow-md'
@@ -147,6 +314,13 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
             Sign In
           </button>
         </div>
+
+        {notice && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl bg-teal-500/8 border border-teal-500/20 p-3 text-xs text-teal-300">
+            <CheckCircle2 className="size-4 shrink-0 text-teal-400" />
+            <span>{notice}</span>
+          </div>
+        )}
 
         {/* Error Alert */}
         {error && (
@@ -244,6 +418,17 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
                 className="w-full rounded-xl border border-white/[0.08] bg-background py-2.5 pl-10 pr-4 text-base sm:text-sm text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
               />
             </div>
+            {mode === 'signin' && (
+              <div className="mt-1.5 text-right">
+                <button
+                  type="button"
+                  onClick={openReset}
+                  className="text-[11px] font-semibold text-zinc-400 hover:text-teal-300 transition"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Submit Button */}
@@ -267,6 +452,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
             )}
           </button>
         </form>
+        </>
+        )}
       </div>
     </div>
   );

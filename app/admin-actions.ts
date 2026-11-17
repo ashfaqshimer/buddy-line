@@ -4,6 +4,7 @@ import { auth, dbInstance, isRootUser, ensureAuthMigrations } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { Pool } from 'pg';
 import { DatabaseSync } from 'node:sqlite';
+import { randomInt } from 'node:crypto';
 
 export interface UserSummary {
   id: string;
@@ -46,6 +47,7 @@ export async function checkIsRootUserAction(): Promise<boolean> {
 export async function getUsersListAction(): Promise<{
   success: boolean;
   users?: UserSummary[];
+  viewer?: { id: string; isRoot: boolean };
   error?: string;
 }> {
   try {
@@ -101,7 +103,7 @@ export async function getUsersListAction(): Promise<{
       };
     });
 
-    return { success: true, users };
+    return { success: true, users, viewer: { id: session.user.id, isRoot: isCallerRoot } };
   } catch (err: unknown) {
     console.error('Failed to list users:', err);
     return {
@@ -177,3 +179,109 @@ export async function setUserRoleAction(payload: {
   }
 }
 
+
+// Unambiguous characters only (no 0/O, 1/I/L) so codes are easy to read aloud.
+const RESET_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const RESET_CODE_LENGTH = 8; // ~40 bits of entropy; single use + short expiry
+const RESET_CODE_TTL_MS = 30 * 60 * 1000;
+
+type UserRow = { id: string; email: string; username: string | null; role: string | null };
+
+async function findUserRow(userId: string): Promise<UserRow | undefined> {
+  if (dbInstance instanceof Pool) {
+    const res = await dbInstance.query('SELECT id, email, username, role FROM "user" WHERE id = $1', [
+      userId,
+    ]);
+    return res.rows[0];
+  }
+  if (dbInstance instanceof DatabaseSync) {
+    return dbInstance
+      .prepare('SELECT id, email, username, role FROM user WHERE id = ?')
+      .get(userId) as UserRow | undefined;
+  }
+  return undefined;
+}
+
+/**
+ * Lets an admin recover a player's account without email: mints a one-time
+ * Better Auth reset token that the admin hands to the player out of band.
+ * The player redeems it in the sign-in modal via authClient.resetPassword,
+ * which consumes the token and revokes the player's existing sessions.
+ */
+export async function createPasswordResetCodeAction(payload: {
+  targetUserId: string;
+}): Promise<{ success: boolean; code?: string; expiresAt?: string; error?: string }> {
+  try {
+    await ensureAuthMigrations();
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: 'Authentication required.' };
+    }
+
+    // Use the DB row rather than the session cookie so role changes apply immediately.
+    const caller = await findUserRow(session.user.id);
+    if (!caller) {
+      return { success: false, error: 'Authentication required.' };
+    }
+    const isCallerRoot = isRootUser(caller);
+    if (!isCallerRoot && caller.role !== 'admin') {
+      return { success: false, error: 'Only admins can reset passwords.' };
+    }
+
+    const { targetUserId } = payload;
+    if (!targetUserId) {
+      return { success: false, error: 'Invalid user specified.' };
+    }
+    if (targetUserId === caller.id) {
+      return { success: false, error: 'You cannot reset your own password here.' };
+    }
+
+    const target = await findUserRow(targetUserId);
+    if (!target) {
+      return { success: false, error: 'Target user not found.' };
+    }
+    if (isRootUser(target)) {
+      return { success: false, error: 'The Root User password cannot be reset from the console.' };
+    }
+    if (target.role === 'admin' && !isCallerRoot) {
+      return { success: false, error: 'Only the Root User can reset an admin password.' };
+    }
+
+    // Invalidate any earlier unused codes so only the newest one works.
+    if (dbInstance instanceof Pool) {
+      await dbInstance.query(
+        `DELETE FROM "verification" WHERE value = $1 AND identifier LIKE 'reset-password:%'`,
+        [target.id]
+      );
+    } else if (dbInstance instanceof DatabaseSync) {
+      dbInstance
+        .prepare(`DELETE FROM verification WHERE value = ? AND identifier LIKE 'reset-password:%'`)
+        .run(target.id);
+    }
+
+    let code = '';
+    for (let i = 0; i < RESET_CODE_LENGTH; i++) {
+      code += RESET_CODE_ALPHABET[randomInt(RESET_CODE_ALPHABET.length)];
+    }
+    const expiresAt = new Date(Date.now() + RESET_CODE_TTL_MS);
+
+    const ctx = await auth.$context;
+    await ctx.internalAdapter.createVerificationValue({
+      identifier: `reset-password:${code}`,
+      value: target.id,
+      expiresAt,
+    });
+
+    return {
+      success: true,
+      code: `${code.slice(0, 4)}-${code.slice(4)}`,
+      expiresAt: expiresAt.toISOString(),
+    };
+  } catch (err: unknown) {
+    console.error('Failed to create password reset code:', err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Failed to create reset code.',
+    };
+  }
+}

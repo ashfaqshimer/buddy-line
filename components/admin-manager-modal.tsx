@@ -13,8 +13,16 @@ import {
   CheckCircle2,
   AlertCircle,
   Sparkles,
+  KeyRound,
+  Copy,
+  Check,
 } from 'lucide-react';
-import { getUsersListAction, setUserRoleAction, UserSummary } from '@/app/admin-actions';
+import {
+  getUsersListAction,
+  setUserRoleAction,
+  createPasswordResetCodeAction,
+  UserSummary,
+} from '@/app/admin-actions';
 
 interface AdminManagerModalProps {
   isOpen: boolean;
@@ -35,6 +43,16 @@ export function AdminManagerModal({
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [userSearch, setUserSearch] = useState('');
   const [userActionLoadingId, setUserActionLoadingId] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<{ id: string; isRoot: boolean } | null>(null);
+
+  // Password reset codes (shown once, in the row they were issued for)
+  const [resetLoadingId, setResetLoadingId] = useState<string | null>(null);
+  const [issuedReset, setIssuedReset] = useState<{
+    userId: string;
+    code: string;
+    expiresAt: string;
+  } | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   // Global feedback
   const [feedback, setFeedback] = useState<{
@@ -48,6 +66,7 @@ export function AdminManagerModal({
       const res = await getUsersListAction();
       if (res.success && res.users) {
         setUsers(res.users);
+        setViewer(res.viewer ?? null);
       } else {
         setFeedback({ type: 'error', message: res.error || 'Failed to load users.' });
       }
@@ -61,6 +80,7 @@ export function AdminManagerModal({
   useEffect(() => {
     if (isOpen) {
       setFeedback(null);
+      setIssuedReset(null);
       fetchUsers();
     }
   }, [isOpen]);
@@ -96,6 +116,48 @@ export function AdminManagerModal({
       setFeedback({ type: 'error', message: 'Error communicating with server.' });
     } finally {
       setUserActionLoadingId(null);
+    }
+  };
+
+  const canResetPassword = (target: UserSummary) => {
+    if (!viewer || target.isRoot || target.id === viewer.id) return false;
+    if (target.role === 'admin') return viewer.isRoot;
+    return true;
+  };
+
+  const handleResetPassword = async (targetUser: UserSummary) => {
+    const label = targetUser.username || targetUser.name;
+    const confirmed = window.confirm(
+      `Generate a password reset code for ${label}?\n\nOnly do this after confirming you're talking to the real player. Any earlier code for them stops working.`
+    );
+    if (!confirmed) return;
+
+    setResetLoadingId(targetUser.id);
+    setFeedback(null);
+    setIssuedReset(null);
+    setCodeCopied(false);
+
+    try {
+      const res = await createPasswordResetCodeAction({ targetUserId: targetUser.id });
+      if (res.success && res.code && res.expiresAt) {
+        setIssuedReset({ userId: targetUser.id, code: res.code, expiresAt: res.expiresAt });
+      } else {
+        setFeedback({ type: 'error', message: res.error || 'Failed to create reset code.' });
+      }
+    } catch {
+      setFeedback({ type: 'error', message: 'Error communicating with server.' });
+    } finally {
+      setResetLoadingId(null);
+    }
+  };
+
+  const handleCopyCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    } catch {
+      // Clipboard can be blocked; the code is still visible to copy by hand
     }
   };
 
@@ -195,12 +257,15 @@ export function AdminManagerModal({
                 const isUserAdmin = user.role === 'admin';
                 const isUserRoot = user.isRoot;
                 const isLoadingThis = userActionLoadingId === user.id;
+                const isResettingThis = resetLoadingId === user.id;
+                const resetForThis = issuedReset?.userId === user.id ? issuedReset : null;
 
                 return (
                   <div
                     key={user.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-background p-3.5 hover:bg-white/[0.03] transition"
+                    className="rounded-xl border border-white/[0.06] bg-background p-3.5 hover:bg-white/[0.03] transition"
                   >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-teal-500/15 to-teal-400/8 border border-teal-400/15 text-xs font-bold text-teal-300">
                         {(user.username || user.name).slice(0, 2).toUpperCase()}
@@ -231,6 +296,21 @@ export function AdminManagerModal({
                     </div>
 
                     <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                      {canResetPassword(user) && (
+                        <button
+                          onClick={() => handleResetPassword(user)}
+                          disabled={isResettingThis}
+                          title="Generate a one-time password reset code"
+                          className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-zinc-300 transition hover:bg-white/[0.08] hover:text-white active:scale-95 disabled:opacity-50"
+                        >
+                          {isResettingThis ? (
+                            <Loader2 className="size-3 animate-spin" />
+                          ) : (
+                            <KeyRound className="size-3" />
+                          )}
+                          <span>Reset Password</span>
+                        </button>
+                      )}
                       {isUserRoot ? (
                         <div className="flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-400/8 border border-amber-400/20 rounded-lg px-3 py-1.5">
                           <Crown className="size-3 text-amber-400 fill-amber-400" />
@@ -265,6 +345,43 @@ export function AdminManagerModal({
                         </button>
                       )}
                     </div>
+                  </div>
+
+                  {resetForThis && (
+                    <div className="mt-3 rounded-lg border border-teal-400/20 bg-teal-400/[0.06] p-3 animate-in fade-in duration-150">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-mono text-lg font-semibold tracking-[0.2em] text-white select-all">
+                          {resetForThis.code}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleCopyCode(resetForThis.code)}
+                            className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] transition"
+                          >
+                            {codeCopied ? <Check className="size-3 text-teal-400" /> : <Copy className="size-3" />}
+                            <span>{codeCopied ? 'Copied' : 'Copy'}</span>
+                          </button>
+                          <button
+                            onClick={() => setIssuedReset(null)}
+                            className="flex size-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-white/[0.06] hover:text-white transition"
+                            aria-label="Dismiss reset code"
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="mt-2 text-[11px] leading-relaxed text-zinc-400">
+                        Give this code to {user.username || user.name} privately. They enter it under{' '}
+                        <span className="text-zinc-200">Sign In → Forgot password?</span> to choose a new
+                        password. It works once and expires at{' '}
+                        {new Date(resetForThis.expiresAt).toLocaleTimeString([], {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}
+                        . It won&apos;t be shown again.
+                      </p>
+                    </div>
+                  )}
                   </div>
                 );
               })}

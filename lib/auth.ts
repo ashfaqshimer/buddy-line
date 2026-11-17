@@ -96,6 +96,8 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
+    // Admin-issued reset codes log the player out everywhere once redeemed
+    revokeSessionsOnPasswordReset: true,
   },
   databaseHooks: {
     user: {
