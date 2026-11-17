@@ -5,27 +5,21 @@ import {
   X,
   Send,
   UserPlus,
-  Users,
-  Clock,
+  UserMinus,
   Check,
   CheckCheck,
   Search,
   MessageSquare,
-  Shield,
-  Crown,
   AlertCircle,
   Loader2,
-  Trash2,
   ChevronLeft,
   ChevronDown,
   ChevronUp,
-  Minus,
   Maximize2,
   Minimize2,
-  Sparkles,
-  ArrowRight,
+  MoreHorizontal,
 } from 'lucide-react';
-import { IoChatbubbles, IoGameController } from 'react-icons/io5';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/auth-provider';
 import { UserAvatar } from '@/components/user-avatar';
 import {
@@ -68,6 +62,71 @@ const QUICK_REACTIONS = ['GG! 🎮', 'Ready to play? 🚀', 'Nice score! 🏆', 
 const CONVERSATION_POLL_MS = 3000;
 const FRIENDS_POLL_MS = 10000;
 const NEAR_BOTTOM_PX = 80;
+const MINUTE_MS = 60_000;
+const DAY_MS = 86_400_000;
+/** Consecutive messages from the same sender within this window are grouped together. */
+const GROUP_GAP_MS = 5 * MINUTE_MS;
+const INPUT_MAX_HEIGHT_PX = 120;
+
+// ── Date helpers ────────────────────────────────────────────────────────────
+function startOfDay(date: Date): number {
+  const copy = new Date(date);
+  copy.setHours(0, 0, 0, 0);
+  return copy.getTime();
+}
+
+/** Whole calendar days between two dates (a - b). */
+function calendarDayDiff(a: Date, b: Date): number {
+  return Math.round((startOfDay(a) - startOfDay(b)) / DAY_MS);
+}
+
+function isSameDay(a: string, b: string): boolean {
+  return calendarDayDiff(new Date(a), new Date(b)) === 0;
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatShortDate(date: Date, now: Date): string {
+  return date.toLocaleDateString([], {
+    day: 'numeric',
+    month: 'short',
+    ...(date.getFullYear() !== now.getFullYear() ? { year: 'numeric' as const } : {}),
+  });
+}
+
+/** Separator label inside a conversation: Today, Yesterday, Monday, 12 Nov. */
+function formatDayLabel(iso: string, now = new Date()): string {
+  const date = new Date(iso);
+  const diff = calendarDayDiff(now, date);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  if (diff > 1 && diff < 7) return date.toLocaleDateString([], { weekday: 'long' });
+  return formatShortDate(date, now);
+}
+
+/** Compact time for the friends list: now, 5m, 14:32, Yesterday, Mon, 12 Nov. */
+function formatListTime(iso: string, now = new Date()): string {
+  const date = new Date(iso);
+  const elapsed = now.getTime() - date.getTime();
+  if (elapsed < MINUTE_MS) return 'now';
+  if (elapsed < 60 * MINUTE_MS) return `${Math.floor(elapsed / MINUTE_MS)}m`;
+  const diff = calendarDayDiff(now, date);
+  if (diff === 0) return formatTime(iso);
+  if (diff === 1) return 'Yesterday';
+  if (diff > 1 && diff < 7) return date.toLocaleDateString([], { weekday: 'short' });
+  return formatShortDate(date, now);
+}
+
+function isGroupedWith(a: PrivateMessageRecord | undefined, b: PrivateMessageRecord | undefined): boolean {
+  if (!a || !b) return false;
+  return (
+    a.senderId === b.senderId &&
+    isSameDay(a.createdAt, b.createdAt) &&
+    Math.abs(new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) < GROUP_GAP_MS
+  );
+}
 
 export function BottomChatWidget({
   isOpen,
@@ -108,6 +167,11 @@ export function BottomChatWidget({
   const [sendingMessage, setSendingMessage] = useState(false);
   const [conversationError, setConversationError] = useState<string | null>(null);
   const [hasNewBelow, setHasNewBelow] = useState(false);
+  // Optimistic messages whose send failed (kept in the feed with Retry / Delete)
+  const [failedMessageIds, setFailedMessageIds] = useState<Set<string>>(() => new Set());
+  // First message that was unread when the conversation was opened ("New" divider)
+  const [firstUnreadId, setFirstUnreadId] = useState<string | null>(null);
+  const [isConversationMenuOpen, setIsConversationMenuOpen] = useState(false);
 
   // Confirm friend removal
   const [friendToRemove, setFriendToRemove] = useState<FriendSummary | null>(null);
@@ -119,8 +183,12 @@ export function BottomChatWidget({
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const selectedFriendIdRef = useRef<string | null>(null);
+  // Unread count of the conversation at the moment it was opened
+  const unreadOnOpenRef = useRef(0);
+  // Local ids for optimistic messages
+  const tempMessageSeqRef = useRef(0);
   const isNearBottomRef = useRef(true);
   const lastRenderedMessageIdRef = useRef<string | null>(null);
   const lastServerMessageIdRef = useRef<string | null>(null);
@@ -137,9 +205,13 @@ export function BottomChatWidget({
       lastRenderedMessageIdRef.current = null;
       lastServerMessageIdRef.current = null;
       isNearBottomRef.current = true;
+      unreadOnOpenRef.current = friend?.unreadCount ?? 0;
       setMessages([]);
       setHasNewBelow(false);
       setConversationError(null);
+      setFailedMessageIds(new Set());
+      setFirstUnreadId(null);
+      setIsConversationMenuOpen(false);
     }
     selectedFriendIdRef.current = friend?.id ?? null;
     setSelectedFriend(friend);
@@ -232,6 +304,14 @@ export function BottomChatWidget({
             );
             return [...serverMessages, ...stillPending];
           });
+
+          // On the first load of a conversation, remember where the unread messages start
+          if (!silent && unreadOnOpenRef.current > 0) {
+            const incoming = serverMessages.filter((m) => m.senderId !== currentUserId);
+            const anchor = incoming[Math.max(0, incoming.length - unreadOnOpenRef.current)];
+            setFirstUnreadId(anchor?.id ?? null);
+            unreadOnOpenRef.current = 0;
+          }
 
           // Flag new incoming messages that arrived while the user is scrolled up
           const latest = serverMessages[serverMessages.length - 1];
@@ -375,29 +455,30 @@ export function BottomChatWidget({
   };
 
   // Send message
-  const handleSendMessage = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!selectedFriend || !inputMessage.trim() || sendingMessage) return;
+  /** Grow the message box with its content, up to a few lines. */
+  const resizeInput = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, INPUT_MAX_HEIGHT_PX)}px`;
+  }, []);
 
-    const friendId = selectedFriend.id;
-    const textToSend = inputMessage.trim();
-    setInputMessage('');
+  const setFailed = (id: string, failed: boolean) => {
+    setFailedMessageIds((prev) => {
+      if (prev.has(id) === failed) return prev;
+      const next = new Set(prev);
+      if (failed) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  /** Send (or resend) an optimistic message already shown in the feed under `tempId`. */
+  const deliverMessage = async (friendId: string, text: string, tempId: string) => {
     setSendingMessage(true);
-
-    const tempId = `temp-${Date.now()}`;
-    const optimisticMsg: PrivateMessageRecord = {
-      id: tempId,
-      senderId: currentUserId!,
-      receiverId: friendId,
-      content: textToSend,
-      isRead: false,
-      readAt: null,
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, optimisticMsg]);
-
+    setFailed(tempId, false);
     try {
-      const res = await sendPrivateMessageAction(friendId, textToSend);
+      const res = await sendPrivateMessageAction(friendId, text);
       if (selectedFriendIdRef.current !== friendId) return; // user switched conversations
 
       if (res.success && res.message) {
@@ -411,18 +492,54 @@ export function BottomChatWidget({
         });
         loadFriendsData(true);
       } else {
-        setMessages((prev) => prev.filter((m) => m.id !== tempId));
-        setConversationError(res.error || 'Failed to send message.');
-        setInputMessage(textToSend);
+        setFailed(tempId, true);
       }
     } catch {
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      setConversationError('Network error while sending message.');
-      setInputMessage(textToSend);
+      if (selectedFriendIdRef.current === friendId) setFailed(tempId, true);
     } finally {
       setSendingMessage(false);
-      setTimeout(() => inputRef.current?.focus(), 50);
     }
+  };
+
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!selectedFriend || !inputMessage.trim() || sendingMessage) return;
+
+    const friendId = selectedFriend.id;
+    const textToSend = inputMessage.trim();
+    setInputMessage('');
+    requestAnimationFrame(resizeInput);
+
+    const tempId = `temp-${++tempMessageSeqRef.current}`;
+    const optimisticMsg: PrivateMessageRecord = {
+      id: tempId,
+      senderId: currentUserId!,
+      receiverId: friendId,
+      content: textToSend,
+      isRead: false,
+      readAt: null,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+
+    await deliverMessage(friendId, textToSend, tempId);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const handleRetryMessage = (message: PrivateMessageRecord) => {
+    if (!selectedFriend || sendingMessage) return;
+    deliverMessage(selectedFriend.id, message.content, message.id);
+  };
+
+  const handleDiscardMessage = (messageId: string) => {
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    setFailed(messageId, false);
+  };
+
+  const fillQuickReply = (text: string) => {
+    setInputMessage(text);
+    inputRef.current?.focus();
+    requestAnimationFrame(resizeInput);
   };
 
   // Add friend (or accept, if the other player already sent a request)
@@ -523,30 +640,60 @@ export function BottomChatWidget({
   const totalUnreadMessages = friends.reduce((sum, f) => sum + (f.unreadCount || 0), 0);
   const collapsedBadgeCount = notificationCount ?? totalUnreadMessages + incomingRequests.length;
 
-  const filteredFriends = friends.filter((f) => {
+  // Most recent conversation first; friends you haven't messaged go last, alphabetically
+  const sortedFriends = [...friends].sort((a, b) => {
+    const ta = a.lastMessage ? new Date(a.lastMessage.createdAt).getTime() : 0;
+    const tb = b.lastMessage ? new Date(b.lastMessage.createdAt).getTime() : 0;
+    return tb - ta || a.username.localeCompare(b.username);
+  });
+
+  const filteredFriends = sortedFriends.filter((f) => {
     if (!friendsFilter.trim()) return true;
     const term = friendsFilter.toLowerCase();
     return f.username.toLowerCase().includes(term) || f.name.toLowerCase().includes(term);
   });
 
+  const tabs: { id: TabType; label: string; count: number }[] = [
+    { id: 'friends', label: 'Friends', count: totalUnreadMessages },
+    { id: 'requests', label: 'Requests', count: incomingRequests.length },
+    { id: 'add', label: 'Add', count: 0 },
+  ];
+
+  const roleBadge = (role?: string | null) =>
+    role === 'admin' || role === 'root' ? (
+      <span className="shrink-0 rounded border border-amber-400/30 px-1 py-px font-mono text-[10px] uppercase text-amber-300">
+        {role}
+      </span>
+    ) : null;
+
+  const outlineButton =
+    'inline-flex items-center justify-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-white/[0.05] disabled:opacity-50';
+  const primaryButton =
+    'inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:bg-teal-300 disabled:opacity-50';
+  const sectionLabel = 'mb-2 block font-mono text-[11px] uppercase tracking-[0.1em] text-subtle-foreground';
+  const iconButton =
+    'flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-white/[0.06] hover:text-foreground';
+
   return (
     <>
-      {/* =========================================================================
-          FACEBOOK-STYLE BOTTOM DOCKED BAR / PILL (ALWAYS ON BOTTOM-RIGHT)
-         ========================================================================= */}
       {/* Backdrop for mobile bottom sheet */}
       {isOpen && (
         <div
           onClick={() => onToggle(false)}
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 sm:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 sm:hidden"
           aria-hidden="true"
         />
       )}
 
-      {/* DOCKED BAR OR EXPANDED WINDOW */}
-      <div className={`select-none ${isOpen ? 'fixed inset-x-0 bottom-0 sm:inset-x-auto sm:right-6 sm:bottom-0 z-50' : 'fixed bottom-0 right-3 sm:right-6 z-40'}`}>
+      <div
+        className={
+          isOpen
+            ? 'fixed inset-x-0 bottom-0 z-50 sm:inset-x-auto sm:bottom-4 sm:right-6'
+            : 'fixed bottom-0 right-3 z-40 sm:right-6'
+        }
+      >
         {!isOpen ? (
-          /* COLLAPSED BOTTOM BAR (Hidden on mobile as mobile bottom nav covers Chat) */
+          /* Collapsed bar (desktop only; the mobile bottom nav has its own chat button) */
           <button
             onClick={() => {
               if (!isLoggedIn) {
@@ -556,195 +703,151 @@ export function BottomChatWidget({
                 loadFriendsData();
               }
             }}
-            className="hidden sm:flex items-center gap-2.5 rounded-t-2xl border-t border-x border-teal-400/30 bg-surface hover:bg-surface-raised px-4 py-2.5 transition-all duration-200 group active:translate-y-0.5"
-            title="Open Player Chat & Friends"
+            className="hidden items-center gap-2.5 rounded-t-lg border-x border-t border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-surface-raised sm:flex"
+            title="Open messages"
           >
-            <div className="relative">
-              <IoChatbubbles className="size-4 text-teal-400 group-hover:scale-110 transition-transform" />
-              {collapsedBadgeCount > 0 && (
-                <span className="absolute -top-1.5 -right-2 flex size-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-semibold text-white">
-                  {collapsedBadgeCount > 9 ? '9+' : collapsedBadgeCount}
-                </span>
-              )}
-            </div>
-
-            <span className="text-xs font-semibold text-white tracking-wide">
-              Friends & Chat
-            </span>
-
-            {isLoggedIn && (
-              <span className="flex items-center gap-1 text-[10px] text-teal-400/90 font-bold bg-teal-400/10 border border-teal-400/20 rounded-lg px-2 py-0.5">
-                <span className="size-1.5 rounded-full bg-teal-400 animate-pulse" />
-                <span>{friends.length}</span>
+            <MessageSquare className="size-4 text-muted-foreground" />
+            <span>Messages</span>
+            {collapsedBadgeCount > 0 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground tabular-nums">
+                {collapsedBadgeCount > 9 ? '9+' : collapsedBadgeCount}
               </span>
             )}
-
-            <ChevronUp className="size-3.5 text-zinc-400 group-hover:text-teal-400 transition" />
+            <ChevronUp className="size-3.5 text-subtle-foreground" />
           </button>
         ) : (
-          /* =========================================================================
-             EXPANDED WINDOW (Mobile Bottom Sheet / Desktop Floating Window)
-             ========================================================================= */
+          /* Open window: bottom sheet on phones, floating panel on desktop */
           <div
-            className={`flex flex-col bg-surface border-t border-x sm:border border-teal-400/30 rounded-t-3xl sm:rounded-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.7),0_0_28px_rgba(45,212,191,0.18)] transition-all duration-200 overflow-hidden pb-[env(safe-area-inset-bottom,0px)] ${
+            role="dialog"
+            aria-label="Messages"
+            className={cn(
+              'flex flex-col overflow-hidden rounded-t-xl border-x border-t border-border bg-surface pb-[env(safe-area-inset-bottom,0px)] shadow-2xl shadow-black/60 sm:rounded-xl sm:border',
               isExpanded
-                ? 'w-full sm:w-[96vw] sm:max-w-3xl h-[88dvh] sm:h-[88vh] sm:max-h-[720px]'
-                : 'w-full sm:w-[380px] md:w-[410px] h-[82dvh] sm:h-[540px] max-h-[85dvh] sm:max-h-[82vh]'
-            }`}
+                ? 'h-[88dvh] w-full sm:h-[88vh] sm:max-h-[720px] sm:w-[96vw] sm:max-w-3xl'
+                : 'h-[82dvh] max-h-[85dvh] w-full sm:h-[540px] sm:max-h-[82vh] sm:w-[380px] md:w-[400px]'
+            )}
           >
-            {/* Mobile Drag Pill */}
-            <div className="w-12 h-1 bg-white/20 rounded-full mx-auto my-1.5 sm:hidden shrink-0" />
+            {/* Mobile drag handle */}
+            <div className="mx-auto my-1.5 h-1 w-10 shrink-0 rounded-full bg-white/20 sm:hidden" />
 
-            {/* Top Widget Bar */}
-            <div className="flex items-center justify-between border-b border-white/[0.08] bg-surface px-3.5 py-2 sm:py-2.5 shrink-0 select-none">
-              {/* Left Title / Context */}
-              <div className="flex items-center gap-2 min-w-0">
+            {/* Title bar */}
+            <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border px-2 sm:px-3">
+              <div className="flex min-w-0 items-center gap-2">
                 {selectedFriend ? (
-                  <button
-                    onClick={() => selectFriend(null)}
-                    className="rounded-lg p-1 text-zinc-400 hover:bg-white/[0.06] hover:text-white transition"
-                    title="Back to friends list"
-                  >
-                    <ChevronLeft className="size-4" />
-                  </button>
+                  <>
+                    <button onClick={() => selectFriend(null)} className={iconButton} title="Back to friends" aria-label="Back to friends">
+                      <ChevronLeft className="size-4" />
+                    </button>
+                    <UserAvatar
+                      avatar={selectedFriend.avatar}
+                      name={selectedFriend.username}
+                      className="size-7 shrink-0 rounded-full bg-surface-raised text-xs font-semibold text-foreground"
+                    />
+                    <span className="truncate text-sm font-semibold text-foreground">{selectedFriend.username}</span>
+                    {roleBadge(selectedFriend.role)}
+                  </>
                 ) : (
-                  <div className="flex size-7 items-center justify-center rounded-lg bg-teal-400/10 border border-teal-400/25 text-teal-400 shrink-0">
-                    <IoChatbubbles className="size-3.5" />
+                  <h3 className="pl-2 text-sm font-semibold text-foreground">Messages</h3>
+                )}
+              </div>
+
+              <div className="flex shrink-0 items-center gap-0.5">
+                {selectedFriend && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsConversationMenuOpen((open) => !open)}
+                      className={iconButton}
+                      title="Conversation options"
+                      aria-label="Conversation options"
+                      aria-expanded={isConversationMenuOpen}
+                    >
+                      <MoreHorizontal className="size-4" />
+                    </button>
+                    {isConversationMenuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setIsConversationMenuOpen(false)} aria-hidden="true" />
+                        <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-border bg-surface p-1 shadow-2xl shadow-black/50">
+                          <button
+                            onClick={() => {
+                              setIsConversationMenuOpen(false);
+                              setFriendToRemove(selectedFriend);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm text-rose-300 transition hover:bg-rose-500/10"
+                          >
+                            <UserMinus className="size-4" />
+                            <span>Remove friend</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
-                <div className="min-w-0">
-                  {selectedFriend ? (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-white truncate">
-                        @{selectedFriend.username}
-                      </span>
-                      {selectedFriend.role === 'admin' ? (
-                        <span className="rounded bg-amber-400/15 border border-amber-400/30 px-1 py-0.2 text-[8px] font-semibold uppercase text-amber-300">
-                          ADMIN
-                        </span>
-                      ) : selectedFriend.role === 'root' ? (
-                        <span className="rounded bg-amber-400/15 border border-amber-400/30 px-1 py-0.2 text-[8px] font-semibold uppercase text-amber-300">
-                          ROOT
-                        </span>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="font-semibold text-xs text-white tracking-wide">
-                        BUDDY CHAT
-                      </h3>
-                      <span className="rounded-lg bg-teal-400/10 border border-teal-400/20 px-1.5 py-0.2 text-[9px] font-bold text-teal-300">
-                        Private
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Right Window Controls */}
-              <div className="flex items-center gap-1 shrink-0 text-zinc-400">
-                {selectedFriend && (
-                  <button
-                    onClick={() => setFriendToRemove(selectedFriend)}
-                    title="Remove Friend"
-                    className="rounded-lg p-1.5 hover:bg-rose-500/10 hover:text-rose-400 transition"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
-                )}
-
-                {/* Maximize / Normal toggle */}
                 <button
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className="hidden sm:inline-flex rounded-lg p-1.5 hover:bg-white/[0.06] hover:text-white transition"
-                  title={isExpanded ? 'Dock to corner' : 'Expand window'}
+                  className={cn(iconButton, 'hidden sm:flex')}
+                  title={isExpanded ? 'Make smaller' : 'Make larger'}
+                  aria-label={isExpanded ? 'Make smaller' : 'Make larger'}
                 >
                   {isExpanded ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
                 </button>
 
-                {/* Minimize to bottom bar (like Facebook minus) */}
-                <button
-                  onClick={() => onToggle(false)}
-                  className="rounded-lg p-1.5 hover:bg-white/[0.06] hover:text-white transition"
-                  title="Minimize chat"
-                >
-                  <Minus className="size-3.5" />
-                </button>
-
-                {/* Close widget */}
-                <button
-                  onClick={() => {
-                    onToggle(false);
-                    selectFriend(null);
-                  }}
-                  className="rounded-lg p-1.5 hover:bg-rose-500/10 hover:text-rose-400 transition"
-                  title="Close chat"
-                >
-                  <X className="size-3.5" />
+                <button onClick={() => onToggle(false)} className={iconButton} title="Close" aria-label="Close messages">
+                  <X className="size-4" />
                 </button>
               </div>
             </div>
 
-            {/* Unauthenticated View */}
             {!isLoggedIn ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-background">
-                <div className="flex size-14 items-center justify-center rounded-xl bg-teal-400/10 border border-teal-400/20 text-teal-400 mb-3">
-                  <Users className="size-7" />
-                </div>
-                <h4 className="text-base font-semibold text-white mb-1.5">Sign In to Chat</h4>
-                <p className="text-xs text-zinc-300 max-w-xs mb-5 leading-relaxed">
-                  Connect with your arcade friends and chat privately in real time.
+              /* Signed out */
+              <div className="flex flex-1 flex-col items-center justify-center bg-background p-6 text-center">
+                <MessageSquare className="mb-3 size-6 text-subtle-foreground" />
+                <h4 className="text-sm font-semibold text-foreground">Sign in to send messages</h4>
+                <p className="mb-5 mt-1 max-w-xs text-sm text-muted-foreground">
+                  Add other players as friends and chat with them privately.
                 </p>
-                <button
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="flex items-center gap-1.5 rounded-lg bg-teal-400 px-5 py-2.5 text-xs font-semibold text-zinc-950 transition active:scale-95"
-                >
-                  <IoGameController className="size-3.5" />
-                  <span>Sign In / Create Account</span>
+                <button onClick={() => setIsAuthModalOpen(true)} className={primaryButton}>
+                  Sign in
                 </button>
               </div>
             ) : selectedFriend ? (
-              /* ===================================================================
-                 VIEW 1: ACTIVE 1-ON-1 CONVERSATION
-                 =================================================================== */
-              <div className="flex-1 flex flex-col bg-background overflow-hidden">
-                {/* Messages Feed */}
+              /* ── Conversation ─────────────────────────────────────────── */
+              <div className="flex flex-1 flex-col overflow-hidden bg-background">
                 <div
                   ref={scrollContainerRef}
                   onScroll={handleMessagesScroll}
-                  className="flex-1 overflow-y-auto p-3.5 space-y-3"
+                  className="flex-1 overflow-y-auto px-3 pb-3 sm:px-4"
                 >
                   {loadingConversation && messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-zinc-500 gap-2">
-                      <Loader2 className="size-5 animate-spin text-teal-400" />
-                      <span className="text-xs">Loading messages...</span>
+                    <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="size-4 animate-spin" />
+                      <span>Loading messages…</span>
                     </div>
                   ) : conversationError && messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-                      <AlertCircle className="size-5 text-rose-400 mb-2" />
-                      <p className="text-xs text-rose-300">{conversationError}</p>
+                    <div className="flex h-full flex-col items-center justify-center p-4 text-center">
+                      <AlertCircle className="mb-2 size-5 text-rose-400" />
+                      <p className="text-sm text-rose-300">{conversationError}</p>
+                      <button onClick={() => loadConversation(selectedFriend.id)} className={cn(outlineButton, 'mt-4')}>
+                        Try again
+                      </button>
                     </div>
                   ) : messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-                      <div className="flex size-12 items-center justify-center rounded-xl bg-teal-400/10 border border-teal-400/20 text-teal-400 mb-2.5">
-                        <MessageSquare className="size-6" />
-                      </div>
-                      <h4 className="font-bold text-white text-sm mb-1">
-                        Chat with @{selectedFriend.username}
-                      </h4>
-                      <p className="text-xs text-zinc-400 max-w-xs mb-3">
-                        Only you and @{selectedFriend.username} can see these messages.
+                    <div className="flex h-full flex-col items-center justify-center p-4 text-center">
+                      <UserAvatar
+                        avatar={selectedFriend.avatar}
+                        name={selectedFriend.username}
+                        className="mb-3 size-14 rounded-full bg-surface-raised text-2xl font-semibold text-foreground"
+                      />
+                      <h4 className="text-sm font-semibold text-foreground">Start a conversation with {selectedFriend.username}</h4>
+                      <p className="mb-4 mt-1 max-w-xs text-sm text-muted-foreground">
+                        Only the two of you can see these messages.
                       </p>
-                      <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-xs">
+                      <div className="flex max-w-xs flex-wrap items-center justify-center gap-1.5">
                         {QUICK_REACTIONS.map((quick) => (
                           <button
                             key={quick}
-                            onClick={() => {
-                              setInputMessage(quick);
-                              inputRef.current?.focus();
-                            }}
-                            className="rounded-lg border border-teal-400/20 bg-teal-400/5 px-2.5 py-1 text-[11px] text-teal-300 hover:bg-teal-400/15 transition"
+                            onClick={() => fillQuickReply(quick)}
+                            className="rounded-full border border-border-strong px-3 py-1 text-xs text-foreground transition hover:bg-white/[0.05]"
                           >
                             {quick}
                           </button>
@@ -753,64 +856,100 @@ export function BottomChatWidget({
                     </div>
                   ) : (
                     <>
-                      <div className="text-center my-1">
-                        <span className="rounded-lg bg-white/[0.04] border border-white/[0.06] px-2.5 py-0.5 text-[9px] font-semibold text-zinc-400">
-                          Private conversation
-                        </span>
-                      </div>
+                      <p className="pt-4 text-center font-mono text-[10px] text-subtle-foreground">
+                        Only you and {selectedFriend.username} can see these messages.
+                      </p>
 
                       {messages.map((msg, index) => {
+                        const prev = messages[index - 1];
+                        const next = messages[index + 1];
                         const isMine = msg.senderId === currentUserId;
-                        const showTimestamp =
-                          index === messages.length - 1 ||
-                          new Date(messages[index + 1].createdAt).getTime() -
-                            new Date(msg.createdAt).getTime() >
-                            300000;
+                        const isPending = msg.id.startsWith('temp-');
+                        const isFailed = failedMessageIds.has(msg.id);
+                        const startsDay = !prev || !isSameDay(prev.createdAt, msg.createdAt);
+                        const joinsPrev = isGroupedWith(prev, msg) && msg.id !== firstUnreadId;
+                        const joinsNext = isGroupedWith(msg, next) && next?.id !== firstUnreadId;
 
                         return (
-                          <div
-                            key={msg.id}
-                            className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
-                          >
-                            <div
-                              className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs sm:text-sm shadow-md transition-all ${
-                                isMine
-                                  ? 'bg-teal-400 text-zinc-950 font-medium rounded-tr-sm'
-                                  : 'bg-surface-raised border border-white/[0.08] text-white rounded-tl-sm'
-                              }`}
-                            >
-                              <p className="whitespace-pre-wrap break-words leading-relaxed">
-                                {msg.content}
-                              </p>
-                            </div>
-
-                            {showTimestamp && (
-                              <div
-                                className={`flex items-center gap-1 text-[9px] text-zinc-500 mt-0.5 px-1 ${
-                                  isMine ? 'justify-end' : 'justify-start'
-                                }`}
-                              >
-                                <span>
-                                  {new Date(msg.createdAt).toLocaleTimeString([], {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
+                          <React.Fragment key={msg.id}>
+                            {startsDay && (
+                              <div className="flex items-center gap-3 pb-1 pt-5" role="separator">
+                                <span className="h-px flex-1 bg-border" />
+                                <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-subtle-foreground">
+                                  {formatDayLabel(msg.createdAt)}
                                 </span>
-                                {isMine &&
-                                  (msg.isRead ? (
-                                    <CheckCheck className="size-3 text-teal-400" />
-                                  ) : (
-                                    <Check className="size-3 text-zinc-500" />
-                                  ))}
+                                <span className="h-px flex-1 bg-border" />
                               </div>
                             )}
-                          </div>
+
+                            {msg.id === firstUnreadId && (
+                              <div className="flex items-center gap-3 pb-1 pt-4" role="separator">
+                                <span className="h-px flex-1 bg-primary/40" />
+                                <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-primary">New</span>
+                                <span className="h-px flex-1 bg-primary/40" />
+                              </div>
+                            )}
+
+                            <div className={cn('flex flex-col', isMine ? 'items-end' : 'items-start', joinsPrev ? 'mt-0.5' : 'mt-3')}>
+                              <div
+                                className={cn(
+                                  'max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-relaxed',
+                                  isMine ? 'bg-zinc-100 text-zinc-950' : 'bg-surface-raised text-foreground',
+                                  isMine
+                                    ? cn(joinsPrev && 'rounded-tr-md', joinsNext && 'rounded-br-md')
+                                    : cn(joinsPrev && 'rounded-tl-md', joinsNext && 'rounded-bl-md'),
+                                  isPending && !isFailed && 'opacity-70',
+                                  isFailed && 'opacity-80 ring-1 ring-rose-500/70'
+                                )}
+                              >
+                                <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                              </div>
+
+                              {isFailed ? (
+                                <div className="mt-1 flex items-center gap-2 px-1 text-[11px] text-rose-300">
+                                  <AlertCircle className="size-3" />
+                                  <span>Not sent</span>
+                                  <button
+                                    onClick={() => handleRetryMessage(msg)}
+                                    disabled={sendingMessage}
+                                    className="font-medium underline underline-offset-2 hover:text-rose-200 disabled:opacity-50"
+                                  >
+                                    Retry
+                                  </button>
+                                  <button
+                                    onClick={() => handleDiscardMessage(msg.id)}
+                                    className="text-subtle-foreground hover:text-foreground"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              ) : (
+                                !joinsNext && (
+                                  <div className="mt-1 flex items-center gap-1 px-1 font-mono text-[10px] text-subtle-foreground tabular-nums">
+                                    <span>{isPending ? 'Sending…' : formatTime(msg.createdAt)}</span>
+                                    {isMine && !isPending &&
+                                      (msg.isRead ? (
+                                        <CheckCheck className="size-3 text-primary" aria-label="Read" />
+                                      ) : (
+                                        <Check className="size-3" aria-label="Delivered" />
+                                      ))}
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </React.Fragment>
                         );
                       })}
                       <div ref={messagesEndRef} />
                     </>
                   )}
                 </div>
+
+                {conversationError && messages.length > 0 && (
+                  <div className="shrink-0 border-t border-border bg-surface px-3 py-1.5 text-center text-[11px] text-muted-foreground">
+                    Couldn&apos;t refresh messages. Trying again…
+                  </div>
+                )}
 
                 {hasNewBelow && (
                   <div className="relative h-0">
@@ -820,7 +959,7 @@ export function BottomChatWidget({
                         setHasNewBelow(false);
                         scrollToBottom(true);
                       }}
-                      className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-lg bg-teal-400 px-3 py-1 text-[11px] font-semibold text-zinc-950 transition active:scale-95"
+                      className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-border-strong bg-surface-raised px-3 py-1 text-xs font-medium text-foreground shadow-lg shadow-black/40 transition hover:bg-surface"
                     >
                       <span>New messages</span>
                       <ChevronDown className="size-3" />
@@ -828,275 +967,214 @@ export function BottomChatWidget({
                   </div>
                 )}
 
-                {/* Input Bar */}
-                <div className="border-t border-white/[0.08] bg-surface p-2.5 shrink-0">
-                  {/* Quick Reactions */}
-                  <div className="flex items-center gap-1 overflow-x-auto pb-1.5 no-scrollbar shrink-0">
-                    {QUICK_REACTIONS.map((quick) => (
-                      <button
-                        key={quick}
-                        onClick={() => {
-                          setInputMessage(quick);
-                          inputRef.current?.focus();
-                        }}
-                        className="rounded-lg bg-white/[0.04] hover:bg-teal-400/10 hover:text-teal-300 border border-white/[0.04] px-2.5 py-1 text-[11px] text-zinc-400 whitespace-nowrap transition shrink-0"
-                      >
-                        {quick}
-                      </button>
-                    ))}
-                  </div>
-
-                  <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      placeholder={`Message @${selectedFriend.username}...`}
-                      maxLength={2000}
-                      className="flex-1 rounded-xl border border-white/[0.08] bg-surface-sunken px-3.5 py-2 text-base sm:text-xs text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
-                    />
-
-                    <button
-                      type="submit"
-                      disabled={!inputMessage.trim() || sendingMessage}
-                      className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-teal-400 text-zinc-950 transition active:scale-95 disabled:opacity-50"
-                      aria-label="Send message"
-                    >
-                      {sendingMessage ? (
-                        <Loader2 className="size-3.5 animate-spin" />
-                      ) : (
-                        <Send className="size-3.5" />
-                      )}
-                    </button>
-                  </form>
-                </div>
+                {/* Composer */}
+                <form onSubmit={handleSendMessage} className="flex shrink-0 items-end gap-2 border-t border-border bg-surface p-2.5">
+                  <textarea
+                    ref={inputRef}
+                    rows={1}
+                    value={inputMessage}
+                    onChange={(e) => {
+                      setInputMessage(e.target.value);
+                      resizeInput();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    placeholder={`Message ${selectedFriend.username}`}
+                    aria-label={`Message ${selectedFriend.username}`}
+                    maxLength={2000}
+                    className="max-h-[120px] min-h-10 flex-1 resize-none rounded-lg border border-border bg-surface-sunken px-3 py-2 text-base leading-snug text-foreground placeholder:text-subtle-foreground transition focus:border-border-strong focus:outline-none sm:text-sm"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!inputMessage.trim() || sendingMessage}
+                    className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition hover:bg-teal-300 active:scale-95 disabled:opacity-40"
+                    aria-label="Send message"
+                    title="Send (Enter). Shift+Enter for a new line"
+                  >
+                    {sendingMessage ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                  </button>
+                </form>
               </div>
             ) : (
-              /* ===================================================================
-                 VIEW 2: MAIN LIST (FRIENDS / REQUESTS / ADD FRIEND)
-                 =================================================================== */
-              <div className="flex-1 flex flex-col overflow-hidden bg-surface">
-                {/* Top Tabs */}
-                <div className="p-2.5 border-b border-white/[0.06] bg-surface">
-                  <div className="grid grid-cols-3 gap-1 rounded-xl bg-surface-sunken p-1 border border-white/[0.04]">
-                    <button
-                      onClick={() => setActiveTab('friends')}
-                      className={`relative flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-bold transition-all ${
-                        activeTab === 'friends'
-                          ? 'bg-teal-400 text-zinc-950'
-                          : 'text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <Users className="size-3" />
-                      <span>Friends</span>
-                      {totalUnreadMessages > 0 && (
-                        <span className="flex size-3.5 items-center justify-center rounded-full bg-rose-500 text-[8px] font-semibold text-white">
-                          {totalUnreadMessages}
-                        </span>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => setActiveTab('requests')}
-                      className={`relative flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-bold transition-all ${
-                        activeTab === 'requests'
-                          ? 'bg-teal-400 text-zinc-950'
-                          : 'text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <Clock className="size-3" />
-                      <span>Requests</span>
-                      {incomingRequests.length > 0 && (
-                        <span className="flex size-3.5 items-center justify-center rounded-full bg-amber-400 text-[8px] font-semibold text-zinc-950">
-                          {incomingRequests.length}
-                        </span>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => setActiveTab('add')}
-                      className={`relative flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-bold transition-all ${
-                        activeTab === 'add'
-                          ? 'bg-teal-400 text-zinc-950'
-                          : 'text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <UserPlus className="size-3" />
-                      <span>Add</span>
-                    </button>
-                  </div>
+              /* ── Friends / Requests / Add ─────────────────────────────── */
+              <div className="flex flex-1 flex-col overflow-hidden">
+                <div role="tablist" aria-label="Messages sections" className="flex shrink-0 gap-5 border-b border-border px-4">
+                  {tabs.map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        role="tab"
+                        aria-selected={isActive}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={cn(
+                          '-mb-px flex items-baseline gap-1.5 border-b-2 py-2.5 text-sm transition',
+                          isActive
+                            ? 'border-foreground font-medium text-foreground'
+                            : 'border-transparent text-muted-foreground hover:text-foreground'
+                        )}
+                      >
+                        <span>{tab.label}</span>
+                        {tab.count > 0 && (
+                          <span className="font-mono text-[11px] text-primary tabular-nums">{tab.count}</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* TAB 1: FRIENDS LIST */}
+                {/* Friends */}
                 {activeTab === 'friends' && (
-                  <div className="flex-1 flex flex-col overflow-hidden">
-                    <div className="p-2 border-b border-white/[0.04]">
-                      <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3 text-zinc-500" />
-                        <input
-                          type="text"
-                          value={friendsFilter}
-                          onChange={(e) => setFriendsFilter(e.target.value)}
-                          placeholder="Search friends..."
-                          className="w-full rounded-xl border border-white/[0.06] bg-surface-sunken pl-7 pr-2.5 py-1 text-base sm:text-xs text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none"
-                        />
+                  <div className="flex flex-1 flex-col overflow-hidden">
+                    {friends.length > 0 && (
+                      <div className="shrink-0 px-3 pt-3">
+                        <div className="relative">
+                          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-subtle-foreground" />
+                          <input
+                            type="search"
+                            value={friendsFilter}
+                            onChange={(e) => setFriendsFilter(e.target.value)}
+                            placeholder="Search friends"
+                            aria-label="Search friends"
+                            className="h-9 w-full rounded-lg border border-border bg-surface-sunken pl-8 pr-3 text-base text-foreground placeholder:text-subtle-foreground transition focus:border-border-strong focus:outline-none sm:text-sm"
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    <div className="flex-1 overflow-y-auto divide-y divide-white/[0.04] p-1.5 space-y-0.5">
-                      {loadingFriends ? (
-                        <div className="flex flex-col items-center justify-center h-36 text-zinc-500 gap-1.5">
-                          <Loader2 className="size-4 animate-spin text-teal-400" />
-                          <span className="text-xs">Loading friends...</span>
+                    <div className="flex-1 overflow-y-auto p-1.5 sm:p-2">
+                      {loadingFriends && friends.length === 0 ? (
+                        <div className="flex h-36 items-center justify-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="size-4 animate-spin" />
+                          <span>Loading friends…</span>
                         </div>
                       ) : filteredFriends.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-44 text-center p-4">
-                          <Users className="size-6 text-zinc-500 mb-2" />
-                          <h5 className="text-xs font-bold text-white mb-0.5">No friends found</h5>
-                          <p className="text-[11px] text-zinc-400 mb-3 max-w-[180px]">
+                        <div className="flex h-48 flex-col items-center justify-center p-4 text-center">
+                          <h5 className="text-sm font-semibold text-foreground">
+                            {friends.length === 0 ? 'No friends yet' : 'No matches'}
+                          </h5>
+                          <p className="mb-4 mt-1 max-w-[220px] text-sm text-muted-foreground">
                             {friends.length === 0
-                              ? 'Add fellow players to start chatting privately!'
-                              : 'No matches found.'}
+                              ? 'Add players by username, or message a creator from their game.'
+                              : `No friend matches "${friendsFilter}".`}
                           </p>
                           {friends.length === 0 && (
-                            <button
-                              onClick={() => setActiveTab('add')}
-                              className="rounded-lg bg-teal-400/10 border border-teal-400/25 px-3 py-1 text-xs font-bold text-teal-300 hover:bg-teal-400/20 transition"
-                            >
-                              Add Player
+                            <button onClick={() => setActiveTab('add')} className={outlineButton}>
+                              <UserPlus className="size-3.5" />
+                              <span>Add a friend</span>
                             </button>
                           )}
                         </div>
                       ) : (
-                        filteredFriends.map((friend) => (
-                          <button
-                            key={friend.id}
-                            onClick={() => handleSelectFriend(friend)}
-                            className="w-full flex items-center gap-2.5 p-2.5 rounded-xl text-left hover:bg-white/[0.04] transition group"
-                          >
-                            <div className="relative shrink-0">
+                        filteredFriends.map((friend) => {
+                          const hasUnread = friend.unreadCount > 0;
+                          return (
+                            <button
+                              key={friend.id}
+                              onClick={() => handleSelectFriend(friend)}
+                              className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-left transition hover:bg-white/[0.04]"
+                            >
                               <UserAvatar
                                 avatar={friend.avatar}
                                 name={friend.username}
-                                className="size-9 rounded-xl bg-teal-400 text-xs font-semibold text-white shadow-sm"
+                                className="size-9 shrink-0 rounded-full bg-surface-raised text-sm font-semibold text-foreground"
                               />
-                              <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full border-2 border-[#181d25] bg-emerald-400" />
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-1">
-                                <span className="font-bold text-xs text-white truncate group-hover:text-teal-300 transition-colors">
-                                  @{friend.username}
-                                </span>
-                                {friend.lastMessage && (
-                                  <span className="text-[9px] text-zinc-500 shrink-0">
-                                    {new Date(friend.lastMessage.createdAt).toLocaleTimeString([], {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                    })}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-baseline justify-between gap-2">
+                                  <span className={cn('truncate text-sm text-foreground', hasUnread ? 'font-semibold' : 'font-medium')}>
+                                    {friend.username}
                                   </span>
-                                )}
+                                  {friend.lastMessage && (
+                                    <span
+                                      className={cn(
+                                        'shrink-0 font-mono text-[11px] tabular-nums',
+                                        hasUnread ? 'text-primary' : 'text-subtle-foreground'
+                                      )}
+                                    >
+                                      {formatListTime(friend.lastMessage.createdAt)}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="mt-0.5 flex items-center justify-between gap-2">
+                                  <p className={cn('truncate text-[13px]', hasUnread ? 'text-foreground' : 'text-muted-foreground')}>
+                                    {friend.lastMessage
+                                      ? friend.lastMessage.senderId === currentUserId
+                                        ? `You: ${friend.lastMessage.content}`
+                                        : friend.lastMessage.content
+                                      : 'No messages yet'}
+                                  </p>
+                                  {hasUnread && (
+                                    <span
+                                      className="size-2 shrink-0 rounded-full bg-primary"
+                                      aria-label={`${friend.unreadCount} unread`}
+                                    />
+                                  )}
+                                </div>
                               </div>
-
-                              <div className="flex items-center justify-between gap-1.5 mt-0.5">
-                                <p className="text-[11px] text-zinc-400 truncate">
-                                  {friend.lastMessage
-                                    ? friend.lastMessage.senderId === currentUserId
-                                      ? `You: ${friend.lastMessage.content}`
-                                      : friend.lastMessage.content
-                                    : 'Click to open private chat'}
-                                </p>
-                                {friend.unreadCount > 0 && (
-                                  <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-teal-400 text-[9px] font-semibold text-zinc-950">
-                                    {friend.unreadCount}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </button>
-                        ))
+                            </button>
+                          );
+                        })
                       )}
                     </div>
                   </div>
                 )}
 
-                {/* TAB 2: REQUESTS */}
+                {/* Requests */}
                 {activeTab === 'requests' && (
-                  <div className="flex-1 overflow-y-auto p-3 space-y-3.5">
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block mb-2">
-                        Received ({incomingRequests.length})
-                      </span>
-
+                  <div className="flex-1 space-y-6 overflow-y-auto p-4">
+                    <section>
+                      <span className={sectionLabel}>Received · {incomingRequests.length}</span>
                       {incomingRequests.length === 0 ? (
-                        <p className="text-xs text-zinc-500 italic py-1">No incoming requests.</p>
+                        <p className="text-sm text-muted-foreground">No friend requests right now.</p>
                       ) : (
-                        <div className="space-y-2">
+                        <div className="divide-y divide-border">
                           {incomingRequests.map((req) => (
-                            <div
-                              key={req.friendshipId}
-                              className="rounded-xl border border-white/[0.06] bg-surface p-2.5 shadow-sm"
-                            >
-                              <div className="flex items-center gap-2 mb-2">
-                                <UserAvatar
-                                  avatar={req.avatar}
-                                  name={req.username}
-                                  className="size-7 rounded-lg bg-teal-500/20 text-xs"
-                                />
-                                <div className="min-w-0">
-                                  <div className="text-xs font-bold text-white truncate">@{req.username}</div>
-                                  <div className="text-[10px] text-zinc-400 truncate">{req.name}</div>
-                                </div>
+                            <div key={req.friendshipId} className="flex items-center gap-3 py-2.5">
+                              <UserAvatar
+                                avatar={req.avatar}
+                                name={req.username}
+                                className="size-8 shrink-0 rounded-full bg-surface-raised text-xs font-semibold text-foreground"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="truncate text-sm font-medium text-foreground">{req.username}</div>
+                                {req.name && req.name !== req.username && (
+                                  <div className="truncate text-xs text-muted-foreground">{req.name}</div>
+                                )}
                               </div>
-
-                              <div className="flex items-center gap-1.5">
-                                <button
-                                  onClick={() => handleRespondRequest(req.friendshipId, 'accept')}
-                                  className="flex-1 flex items-center justify-center gap-1 rounded-lg bg-teal-400 py-1 text-xs font-bold text-zinc-950 transition"
-                                >
-                                  <Check className="size-3" />
-                                  <span>Accept</span>
-                                </button>
-                                <button
-                                  onClick={() => handleRespondRequest(req.friendshipId, 'decline')}
-                                  className="flex-1 rounded-lg border border-white/[0.08] bg-white/[0.04] py-1 text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] transition"
-                                >
-                                  Decline
-                                </button>
-                              </div>
+                              <button onClick={() => handleRespondRequest(req.friendshipId, 'accept')} className={primaryButton}>
+                                Accept
+                              </button>
+                              <button onClick={() => handleRespondRequest(req.friendshipId, 'decline')} className={outlineButton}>
+                                Decline
+                              </button>
                             </div>
                           ))}
                         </div>
                       )}
-                    </div>
+                    </section>
 
-                    <div className="pt-2 border-t border-white/[0.06]">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block mb-2">
-                        Sent ({outgoingRequests.length})
-                      </span>
-
+                    <section>
+                      <span className={sectionLabel}>Sent · {outgoingRequests.length}</span>
                       {outgoingRequests.length === 0 ? (
-                        <p className="text-xs text-zinc-500 italic py-1">No outgoing requests.</p>
+                        <p className="text-sm text-muted-foreground">You have no pending requests.</p>
                       ) : (
-                        <div className="space-y-1.5">
+                        <div className="divide-y divide-border">
                           {outgoingRequests.map((req) => (
-                            <div
-                              key={req.friendshipId}
-                              className="flex items-center justify-between gap-2 rounded-xl border border-white/[0.04] bg-[#141820] p-2"
-                            >
-                              <span className="text-xs font-bold text-zinc-300 truncate">
-                                @{req.username}
-                              </span>
+                            <div key={req.friendshipId} className="flex items-center gap-3 py-2.5">
+                              <UserAvatar
+                                avatar={req.avatar}
+                                name={req.username}
+                                className="size-8 shrink-0 rounded-full bg-surface-raised text-xs font-semibold text-foreground"
+                              />
+                              <span className="min-w-0 flex-1 truncate text-sm text-foreground">{req.username}</span>
+                              <span className="font-mono text-[11px] text-subtle-foreground">Pending</span>
                               <button
                                 onClick={() => handleCancelOutgoing(req.userId)}
-                                className="text-[10px] font-semibold text-rose-400 hover:text-rose-300 px-2 py-0.5 rounded hover:bg-rose-500/10 transition"
+                                className="rounded-md px-2 py-1 text-xs text-muted-foreground transition hover:bg-rose-500/10 hover:text-rose-300"
                               >
                                 Cancel
                               </button>
@@ -1104,171 +1182,147 @@ export function BottomChatWidget({
                           ))}
                         </div>
                       )}
-                    </div>
+                    </section>
                   </div>
                 )}
 
-                {/* TAB 3: ADD FRIEND */}
+                {/* Add friend */}
                 {activeTab === 'add' && (
-                  <div className="flex-1 overflow-y-auto p-3 space-y-3.5">
-                    {/* Targeted player (from "message creator") */}
+                  <div className="flex-1 space-y-6 overflow-y-auto p-4">
+                    {/* Player opened from "message creator" */}
                     {targetPlayer && (
-                      <div className="rounded-xl border border-teal-400/30 bg-teal-400/5 p-3">
-                        <div className="flex items-center gap-2.5 mb-2.5">
+                      <div className="rounded-lg border border-border-strong bg-surface-raised p-3">
+                        <div className="flex items-center gap-3">
                           <UserAvatar
                             avatar={targetPlayer.image}
                             name={targetPlayer.username}
-                            className="size-9 rounded-xl bg-teal-400 text-base font-semibold text-white"
+                            className="size-10 shrink-0 rounded-full bg-surface text-base font-semibold text-foreground"
                           />
                           <div className="min-w-0 flex-1">
-                            <div className="text-xs font-bold text-white truncate">@{targetPlayer.username}</div>
-                            <div className="text-[10px] text-zinc-400">
+                            <div className="truncate text-sm font-semibold text-foreground">{targetPlayer.username}</div>
+                            <div className="text-xs text-muted-foreground">
                               {targetPlayer.relationship === 'friend'
-                                ? "You're friends now!"
+                                ? "You're friends."
                                 : targetPlayer.relationship === 'pending_outgoing'
                                   ? 'Request sent. You can chat once they accept.'
                                   : targetPlayer.relationship === 'pending_incoming'
-                                    ? 'They already sent you a friend request.'
+                                    ? 'They sent you a friend request.'
                                     : 'Add them as a friend to start chatting.'}
                             </div>
                           </div>
                           <button
                             type="button"
                             onClick={() => setTargetPlayer(null)}
-                            className="rounded-lg p-1 text-zinc-400 hover:bg-white/[0.06] hover:text-white transition"
+                            className={iconButton}
                             aria-label="Dismiss"
                           >
                             <X className="size-3.5" />
                           </button>
                         </div>
 
-                        {targetPlayer.relationship === 'friend' ? (
-                          <button
-                            type="button"
-                            onClick={handleMessageTargetPlayer}
-                            className="w-full flex items-center justify-center gap-1 rounded-lg bg-teal-400 py-1.5 text-xs font-semibold text-zinc-950 transition"
-                          >
-                            <MessageSquare className="size-3" />
-                            <span>Open Chat</span>
-                          </button>
-                        ) : targetPlayer.relationship === 'pending_outgoing' ? (
-                          <button
-                            type="button"
-                            onClick={() => handleCancelOutgoing(targetPlayer.id)}
-                            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] py-1.5 text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] transition"
-                          >
-                            Cancel Request
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleAddFriend(targetPlayer.id)}
-                            disabled={addFriendStatus.type === 'loading'}
-                            className="w-full flex items-center justify-center gap-1 rounded-lg bg-teal-400 py-1.5 text-xs font-semibold text-zinc-950 transition disabled:opacity-50"
-                          >
-                            {addFriendStatus.type === 'loading' ? (
-                              <Loader2 className="size-3 animate-spin" />
-                            ) : targetPlayer.relationship === 'pending_incoming' ? (
-                              <Check className="size-3" />
-                            ) : (
-                              <UserPlus className="size-3" />
-                            )}
-                            <span>{targetPlayer.relationship === 'pending_incoming' ? 'Accept Request' : 'Add Friend'}</span>
-                          </button>
-                        )}
+                        <div className="mt-3">
+                          {targetPlayer.relationship === 'friend' ? (
+                            <button type="button" onClick={handleMessageTargetPlayer} className={cn(primaryButton, 'w-full py-2')}>
+                              <MessageSquare className="size-3.5" />
+                              <span>Send a message</span>
+                            </button>
+                          ) : targetPlayer.relationship === 'pending_outgoing' ? (
+                            <button
+                              type="button"
+                              onClick={() => handleCancelOutgoing(targetPlayer.id)}
+                              className={cn(outlineButton, 'w-full py-2')}
+                            >
+                              Cancel request
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleAddFriend(targetPlayer.id)}
+                              disabled={addFriendStatus.type === 'loading'}
+                              className={cn(primaryButton, 'w-full py-2')}
+                            >
+                              {addFriendStatus.type === 'loading' ? (
+                                <Loader2 className="size-3.5 animate-spin" />
+                              ) : targetPlayer.relationship === 'pending_incoming' ? (
+                                <Check className="size-3.5" />
+                              ) : (
+                                <UserPlus className="size-3.5" />
+                              )}
+                              <span>{targetPlayer.relationship === 'pending_incoming' ? 'Accept request' : 'Add friend'}</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
 
-                    {/* Add Form */}
-                    <div className="rounded-xl border border-teal-400/20 bg-surface p-3 space-y-2">
-                      <span className="text-xs font-semibold text-teal-300 flex items-center gap-1">
-                        <Sparkles className="size-3 text-teal-400" />
-                        <span>Add by Username</span>
-                      </span>
-
+                    {/* Add by username */}
+                    <section>
+                      <label htmlFor="add-friend-username" className={sectionLabel}>
+                        Add by username
+                      </label>
                       <form
                         onSubmit={(e) => {
                           e.preventDefault();
-                          if (addFriendInput.trim()) {
-                            handleAddFriend(addFriendInput.trim());
-                          }
+                          if (addFriendInput.trim()) handleAddFriend(addFriendInput.trim());
                         }}
-                        className="space-y-2"
+                        className="flex gap-2"
                       >
                         <input
+                          id="add-friend-username"
                           type="text"
                           value={addFriendInput}
                           onChange={(e) => setAddFriendInput(e.target.value)}
                           placeholder="e.g. PixelMaster"
-                          className="w-full rounded-lg border border-white/[0.08] bg-surface-sunken px-3 py-1.5 text-base sm:text-xs text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none"
+                          autoComplete="off"
+                          className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-surface-sunken px-3 text-base text-foreground placeholder:text-subtle-foreground transition focus:border-border-strong focus:outline-none sm:text-sm"
                         />
-
                         <button
                           type="submit"
                           disabled={!addFriendInput.trim() || addFriendStatus.type === 'loading'}
-                          className="w-full flex items-center justify-center gap-1 rounded-lg bg-teal-400 py-1.5 text-xs font-semibold text-zinc-950 transition disabled:opacity-50"
+                          className={cn(primaryButton, 'h-9')}
                         >
-                          {addFriendStatus.type === 'loading' ? (
-                            <Loader2 className="size-3 animate-spin" />
-                          ) : (
-                            <UserPlus className="size-3" />
-                          )}
-                          <span>Send Request</span>
+                          {addFriendStatus.type === 'loading' ? <Loader2 className="size-3.5 animate-spin" /> : <UserPlus className="size-3.5" />}
+                          <span>Send request</span>
                         </button>
                       </form>
-
                       {addFriendStatus.type === 'success' && (
-                        <p className="text-[11px] text-emerald-400">{addFriendStatus.message}</p>
+                        <p className="mt-2 text-xs text-teal-300">{addFriendStatus.message}</p>
                       )}
                       {addFriendStatus.type === 'error' && (
-                        <p className="text-[11px] text-rose-400">{addFriendStatus.message}</p>
+                        <p className="mt-2 text-xs text-rose-300">{addFriendStatus.message}</p>
                       )}
-                    </div>
+                    </section>
 
-                    {/* Community Suggestions */}
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block mb-2">
-                        Community Players
-                      </span>
-
-                      <div className="space-y-1.5">
-                        {suggestedPlayers.length === 0 ? (
-                          <p className="text-xs text-zinc-500 py-1">No other players found.</p>
-                        ) : (
-                          suggestedPlayers.map((player) => (
-                            <div
-                              key={player.id}
-                              className="flex items-center justify-between gap-2 p-2 rounded-xl border border-white/[0.04] bg-surface"
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <UserAvatar
-                                  avatar={player.image}
-                                  name={player.username}
-                                  className="size-7 rounded-lg bg-white/[0.04] text-xs"
-                                />
-                                <span className="text-xs font-bold text-white truncate">
-                                  @{player.username}
-                                </span>
-                              </div>
-
+                    {/* Other players */}
+                    <section>
+                      <span className={sectionLabel}>Players</span>
+                      {suggestedPlayers.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No other players yet.</p>
+                      ) : (
+                        <div className="divide-y divide-border">
+                          {suggestedPlayers.map((player) => (
+                            <div key={player.id} className="flex items-center gap-3 py-2.5">
+                              <UserAvatar
+                                avatar={player.image}
+                                name={player.username}
+                                className="size-8 shrink-0 rounded-full bg-surface-raised text-xs font-semibold text-foreground"
+                              />
+                              <span className="min-w-0 flex-1 truncate text-sm text-foreground">{player.username}</span>
                               {player.relationship === 'friend' ? (
-                                <span className="text-[10px] font-bold text-teal-400">Friends ✓</span>
+                                <span className="font-mono text-[11px] text-subtle-foreground">Friend</span>
                               ) : player.relationship === 'pending_outgoing' ? (
-                                <span className="text-[10px] font-bold text-amber-300">Sent ⏳</span>
+                                <span className="font-mono text-[11px] text-subtle-foreground">Requested</span>
                               ) : (
-                                <button
-                                  onClick={() => handleAddFriend(player.id)}
-                                  className="flex items-center gap-1 rounded-lg bg-teal-400/10 border border-teal-400/25 px-2 py-0.5 text-[10px] font-bold text-teal-300 hover:bg-teal-400 hover:text-zinc-950 transition"
-                                >
-                                  <UserPlus className="size-2.5" />
-                                  <span>Add</span>
+                                <button onClick={() => handleAddFriend(player.id)} className={outlineButton}>
+                                  <UserPlus className="size-3" />
+                                  <span>{player.relationship === 'pending_incoming' ? 'Accept' : 'Add'}</span>
                                 </button>
                               )}
                             </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
                   </div>
                 )}
               </div>
@@ -1277,43 +1331,36 @@ export function BottomChatWidget({
         )}
       </div>
 
-      {/* Remove Friend Confirmation Dialog */}
+      {/* Remove friend confirmation */}
       {friendToRemove && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-sm rounded-xl border border-rose-500/20 bg-surface p-5 shadow-2xl space-y-3">
-            <div className="flex items-center gap-3 text-rose-400">
-              <Trash2 className="size-5" />
-              <div>
-                <h4 className="font-bold text-white text-sm">Remove Friend</h4>
-                <p className="text-xs text-rose-300">@{friendToRemove.username}</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-zinc-300">
-              Are you sure you want to remove <strong className="text-white">@{friendToRemove.username}</strong> from your friends?
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in duration-150">
+          <div role="alertdialog" aria-labelledby="remove-friend-title" className="w-full max-w-sm rounded-xl border border-border bg-surface p-5 shadow-2xl shadow-black/50">
+            <h4 id="remove-friend-title" className="text-base font-semibold text-foreground">
+              Remove {friendToRemove.username}?
+            </h4>
+            <p className="mt-1 text-sm text-muted-foreground">
+              You&apos;ll need to send a new friend request to message each other again.
             </p>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="mt-5 flex items-center justify-end gap-2">
               <button
                 onClick={() => setFriendToRemove(null)}
                 disabled={isRemovingFriend}
-                className="px-3 py-1.5 text-xs font-semibold text-zinc-400 hover:text-white"
+                className="rounded-lg border border-border-strong px-3.5 py-2 text-sm font-medium text-foreground transition hover:bg-white/[0.05] disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmRemoveFriend}
                 disabled={isRemovingFriend}
-                className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-500 transition disabled:opacity-50"
+                className="rounded-lg bg-rose-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:opacity-50"
               >
-                {isRemovingFriend ? 'Removing...' : 'Remove'}
+                {isRemovingFriend ? 'Removing…' : 'Remove friend'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Auth Modal Trigger */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
