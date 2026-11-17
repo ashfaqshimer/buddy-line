@@ -12,7 +12,6 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
   KeyRound,
   Copy,
   Check,
@@ -170,236 +169,183 @@ export function AdminManagerModal({
     );
   });
 
+  const adminCount = users.filter((u) => u.role === 'admin' || u.isRoot).length;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3.5 sm:p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl rounded-xl border border-white/[0.08] bg-surface shadow-2xl shadow-black/40 overflow-hidden flex flex-col max-h-[85dvh] pb-[env(safe-area-inset-bottom,0px)]">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-white/[0.06] bg-surface px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-400/20 text-amber-300">
+    <div className="scrim p-3 sm:p-4" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="admin-modal-title"
+        onClick={(e) => e.stopPropagation()}
+        className="panel flex max-h-[88dvh] max-w-2xl flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)]"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-amber-400/12 text-amber-300">
               <Crown className="size-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <span>Buddy Line Administration</span>
-                <span className="rounded-lg bg-amber-400/12 text-amber-300 border border-amber-400/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-                  Admin Console
-                </span>
-              </h2>
-              <p className="text-xs text-zinc-400">
-                Manage platform users, roles, and administrator access privileges.
-              </p>
+            </span>
+            <div className="min-w-0">
+              <h2 id="admin-modal-title" className="font-display text-lg font-bold text-foreground">Admin console</h2>
+              <p className="truncate text-sm text-muted-foreground">Manage roles and help players back into their accounts.</p>
             </div>
           </div>
-
-          <button
-            onClick={onClose}
-            className="flex size-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-zinc-400 hover:bg-white/[0.08] hover:text-white transition"
-          >
-            <X className="size-4" />
+          <button onClick={onClose} className="icon-btn" aria-label="Close admin console">
+            <X className="size-5" />
           </button>
         </div>
 
-        {/* Feedback Alert */}
         {feedback && (
-          <div
-            className={`mx-6 mt-4 flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-xs font-medium animate-in fade-in duration-150 ${
-              feedback.type === 'success'
-                ? 'border-teal-500/20 bg-teal-500/8 text-teal-300'
-                : 'border-rose-500/20 bg-rose-500/8 text-rose-300'
-            }`}
-          >
+          <div className={`alert anim-fade mx-5 mt-4 sm:mx-6 ${feedback.type === 'success' ? 'alert-success' : 'alert-error'}`}>
             {feedback.type === 'success' ? (
-              <CheckCircle2 className="size-4 shrink-0 text-teal-400" />
+              <CheckCircle2 className="mt-px size-4 shrink-0" />
             ) : (
-              <AlertCircle className="size-4 shrink-0 text-rose-400" />
+              <AlertCircle className="mt-px size-4 shrink-0" />
             )}
             <span>{feedback.message}</span>
           </div>
         )}
 
-        {/* User Roles & Permissions Content */}
-        <div className="p-6 space-y-4 overflow-y-auto flex-1">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-2.5 size-3.5 text-zinc-500" />
+        {/* Members */}
+        <div className="flex-1 space-y-4 overflow-y-auto p-5 sm:p-6">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-subtle-foreground" />
               <input
-                type="text"
+                type="search"
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
-                placeholder="Search username, name, or email..."
-                className="w-full rounded-xl border border-white/[0.08] bg-background py-2 pl-9 pr-3 text-base sm:text-xs text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none"
+                placeholder="Search by username, name or email"
+                aria-label="Search members"
+                className="field !rounded-full pl-10"
               />
             </div>
-
-            <button
-              onClick={fetchUsers}
-              disabled={loadingUsers}
-              className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] transition self-start sm:self-auto disabled:opacity-50"
-            >
-              <RefreshCw className={`size-3.5 ${loadingUsers ? 'animate-spin' : ''}`} />
-              <span>Refresh Users</span>
+            <button onClick={fetchUsers} disabled={loadingUsers} className="btn btn-secondary shrink-0" title="Refresh list">
+              <RefreshCw className={`size-4 ${loadingUsers ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
 
           {loadingUsers ? (
-            <div className="py-16 text-center text-zinc-400">
-              <Loader2 className="size-6 animate-spin mx-auto mb-2 text-teal-400" />
-              <span className="text-xs">Loading Buddy Line member directory...</span>
+            <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              <span>Loading members…</span>
             </div>
           ) : filteredUsers.length === 0 ? (
-            <div className="rounded-xl border border-white/[0.06] bg-background p-8 text-center text-zinc-500 text-xs">
-              No registered members found matching &quot;{userSearch}&quot;.
+            <div className="rounded-2xl border border-dashed border-border-strong p-8 text-center text-sm text-muted-foreground">
+              No members match &quot;{userSearch}&quot;.
             </div>
           ) : (
-            <div className="space-y-2.5">
+            <ul className="space-y-2">
               {filteredUsers.map((user) => {
                 const isUserAdmin = user.role === 'admin';
                 const isUserRoot = user.isRoot;
                 const isLoadingThis = userActionLoadingId === user.id;
                 const isResettingThis = resetLoadingId === user.id;
                 const resetForThis = issuedReset?.userId === user.id ? issuedReset : null;
+                const label = user.username || user.name;
 
                 return (
-                  <div
-                    key={user.id}
-                    className="rounded-xl border border-white/[0.06] bg-background p-3.5 hover:bg-white/[0.03] transition"
-                  >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-teal-500/15 to-teal-400/8 border border-teal-400/15 text-xs font-bold text-teal-300">
-                        {(user.username || user.name).slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-white truncate">
-                            {user.username || user.name}
-                          </span>
-                          {isUserRoot ? (
-                            <span className="flex items-center gap-1 rounded bg-amber-400/15 text-amber-300 border border-amber-400/25 px-1.5 py-0.2 text-[9px] font-semibold uppercase tracking-wider">
-                              <Crown className="size-2.5 text-amber-400 fill-amber-400" />
-                              ROOT
-                            </span>
-                          ) : isUserAdmin ? (
-                            <span className="flex items-center gap-1 rounded bg-teal-400/10 text-teal-300 border border-teal-400/20 px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-wider">
-                              <ShieldCheck className="size-2.5 text-teal-400" />
-                              ADMIN
-                            </span>
-                          ) : (
-                            <span className="rounded bg-white/[0.04] text-zinc-400 px-1.5 py-0.2 text-[9px] font-semibold uppercase">
-                              PLAYER
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[11px] text-zinc-400 truncate">{user.email}</div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                      {canResetPassword(user) && (
-                        <button
-                          onClick={() => handleResetPassword(user)}
-                          disabled={isResettingThis}
-                          title="Generate a one-time password reset code"
-                          className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-zinc-300 transition hover:bg-white/[0.08] hover:text-white active:scale-95 disabled:opacity-50"
-                        >
-                          {isResettingThis ? (
-                            <Loader2 className="size-3 animate-spin" />
-                          ) : (
-                            <KeyRound className="size-3" />
-                          )}
-                          <span>Reset Password</span>
-                        </button>
-                      )}
-                      {isUserRoot ? (
-                        <div className="flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-400/8 border border-amber-400/20 rounded-lg px-3 py-1.5">
-                          <Crown className="size-3 text-amber-400 fill-amber-400" />
-                          <span>Permanent Root</span>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleToggleRole(user)}
-                          disabled={isLoadingThis}
-                          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition active:scale-95 disabled:opacity-50 ${
-                            isUserAdmin
-                              ? 'border border-rose-500/20 bg-rose-500/8 text-rose-300 hover:bg-rose-500/15'
-                              : 'border border-teal-400/25 bg-teal-400/10 text-teal-300 hover:bg-teal-400 hover:text-zinc-950'
-                          }`}
-                        >
-                          {isLoadingThis ? (
-                            <>
-                              <Loader2 className="size-3 animate-spin" />
-                              <span>Updating...</span>
-                            </>
-                          ) : isUserAdmin ? (
-                            <>
-                              <ShieldAlert className="size-3" />
-                              <span>Demote to Player</span>
-                            </>
-                          ) : (
-                            <>
-                              <Shield className="size-3" />
-                              <span>Make Admin</span>
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {resetForThis && (
-                    <div className="mt-3 rounded-lg border border-teal-400/20 bg-teal-400/[0.06] p-3 animate-in fade-in duration-150">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-mono text-lg font-semibold tracking-[0.2em] text-white select-all">
-                          {resetForThis.code}
+                  <li key={user.id} className="rounded-2xl border border-border bg-surface-sunken/60 p-3 transition hover:border-border-strong">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-raised text-xs font-bold text-foreground">
+                          {label.slice(0, 2).toUpperCase()}
                         </span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleCopyCode(resetForThis.code)}
-                            className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] transition"
-                          >
-                            {codeCopied ? <Check className="size-3 text-teal-400" /> : <Copy className="size-3" />}
-                            <span>{codeCopied ? 'Copied' : 'Copy'}</span>
-                          </button>
-                          <button
-                            onClick={() => setIssuedReset(null)}
-                            className="flex size-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-white/[0.06] hover:text-white transition"
-                            aria-label="Dismiss reset code"
-                          >
-                            <X className="size-3.5" />
-                          </button>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate text-sm font-semibold text-foreground">{label}</span>
+                            {isUserRoot ? (
+                              <span className="tag tag-admin">
+                                <Crown className="size-3" />
+                                Root
+                              </span>
+                            ) : isUserAdmin ? (
+                              <span className="tag tag-admin">
+                                <ShieldCheck className="size-3" />
+                                Admin
+                              </span>
+                            ) : (
+                              <span className="tag tag-muted">Player</span>
+                            )}
+                          </div>
+                          <div className="truncate text-xs text-subtle-foreground">{user.email}</div>
                         </div>
                       </div>
-                      <p className="mt-2 text-[11px] leading-relaxed text-zinc-400">
-                        Give this code to {user.username || user.name} privately. They enter it under{' '}
-                        <span className="text-zinc-200">Sign In → Forgot password?</span> to choose a new
-                        password. It works once and expires at{' '}
-                        {new Date(resetForThis.expiresAt).toLocaleTimeString([], {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                        })}
-                        . It won&apos;t be shown again.
-                      </p>
+
+                      <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+                        {canResetPassword(user) && (
+                          <button
+                            onClick={() => handleResetPassword(user)}
+                            disabled={isResettingThis}
+                            title="Generate a one-time password reset code"
+                            className="btn btn-secondary btn-sm"
+                          >
+                            {isResettingThis ? <Loader2 className="size-3.5 animate-spin" /> : <KeyRound className="size-3.5" />}
+                            <span>Reset password</span>
+                          </button>
+                        )}
+                        {isUserRoot ? (
+                          <span className="px-2 text-xs text-subtle-foreground">Permanent</span>
+                        ) : (
+                          <button
+                            onClick={() => handleToggleRole(user)}
+                            disabled={isLoadingThis}
+                            className={`btn btn-sm ${isUserAdmin ? 'btn-danger-soft' : 'btn-secondary'}`}
+                          >
+                            {isLoadingThis ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : isUserAdmin ? (
+                              <ShieldAlert className="size-3.5" />
+                            ) : (
+                              <Shield className="size-3.5" />
+                            )}
+                            <span>{isLoadingThis ? 'Updating…' : isUserAdmin ? 'Remove admin' : 'Make admin'}</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  </div>
+
+                    {resetForThis && (
+                      <div className="anim-fade mt-3 rounded-xl border border-primary/25 bg-primary/[0.06] p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="select-all font-mono text-lg font-semibold tracking-[0.2em] text-foreground">
+                            {resetForThis.code}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => handleCopyCode(resetForThis.code)} className="btn btn-secondary btn-sm">
+                              {codeCopied ? <Check className="size-3.5 text-primary" /> : <Copy className="size-3.5" />}
+                              <span>{codeCopied ? 'Copied' : 'Copy'}</span>
+                            </button>
+                            <button onClick={() => setIssuedReset(null)} className="icon-btn size-8" aria-label="Dismiss reset code">
+                              <X className="size-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                          Give this code to {label} privately. They enter it under{' '}
+                          <span className="text-foreground">Sign in → Forgot password?</span> to choose a new password. It works
+                          once and expires at{' '}
+                          {new Date(resetForThis.expiresAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}. It
+                          won&apos;t be shown again.
+                        </p>
+                      </div>
+                    )}
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           )}
         </div>
 
-        {/* Modal Footer */}
-        <div className="border-t border-white/[0.06] bg-surface px-6 py-3.5 flex items-center justify-between text-xs text-zinc-400">
-          <div className="flex items-center gap-1.5">
-            <Sparkles className="size-3 text-teal-400" />
-            <span>Buddy Line Platform Security Layer</span>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-4 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] transition"
-          >
-            Close
+        {/* Footer */}
+        <div className="flex items-center justify-between border-t border-border px-5 py-3 text-xs text-subtle-foreground sm:px-6">
+          <span className="tabular-nums">
+            {loadingUsers ? ' ' : `${users.length} ${users.length === 1 ? 'member' : 'members'} · ${adminCount} ${adminCount === 1 ? 'admin' : 'admins'}`}
+          </span>
+          <button onClick={onClose} className="btn btn-secondary btn-sm">
+            Done
           </button>
         </div>
       </div>

@@ -8,7 +8,6 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
-  Move,
 } from 'lucide-react';
 
 interface KeyConfig {
@@ -63,159 +62,106 @@ export function VirtualGamepad({
     }
   };
 
+  /** Touch + mouse handlers for one virtual key. */
+  const pressHandlers = (keyId: string) => ({
+    onTouchStart: (e: React.TouchEvent) => handlePress(keyId, e),
+    onTouchEnd: (e: React.TouchEvent) => handleRelease(keyId, e),
+    onMouseDown: (e: React.MouseEvent) => handlePress(keyId, e),
+    onMouseUp: (e: React.MouseEvent) => handleRelease(keyId, e),
+    onMouseLeave: () => handleRelease(keyId),
+  });
+
+  const dpadKey = (keyId: string, label: string, Icon: typeof ChevronUp) => (
+    <button
+      {...pressHandlers(keyId)}
+      aria-label={label}
+      className={`flex size-[52px] items-center justify-center rounded-2xl border transition ${
+        activeKeys[keyId]
+          ? 'scale-95 border-primary bg-primary text-primary-foreground shadow-[0_0_24px_rgba(56,189,248,0.6)]'
+          : 'border-white/10 bg-white/[0.08] text-white'
+      }`}
+    >
+      <Icon className="size-7" />
+    </button>
+  );
+
   if (!isVisible) {
     return (
       <button
         onClick={onToggleVisibility}
-        className="fixed bottom-12 right-4 z-40 flex items-center gap-1.5 rounded-lg border border-teal-400/30 bg-surface/90 backdrop-blur-md px-3 py-1.5 text-[11px] font-bold text-teal-300 shadow-xl"
-        title="Show On-screen Touch Controls"
+        className="glass absolute bottom-3 right-3 z-40 inline-flex items-center gap-1.5 rounded-full border border-border-strong px-3.5 py-2 text-xs font-semibold text-foreground shadow-xl"
+        title="Show on-screen touch controls"
       >
         <Eye className="size-3.5" />
-        <span>Controls</span>
+        <span>Show controls</span>
       </button>
     );
   }
 
   return (
     <div
-      className="fixed bottom-0 inset-x-0 z-30 pointer-events-none p-3 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] flex items-end justify-between select-none"
+      className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex select-none items-end justify-between p-3 pb-4"
       style={{ touchAction: 'none' }}
     >
-      {/* LEFT: 4-Way D-Pad */}
-      <div className="pointer-events-auto flex flex-col items-center bg-black/40 backdrop-blur-md p-2 rounded-xl border border-white/10 shadow-2xl">
-        {/* UP */}
-        <button
-          onTouchStart={(e) => handlePress('UP', e)}
-          onTouchEnd={(e) => handleRelease('UP', e)}
-          onMouseDown={(e) => handlePress('UP', e)}
-          onMouseUp={(e) => handleRelease('UP', e)}
-          className={`size-12 rounded-xl flex items-center justify-center transition active:scale-95 ${
-            activeKeys.UP
-              ? 'bg-teal-400 text-zinc-950 scale-95'
-              : 'bg-white/10 text-white hover:bg-white/15'
-          }`}
-          aria-label="Up Arrow"
-        >
-          <ChevronUp className="size-7" />
-        </button>
-
-        {/* MIDDLE ROW: LEFT, CENTER, RIGHT */}
-        <div className="flex items-center gap-2 my-1">
-          {/* LEFT */}
-          <button
-            onTouchStart={(e) => handlePress('LEFT', e)}
-            onTouchEnd={(e) => handleRelease('LEFT', e)}
-            onMouseDown={(e) => handlePress('LEFT', e)}
-            onMouseUp={(e) => handleRelease('LEFT', e)}
-            className={`size-12 rounded-xl flex items-center justify-center transition active:scale-95 ${
-              activeKeys.LEFT
-                ? 'bg-teal-400 text-zinc-950 scale-95'
-                : 'bg-white/10 text-white hover:bg-white/15'
-            }`}
-            aria-label="Left Arrow"
-          >
-            <ChevronLeft className="size-7" />
-          </button>
-
-          {/* D-Pad Center Core */}
-          <div className="size-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-            <div className="size-2 rounded-full bg-teal-400/40" />
-          </div>
-
-          {/* RIGHT */}
-          <button
-            onTouchStart={(e) => handlePress('RIGHT', e)}
-            onTouchEnd={(e) => handleRelease('RIGHT', e)}
-            onMouseDown={(e) => handlePress('RIGHT', e)}
-            onMouseUp={(e) => handleRelease('RIGHT', e)}
-            className={`size-12 rounded-xl flex items-center justify-center transition active:scale-95 ${
-              activeKeys.RIGHT
-                ? 'bg-teal-400 text-zinc-950 scale-95'
-                : 'bg-white/10 text-white hover:bg-white/15'
-            }`}
-            aria-label="Right Arrow"
-          >
-            <ChevronRight className="size-7" />
-          </button>
-        </div>
-
-        {/* DOWN */}
-        <button
-          onTouchStart={(e) => handlePress('DOWN', e)}
-          onTouchEnd={(e) => handleRelease('DOWN', e)}
-          onMouseDown={(e) => handlePress('DOWN', e)}
-          onMouseUp={(e) => handleRelease('DOWN', e)}
-          className={`size-12 rounded-xl flex items-center justify-center transition active:scale-95 ${
-            activeKeys.DOWN
-              ? 'bg-teal-400 text-zinc-950 scale-95'
-              : 'bg-white/10 text-white hover:bg-white/15'
-          }`}
-          aria-label="Down Arrow"
-        >
-          <ChevronDown className="size-7" />
-        </button>
+      {/* D-pad */}
+      <div className="pointer-events-auto grid grid-cols-3 grid-rows-3 gap-1 rounded-[28px] border border-white/10 bg-black/45 p-2 shadow-2xl backdrop-blur-md">
+        <span />
+        {dpadKey('UP', 'Up arrow', ChevronUp)}
+        <span />
+        {dpadKey('LEFT', 'Left arrow', ChevronLeft)}
+        <span className="flex items-center justify-center" aria-hidden>
+          <span className="size-3 rounded-full bg-white/15" />
+        </span>
+        {dpadKey('RIGHT', 'Right arrow', ChevronRight)}
+        <span />
+        {dpadKey('DOWN', 'Down arrow', ChevronDown)}
+        <span />
       </div>
 
-      {/* RIGHT: Action Buttons (SPACE / A / B) */}
-      <div className="pointer-events-auto flex flex-col items-end gap-2 bg-black/40 backdrop-blur-md p-2.5 rounded-xl border border-white/10 shadow-2xl">
-        <div className="flex items-center justify-between w-full pb-1 px-1 border-b border-white/10">
-          <span className="text-[9px] font-semibold text-zinc-400 uppercase tracking-widest">
-            ACTIONS
-          </span>
-          <button
-            onClick={onToggleVisibility}
-            className="text-zinc-400 hover:text-white p-0.5"
-            title="Hide On-screen Controls"
-          >
+      {/* Action buttons */}
+      <div className="pointer-events-auto flex flex-col items-stretch gap-2.5 rounded-[28px] border border-white/10 bg-black/45 p-3 shadow-2xl backdrop-blur-md">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/50">Actions</span>
+          <button onClick={onToggleVisibility} className="rounded-full p-1 text-white/50 hover:text-white" title="Hide on-screen controls" aria-label="Hide on-screen controls">
             <EyeOff className="size-3.5" />
           </button>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* B Button */}
+        <div className="flex items-center justify-center gap-3">
           <button
-            onTouchStart={(e) => handlePress('B', e)}
-            onTouchEnd={(e) => handleRelease('B', e)}
-            onMouseDown={(e) => handlePress('B', e)}
-            onMouseUp={(e) => handleRelease('B', e)}
-            className={`size-12 rounded-full font-black text-sm flex items-center justify-center transition active:scale-95 shadow-md ${
+            {...pressHandlers('B')}
+            aria-label="B (Shift)"
+            className={`font-display flex size-14 translate-y-3 items-center justify-center rounded-full border-2 text-base font-bold transition ${
               activeKeys.B
-                ? 'bg-amber-400 text-zinc-950 scale-95'
-                : 'bg-white/10 text-amber-300 border border-amber-400/30 hover:bg-white/15'
+                ? 'scale-95 border-social bg-social text-social-foreground shadow-[0_0_24px_rgba(167,139,250,0.7)]'
+                : 'border-social/50 bg-social/15 text-social-hover'
             }`}
           >
             B
           </button>
-
-          {/* A Button */}
           <button
-            onTouchStart={(e) => handlePress('A', e)}
-            onTouchEnd={(e) => handleRelease('A', e)}
-            onMouseDown={(e) => handlePress('A', e)}
-            onMouseUp={(e) => handleRelease('A', e)}
-            className={`size-12 rounded-full font-black text-sm flex items-center justify-center transition active:scale-95 shadow-md ${
+            {...pressHandlers('A')}
+            aria-label="A (Enter)"
+            className={`font-display flex size-14 -translate-y-1 items-center justify-center rounded-full border-2 text-base font-bold transition ${
               activeKeys.A
-                ? 'bg-teal-400 text-zinc-950 scale-95'
-                : 'bg-white/10 text-teal-300 border border-teal-400/30 hover:bg-white/15'
+                ? 'scale-95 border-primary bg-primary text-primary-foreground shadow-[0_0_24px_rgba(56,189,248,0.7)]'
+                : 'border-primary/50 bg-primary/15 text-primary-hover'
             }`}
           >
             A
           </button>
         </div>
 
-        {/* Spacebar / Jump Button */}
         <button
-          onTouchStart={(e) => handlePress('SPACE', e)}
-          onTouchEnd={(e) => handleRelease('SPACE', e)}
-          onMouseDown={(e) => handlePress('SPACE', e)}
-          onMouseUp={(e) => handleRelease('SPACE', e)}
-          className={`w-full py-2.5 px-4 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center transition active:scale-95 shadow-md ${
+          {...pressHandlers('SPACE')}
+          aria-label="Space"
+          className={`mt-2 rounded-full border px-5 py-2.5 text-xs font-bold uppercase tracking-[0.14em] transition ${
             activeKeys.SPACE
-              ? 'bg-teal-400 text-zinc-950 scale-98'
-              : 'bg-gradient-to-r from-teal-500/20 to-teal-400/20 text-teal-300 border border-teal-400/40 hover:bg-teal-400/30'
+              ? 'scale-[0.98] border-white bg-white text-background'
+              : 'border-white/20 bg-white/[0.08] text-white'
           }`}
         >
-          SPACE (ACTION)
+          Space
         </button>
       </div>
     </div>

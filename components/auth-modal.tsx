@@ -3,12 +3,12 @@
 import React, { useState } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { PRESET_AVATARS } from '@/lib/avatars';
+import { BuddyLineLogo } from './buddy-line-logo';
 import {
   X,
-  Sparkles,
+  Loader2,
   User,
   Lock,
-  Rocket,
   AlertCircle,
   Mail,
   KeyRound,
@@ -174,285 +174,235 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signup' }
     }
   };
 
+  const switchMode = (next: 'signin' | 'signup') => {
+    setMode(next);
+    setError('');
+    setNotice('');
+  };
+
+  /** Text input with a leading icon. */
+  const iconField = (
+    Icon: typeof User,
+    props: React.InputHTMLAttributes<HTMLInputElement>
+  ) => (
+    <div className="relative">
+      <Icon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-subtle-foreground" />
+      <input {...props} className={`field pl-10 ${props.className ?? ''}`} />
+    </div>
+  );
+
+  const submitSpinner = <Loader2 className="size-4 animate-spin" />;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md rounded-xl border border-white/[0.08] bg-surface p-5 sm:p-6 shadow-2xl shadow-black/40 max-h-[90dvh] overflow-y-auto">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 rounded-xl p-2 text-zinc-400 hover:bg-white/5 hover:text-white transition"
-        >
+    <div className="scrim" onClick={() => !loading && onClose()}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-modal-title"
+        onClick={(e) => e.stopPropagation()}
+        className="panel max-h-[92dvh] max-w-md overflow-y-auto p-6 sm:p-7"
+      >
+        <button onClick={onClose} className="icon-btn absolute right-3 top-3" aria-label="Close">
           <X className="size-5" />
         </button>
 
-        {/* Modal Header */}
-        <div className="text-center mb-6">
-          <div className="inline-flex size-14 items-center justify-center rounded-xl bg-teal-400 text-3xl shadow-lg mb-3">
-            {isResetting ? <KeyRound className="size-6 text-zinc-950" /> : mode === 'signup' ? selectedAvatar : '🚀'}
-          </div>
-          <h2 className="text-2xl font-semibold text-white tracking-tight">
-            {isResetting ? 'Reset your password' : mode === 'signup' ? 'Join Buddy Line!' : 'Welcome back'}
+        {/* Header */}
+        <div className="mb-6 flex flex-col items-center text-center">
+          {isResetting ? (
+            <span className="flex size-14 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+              <KeyRound className="size-6" />
+            </span>
+          ) : (
+            <BuddyLineLogo size="lg" />
+          )}
+          <h2 id="auth-modal-title" className="font-display mt-4 text-[22px] font-bold text-foreground">
+            {isResetting ? 'Reset your password' : mode === 'signup' ? 'Join Buddy Line' : 'Welcome back'}
           </h2>
-          <p className="text-xs text-zinc-400 mt-1">
+          <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">
             {isResetting
-              ? 'Ask a Buddy Line admin for a reset code, then pick a new password'
+              ? 'Ask a Buddy Line admin for a reset code, then choose a new password.'
               : mode === 'signup'
-              ? 'Pick an avatar and nickname to play & share games'
-              : 'Sign in to access your game creations and rank'}
+              ? 'Pick an avatar and a username to play, upload games and chat with friends.'
+              : 'Sign in to upload games and chat with your friends.'}
           </p>
         </div>
 
         {isResetting ? (
-          <>
+          <form onSubmit={handleResetSubmit} className="space-y-4">
             {error && (
-              <div className="mb-4 flex items-center gap-2 rounded-xl bg-rose-500/8 border border-rose-500/20 p-3 text-xs text-rose-300">
-                <AlertCircle className="size-4 shrink-0 text-rose-400" />
+              <div className="alert alert-error">
+                <AlertCircle className="mt-px size-4 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
-            <form onSubmit={handleResetSubmit} className="space-y-4">
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-1.5">
-                  Reset Code
-                </label>
-                <div className="relative">
-                  <KeyRound className="absolute left-3.5 top-3 size-4 text-zinc-400" />
-                  <input
-                    type="text"
-                    value={resetCode}
-                    onChange={(e) => setResetCode(e.target.value)}
-                    placeholder="ABCD-2345"
-                    autoComplete="one-time-code"
-                    autoCapitalize="characters"
-                    spellCheck={false}
-                    maxLength={12}
-                    required
-                    className="w-full rounded-xl border border-white/[0.08] bg-background py-2.5 pl-10 pr-4 font-mono text-base sm:text-sm uppercase tracking-widest text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
-                  />
-                </div>
-              </div>
+            <div>
+              <label className="field-label" htmlFor="reset-code">Reset code</label>
+              {iconField(KeyRound, {
+                id: 'reset-code',
+                type: 'text',
+                value: resetCode,
+                onChange: (e) => setResetCode(e.target.value),
+                placeholder: 'ABCD-2345',
+                autoComplete: 'one-time-code',
+                autoCapitalize: 'characters',
+                spellCheck: false,
+                maxLength: 12,
+                required: true,
+                className: 'font-mono uppercase tracking-widest',
+              })}
+            </div>
 
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-1.5">
-                  New Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-3 size-4 text-zinc-400" />
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
-                    autoComplete="new-password"
-                    required
-                    className="w-full rounded-xl border border-white/[0.08] bg-background py-2.5 pl-10 pr-4 text-base sm:text-sm text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
-                  />
-                </div>
-              </div>
+            <div>
+              <label className="field-label" htmlFor="reset-new-password">New password</label>
+              {iconField(Lock, {
+                id: 'reset-new-password',
+                type: 'password',
+                value: newPassword,
+                onChange: (e) => setNewPassword(e.target.value),
+                placeholder: `At least ${MIN_PASSWORD_LENGTH} characters`,
+                autoComplete: 'new-password',
+                required: true,
+              })}
+            </div>
 
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-1.5">
-                  Confirm New Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-3 size-4 text-zinc-400" />
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                    required
-                    className="w-full rounded-xl border border-white/[0.08] bg-background py-2.5 pl-10 pr-4 text-base sm:text-sm text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
-                  />
-                </div>
-              </div>
+            <div>
+              <label className="field-label" htmlFor="reset-confirm-password">Confirm new password</label>
+              {iconField(Lock, {
+                id: 'reset-confirm-password',
+                type: 'password',
+                value: confirmPassword,
+                onChange: (e) => setConfirmPassword(e.target.value),
+                placeholder: '••••••••',
+                autoComplete: 'new-password',
+                required: true,
+              })}
+            </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full mt-2 flex items-center justify-center gap-2 rounded-full bg-teal-400 py-3 text-sm font-semibold text-zinc-950 shadow-lg transition transform active:scale-95 disabled:opacity-50"
-              >
-                {loading ? <span className="animate-spin text-lg">⚙️</span> : <span>Set New Password</span>}
+            <button type="submit" disabled={loading} className="btn btn-primary btn-lg mt-2 w-full">
+              {loading ? submitSpinner : <span>Set new password</span>}
+            </button>
+
+            <button type="button" onClick={closeReset} className="btn btn-ghost btn-sm mx-auto flex">
+              <ArrowLeft className="size-3.5" />
+              <span>Back to sign in</span>
+            </button>
+          </form>
+        ) : (
+          <>
+            <div className="segmented mb-5" role="tablist" aria-label="Account">
+              <button type="button" role="tab" aria-selected={mode === 'signup'} onClick={() => switchMode('signup')}>
+                Create account
               </button>
+              <button type="button" role="tab" aria-selected={mode === 'signin'} onClick={() => switchMode('signin')}>
+                Sign in
+              </button>
+            </div>
 
-              <button
-                type="button"
-                onClick={closeReset}
-                className="w-full flex items-center justify-center gap-1.5 py-1 text-xs font-semibold text-zinc-400 hover:text-white transition"
-              >
-                <ArrowLeft className="size-3.5" />
-                <span>Back to sign in</span>
+            {notice && (
+              <div className="alert alert-success mb-4">
+                <CheckCircle2 className="mt-px size-4 shrink-0" />
+                <span>{notice}</span>
+              </div>
+            )}
+
+            {error && (
+              <div className="alert alert-error mb-4">
+                <AlertCircle className="mt-px size-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {mode === 'signup' && (
+                <div>
+                  <span className="field-label">Avatar</span>
+                  <div className="grid grid-cols-6 gap-2">
+                    {AVATAR_OPTIONS.map((avatar) => (
+                      <button
+                        key={avatar}
+                        type="button"
+                        onClick={() => setSelectedAvatar(avatar)}
+                        aria-label={`Use ${avatar} as avatar`}
+                        aria-pressed={selectedAvatar === avatar}
+                        className={`flex aspect-square items-center justify-center rounded-2xl text-[22px] transition active:scale-90 ${
+                          selectedAvatar === avatar
+                            ? 'bg-social/20 ring-2 ring-social'
+                            : 'bg-surface-sunken ring-1 ring-border hover:ring-border-strong'
+                        }`}
+                      >
+                        {avatar}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="field-label" htmlFor="auth-identifier">
+                  {mode === 'signup' ? 'Username' : 'Username or email'}
+                </label>
+                {iconField(User, {
+                  id: 'auth-identifier',
+                  type: 'text',
+                  value: username,
+                  onChange: (e) => setUsername(e.target.value),
+                  placeholder: mode === 'signup' ? 'e.g. PixelHero' : 'Your username or email',
+                  autoComplete: 'username',
+                  maxLength: 40,
+                  required: true,
+                })}
+              </div>
+
+              {mode === 'signup' && (
+                <div>
+                  <label className="field-label flex items-baseline justify-between" htmlFor="auth-email">
+                    <span>Email</span>
+                    <span className="text-xs font-normal text-subtle-foreground">Optional</span>
+                  </label>
+                  {iconField(Mail, {
+                    id: 'auth-email',
+                    type: 'email',
+                    value: email,
+                    onChange: (e) => setEmail(e.target.value),
+                    placeholder: 'you@example.com',
+                    autoComplete: 'email',
+                  })}
+                  <p className="mt-1.5 text-xs leading-relaxed text-subtle-foreground">
+                    Lets you sign in with your email too. You can add one later.
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <div className="flex items-baseline justify-between">
+                  <label className="field-label" htmlFor="auth-password">Password</label>
+                  {mode === 'signin' && (
+                    <button
+                      type="button"
+                      onClick={openReset}
+                      className="text-xs font-semibold text-muted-foreground transition hover:text-primary"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                {iconField(Lock, {
+                  id: 'auth-password',
+                  type: 'password',
+                  value: password,
+                  onChange: (e) => setPassword(e.target.value),
+                  placeholder: '••••••••',
+                  autoComplete: mode === 'signup' ? 'new-password' : 'current-password',
+                  required: true,
+                })}
+              </div>
+
+              <button type="submit" disabled={loading} className="btn btn-primary btn-lg mt-2 w-full">
+                {loading ? submitSpinner : <span>{mode === 'signup' ? 'Create account' : 'Sign in'}</span>}
               </button>
             </form>
           </>
-        ) : (
-        <>
-        {/* Mode Switcher Tabs */}
-        <div className="flex rounded-xl bg-background p-1 mb-5 border border-white/[0.06]">
-          <button
-            type="button"
-            onClick={() => { setMode('signup'); setError(''); setNotice(''); }}
-            className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
-              mode === 'signup'
-                ? 'bg-teal-400 text-zinc-950 shadow-md'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            Create Account
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode('signin'); setError(''); setNotice(''); }}
-            className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
-              mode === 'signin'
-                ? 'bg-teal-400 text-zinc-950 shadow-md'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            Sign In
-          </button>
-        </div>
-
-        {notice && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl bg-teal-500/8 border border-teal-500/20 p-3 text-xs text-teal-300">
-            <CheckCircle2 className="size-4 shrink-0 text-teal-400" />
-            <span>{notice}</span>
-          </div>
-        )}
-
-        {/* Error Alert */}
-        {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl bg-rose-500/8 border border-rose-500/20 p-3 text-xs text-rose-300">
-            <AlertCircle className="size-4 shrink-0 text-rose-400" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Avatar Picker (Signup only) */}
-          {mode === 'signup' && (
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-2">
-                Pick Your Mascot Avatar:
-              </label>
-              <div className="grid grid-cols-6 gap-2">
-                {AVATAR_OPTIONS.map((avatar) => (
-                  <button
-                    key={avatar}
-                    type="button"
-                    onClick={() => setSelectedAvatar(avatar)}
-                    className={`flex size-11 items-center justify-center rounded-xl text-xl border transition ${
-                      selectedAvatar === avatar
-                        ? 'border-teal-400 bg-teal-400/15 scale-105 shadow-md'
-                        : 'border-white/[0.06] bg-white/[0.03] hover:border-white/15'
-                    }`}
-                  >
-                    {avatar}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Username / Identifier Input */}
-          <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-1.5">
-              {mode === 'signup' ? 'Nickname / Username' : 'Username or Email'}
-            </label>
-            <div className="relative">
-              <User className="absolute left-3.5 top-3 size-4 text-zinc-400" />
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder={mode === 'signup' ? 'e.g. AstroKid or PixelHero' : 'Enter your nickname or email'}
-                maxLength={40}
-                required
-                className="w-full rounded-xl border border-white/[0.08] bg-background py-2.5 pl-10 pr-4 text-base sm:text-sm text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
-              />
-            </div>
-          </div>
-
-          {/* Optional Email Input (Signup only) */}
-          {mode === 'signup' && (
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-300">
-                  Email Address
-                </label>
-                <span className="text-[10px] text-teal-400/80 font-semibold uppercase tracking-wider">
-                  Optional
-                </span>
-              </div>
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-3 size-4 text-zinc-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. you@example.com"
-                  className="w-full rounded-xl border border-white/[0.08] bg-background py-2.5 pl-10 pr-4 text-base sm:text-sm text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
-                />
-              </div>
-              <p className="mt-1 text-[10px] text-zinc-500">
-                Optional: add an email for account recovery or sign-in. If left blank, a player ID is generated for you.
-              </p>
-            </div>
-          )}
-
-          {/* Password Input */}
-          <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-1.5">
-              Secret Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-3 size-4 text-zinc-400" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full rounded-xl border border-white/[0.08] bg-background py-2.5 pl-10 pr-4 text-base sm:text-sm text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
-              />
-            </div>
-            {mode === 'signin' && (
-              <div className="mt-1.5 text-right">
-                <button
-                  type="button"
-                  onClick={openReset}
-                  className="text-[11px] font-semibold text-zinc-400 hover:text-teal-300 transition"
-                >
-                  Forgot password?
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-2 flex items-center justify-center gap-2 rounded-full bg-teal-400 py-3 text-sm font-semibold text-zinc-950 shadow-lg transition transform active:scale-95 disabled:opacity-50"
-          >
-            {loading ? (
-              <span className="animate-spin text-lg">⚙️</span>
-            ) : mode === 'signup' ? (
-              <>
-                <Rocket className="size-4" />
-                <span>Launch My Account 🚀</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="size-4" />
-                <span>Enter Buddy Line</span>
-              </>
-            )}
-          </button>
-        </form>
-        </>
         )}
       </div>
     </div>

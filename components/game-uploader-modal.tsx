@@ -4,9 +4,6 @@ import React, { useState, useRef } from 'react';
 import {
   X,
   Upload,
-  FileCode,
-  FileText,
-  Palette,
   CheckCircle2,
   AlertCircle,
   HelpCircle,
@@ -16,8 +13,9 @@ import {
   Link as LinkIcon,
   Loader2,
   Trash2,
+  Rocket,
 } from 'lucide-react';
-import { GiJoystick, GiSparkles } from 'react-icons/gi';
+import { GiJoystick } from 'react-icons/gi';
 import confetti from 'canvas-confetti';
 import { bundleGameSource } from '@/lib/game-bundler';
 import { uploadGame } from '@/app/game-actions';
@@ -385,6 +383,7 @@ export function GameUploaderModal({
           particleCount: 140,
           spread: 80,
           origin: { y: 0.6 },
+          colors: ['#38bdf8', '#818cf8', '#c084fc', '#ffffff'],
         });
       } catch {
         // ignore
@@ -409,161 +408,234 @@ export function GameUploaderModal({
     ? bundleGameSource(htmlFile.content, cssFile?.content, jsFile?.content)
     : '';
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="relative flex max-h-[92dvh] w-full max-w-4xl flex-col rounded-xl border border-white/[0.08] bg-surface overflow-hidden pb-[env(safe-area-inset-bottom,0px)]">
-        {/* Top Header */}
-        <div className="flex items-center justify-between border-b border-white/[0.06] px-4 sm:px-6 py-3.5 sm:py-4 bg-surface gap-2">
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="flex size-10 sm:size-11 items-center justify-center rounded-xl bg-teal-400 text-zinc-950 shadow-lg shrink-0">
-              <GiJoystick className="size-5 sm:size-6 text-zinc-950 font-semibold" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <h2 className="text-base sm:text-xl font-semibold text-white tracking-tight truncate">Game Creator Studio</h2>
-                <span className="hidden xs:inline-block rounded-lg bg-teal-400/10 border border-teal-400/20 px-2 py-0.5 text-[10px] font-bold text-teal-400 shrink-0">
-                  HTML5 Sandboxed
-                </span>
-              </div>
-              <p className="text-[11px] sm:text-xs text-zinc-400 truncate">
-                Upload your code files and publish your game to the community!
-              </p>
-            </div>
-          </div>
+  type CodeFile = { name: string; size: string; content: string } | null;
 
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+  /** One drop/choose slot for a code file. */
+  const fileSlot = (opts: {
+    type: 'html' | 'css' | 'js';
+    title: string;
+    hint: string;
+    accept: string;
+    required?: boolean;
+    dot: string;
+    file: CodeFile;
+    clear: () => void;
+    inputRef: React.RefObject<HTMLInputElement | null>;
+    setFile: (val: { name: string; size: string; content: string }) => void;
+  }) => (
+    <div
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => handleFileDrop(e, opts.type)}
+      className={`flex flex-col justify-between rounded-2xl border-2 border-dashed p-4 transition ${
+        opts.file ? 'border-success/40 bg-success/[0.05]' : 'border-border-strong bg-surface-sunken/60 hover:border-primary/50'
+      }`}
+    >
+      <div>
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-2 text-sm font-bold text-foreground">
+            <span className={`size-2.5 rounded-full ${opts.dot}`} aria-hidden />
+            {opts.title}
+          </span>
+          <span className={`tag ${opts.required ? 'tag-play' : 'tag-muted'}`}>{opts.required ? 'Required' : 'Optional'}</span>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">{opts.hint}</p>
+      </div>
+
+      <div className="mt-4">
+        {opts.file ? (
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-success/10 px-3 py-2">
+            <span className="flex min-w-0 items-center gap-2 text-xs font-semibold text-emerald-300">
+              <CheckCircle2 className="size-4 shrink-0" />
+              <span className="truncate">{opts.file.name}</span>
+              <span className="shrink-0 font-normal text-emerald-300/70">{opts.file.size}</span>
+            </span>
+            <button
+              type="button"
+              onClick={opts.clear}
+              className="icon-btn size-7 hover:!text-rose-300"
+              aria-label={`Remove ${opts.file.name}`}
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => opts.inputRef.current?.click()} className="btn btn-secondary btn-sm w-full">
+            <Upload className="size-3.5" />
+            <span>Choose {opts.accept.split(',')[0]} file</span>
+          </button>
+        )}
+        <input
+          ref={opts.inputRef}
+          type="file"
+          accept={opts.accept}
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files?.[0]) readFileContent(e.target.files[0], opts.setFile);
+          }}
+        />
+      </div>
+    </div>
+  );
+
+  const stepHeading = (n: number, title: string, aside?: React.ReactNode) => (
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <h3 className="flex items-center gap-2.5 text-sm font-bold text-foreground">
+        <span className="font-display flex size-6 items-center justify-center rounded-full bg-[image:var(--brand-gradient)] text-[11px] font-bold text-[#0b0820]">
+          {n}
+        </span>
+        {title}
+      </h3>
+      {aside}
+    </div>
+  );
+
+  return (
+    <div className="scrim p-0 sm:p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="uploader-title"
+        className="panel flex h-[100dvh] max-w-4xl flex-col overflow-hidden rounded-none pb-[env(safe-area-inset-bottom,0px)] sm:h-auto sm:max-h-[92dvh] sm:rounded-[var(--radius-xl)]"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5 pt-[calc(0.875rem+env(safe-area-inset-top,0px))] sm:px-6 sm:py-4">
+          <div className="min-w-0">
+            <h2 id="uploader-title" className="font-display truncate text-lg font-bold text-foreground sm:text-xl">
+              Upload a game
+            </h2>
+            <p className="truncate text-sm text-muted-foreground">Add your files, test-play them, then publish.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
             <button
               type="button"
               onClick={loadStarterTemplate}
-              className="flex items-center gap-1.5 rounded-lg border border-teal-400/20 bg-teal-400/8 px-2.5 sm:px-3.5 py-1.5 text-[11px] sm:text-xs font-bold text-teal-300 hover:bg-teal-400/15 transition"
-              title="Autofill with starter game template"
+              className="btn btn-secondary btn-sm"
+              title="Fill the form with a small example game"
             >
-              <Wand2 className="size-3.5 shrink-0" />
-              <span className="hidden xs:inline">Starter Template</span>
-              <span className="xs:hidden">Template</span>
+              <Wand2 className="size-3.5" />
+              <span className="hidden sm:inline">Use starter template</span>
+              <span className="sm:hidden">Template</span>
             </button>
-
-            <button
-              onClick={onClose}
-              className="rounded-xl p-1.5 sm:p-2 text-zinc-400 hover:bg-white/[0.08] hover:text-white transition"
-            >
+            <button onClick={onClose} className="icon-btn" aria-label="Close uploader">
               <X className="size-5" />
             </button>
           </div>
         </div>
 
-        {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Error Banner */}
+        {/* Body */}
+        <div className="flex-1 space-y-8 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
           {errorMessage && (
-            <div className="flex items-center gap-2 rounded-xl bg-rose-500/8 border border-rose-500/20 p-3.5 text-xs text-rose-300">
-              <AlertCircle className="size-4 shrink-0 text-rose-400" />
+            <div className="alert alert-error">
+              <AlertCircle className="mt-px size-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
-          {/* 1. Game Title & Icon Picker */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 items-start">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-300 mb-1.5">
-                  Game Title <span className="text-rose-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Astro Jump, Cyber Runner, Neon Dodge..."
-                  maxLength={40}
-                  className="w-full rounded-xl border border-white/[0.08] bg-background px-4 py-3 text-base font-bold text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-300 mb-1.5">
-                  How To Play / Description <span className="text-zinc-500 font-normal">(Optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="e.g. Press Spacebar to jump and dodge asteroids! Arrow keys to move."
-                  maxLength={120}
-                  className="w-full rounded-xl border border-white/[0.08] bg-background px-4 py-2.5 text-base sm:text-xs text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
-                />
-              </div>
-            </div>
-
-            {/* Thumbnail & Icon Picker */}
-            <div className="rounded-xl border border-white/[0.06] bg-background p-4 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
-                    <ImageIcon className="size-3.5 text-teal-400" />
-                    Game Thumbnail
-                  </span>
-                  {thumbnailUrl ? (
-                    <span className="text-[10px] bg-teal-400/10 text-teal-300 font-bold px-1.5 py-0.5 rounded-lg border border-teal-400/20">
-                      Active
-                    </span>
-                  ) : (
-                    <span className="text-xl" title="Fallback emoji badge">{selectedIcon}</span>
-                  )}
+          {/* 1. Details */}
+          <section>
+            {stepHeading(1, 'Details')}
+            <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-[minmax(0,1fr)_280px]">
+              <div className="space-y-4">
+                <div>
+                  <label className="field-label" htmlFor="game-title">
+                    Title <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    id="game-title"
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. Astro Jump"
+                    maxLength={40}
+                    className="field font-semibold"
+                  />
                 </div>
 
-                {/* If thumbnail is active, show preview */}
+                <div>
+                  <label className="field-label flex items-baseline justify-between" htmlFor="game-description">
+                    <span>How to play</span>
+                    <span className="text-xs font-normal text-subtle-foreground">{description.length}/120</span>
+                  </label>
+                  <textarea
+                    id="game-description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="e.g. Arrow keys to move, Space to jump. Dodge the asteroids!"
+                    maxLength={120}
+                    rows={3}
+                    className="field resize-none"
+                  />
+                  <p className="mt-1.5 text-xs text-subtle-foreground">Shown on your game’s card and while people play.</p>
+                </div>
+
+                <div>
+                  <span className="field-label flex items-center gap-2">
+                    Badge icon <span className="text-2xl leading-none">{selectedIcon}</span>
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {EMOJI_CATEGORIES.flatMap((c) => c.emojis).map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => setSelectedIcon(emoji)}
+                        aria-label={`Use ${emoji} as badge icon`}
+                        aria-pressed={selectedIcon === emoji}
+                        className={`flex size-9 items-center justify-center rounded-xl text-lg transition active:scale-90 ${
+                          selectedIcon === emoji ? 'bg-primary/15 ring-2 ring-primary' : 'bg-surface-sunken ring-1 ring-border hover:ring-border-strong'
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-1.5 text-xs text-subtle-foreground">Appears on your cover when there’s no cover image.</p>
+                </div>
+              </div>
+
+              {/* Cover image */}
+              <div className="rounded-2xl border border-border bg-surface-sunken/60 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <ImageIcon className="size-4 text-primary" />
+                    Cover image
+                  </span>
+                  <span className="text-xs text-subtle-foreground">Optional</span>
+                </div>
+
                 {thumbnailUrl ? (
-                  <div className="relative w-full h-28 rounded-xl overflow-hidden border border-teal-500/30 bg-black/40 group mb-3">
+                  <div className="group relative aspect-video w-full overflow-hidden rounded-xl bg-black/40 ring-1 ring-border">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={thumbnailUrl}
-                      alt="Game Thumbnail Preview"
+                      alt="Cover preview"
                       className="size-full object-cover"
                       onError={() => {
                         setErrorMessage('Could not load image from the provided thumbnail URL');
                       }}
                     />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setThumbnailUrl('');
-                          setUrlInput('');
-                          if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
-                        }}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/90 text-white text-xs font-bold hover:bg-rose-600 transition"
-                      >
-                        <Trash2 className="size-3.5" />
-                        <span>Remove</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setThumbnailUrl('');
+                        setUrlInput('');
+                        if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
+                      }}
+                      className="btn btn-sm absolute right-2 top-2 bg-black/70 text-white backdrop-blur hover:bg-rose-600"
+                    >
+                      <Trash2 className="size-3.5" />
+                      <span>Remove</span>
+                    </button>
                   </div>
                 ) : (
-                  <div className="mb-3">
-                    {/* Mode Toggle Tabs */}
-                    <div className="flex rounded-lg bg-white/[0.04] p-0.5 mb-2 text-[10px] font-bold">
-                      <button
-                        type="button"
-                        onClick={() => setThumbnailTab('upload')}
-                        className={`flex-1 py-1 rounded-md transition flex items-center justify-center gap-1 ${
-                          thumbnailTab === 'upload'
-                            ? 'bg-teal-500/20 text-teal-300 shadow-xs'
-                            : 'text-zinc-400 hover:text-white'
-                        }`}
-                      >
-                        <Upload className="size-3" />
-                        <span>Upload</span>
+                  <>
+                    <div className="segmented mb-3" role="tablist" aria-label="Cover image source">
+                      <button type="button" role="tab" aria-selected={thumbnailTab === 'upload'} onClick={() => setThumbnailTab('upload')} className="!min-h-8 !text-xs">
+                        <Upload className="size-3.5" />
+                        Upload
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setThumbnailTab('url')}
-                        className={`flex-1 py-1 rounded-md transition flex items-center justify-center gap-1 ${
-                          thumbnailTab === 'url'
-                            ? 'bg-teal-500/20 text-teal-300 shadow-xs'
-                            : 'text-zinc-400 hover:text-white'
-                        }`}
-                      >
-                        <LinkIcon className="size-3" />
-                        <span>Image URL</span>
+                      <button type="button" role="tab" aria-selected={thumbnailTab === 'url'} onClick={() => setThumbnailTab('url')} className="!min-h-8 !text-xs">
+                        <LinkIcon className="size-3.5" />
+                        Link
                       </button>
                     </div>
 
@@ -575,7 +647,12 @@ export function GameUploaderModal({
                           if (e.dataTransfer.files?.[0]) handleThumbnailFileSelected(e.dataTransfer.files[0]);
                         }}
                         onClick={() => thumbnailInputRef.current?.click()}
-                        className="flex flex-col items-center justify-center p-3 rounded-xl border border-dashed border-teal-500/30 bg-teal-500/[0.03] hover:bg-teal-500/[0.08] hover:border-teal-400/60 transition cursor-pointer text-center min-h-[84px]"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') thumbnailInputRef.current?.click();
+                        }}
+                        className="flex aspect-video cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border-strong text-center transition hover:border-primary/50 hover:bg-primary/[0.04]"
                       >
                         <input
                           ref={thumbnailInputRef}
@@ -587,20 +664,20 @@ export function GameUploaderModal({
                           }}
                         />
                         {isUploadingThumbnail ? (
-                          <div className="flex items-center gap-2 text-teal-400 text-xs py-2 font-semibold">
+                          <span className="flex items-center gap-2 text-sm font-semibold text-primary">
                             <Loader2 className="size-4 animate-spin" />
-                            <span>Uploading...</span>
-                          </div>
+                            Uploading…
+                          </span>
                         ) : (
                           <>
-                            <Upload className="size-4 text-teal-400 mb-1" />
-                            <span className="text-[11px] font-bold text-white">Choose Image</span>
-                            <span className="text-[9px] text-zinc-400">PNG, JPG, WebP (max 4MB)</span>
+                            <Upload className="size-5 text-primary" />
+                            <span className="text-sm font-semibold text-foreground">Choose an image</span>
+                            <span className="text-xs text-subtle-foreground">PNG, JPG or WebP, up to 4MB</span>
                           </>
                         )}
                       </div>
                     ) : (
-                      <div className="space-y-1">
+                      <div>
                         <input
                           type="url"
                           value={urlInput}
@@ -608,312 +685,115 @@ export function GameUploaderModal({
                             setUrlInput(e.target.value);
                             setThumbnailUrl(e.target.value.trim());
                           }}
-                          placeholder="https://... (Cloudinary, Imgur, etc.)"
-                          className="w-full rounded-xl border border-white/[0.08] bg-surface-sunken px-2.5 py-2 text-base sm:text-xs text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none"
+                          placeholder="https://…"
+                          aria-label="Cover image URL"
+                          className="field"
                         />
-                        <span className="text-[9px] text-zinc-500 block">Paste direct image URL</span>
+                        <span className="mt-1.5 block text-xs text-subtle-foreground">Paste a direct link to an image.</span>
                       </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
-
-              {/* Emoji badge fallback */}
-              <div className="pt-2 border-t border-white/[0.04]">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                    Badge Icon
-                  </span>
-                  <span className="text-sm">{selectedIcon}</span>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {EMOJI_CATEGORIES.flatMap((c) => c.emojis).slice(0, 12).map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => setSelectedIcon(emoji)}
-                      className={`size-7 rounded-lg text-sm flex items-center justify-center border transition ${
-                        selectedIcon === emoji
-                          ? 'border-teal-400 bg-teal-400/20 scale-105 shadow-sm'
-                          : 'border-white/[0.04] bg-white/[0.02] hover:border-white/15'
-                      }`}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
-          </div>
+          </section>
 
-          {/* 2. Visual 3-Slot Code Assets Dropper */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                Code Files (HTML, CSS, JS)
+          {/* 2. Code files */}
+          <section>
+            {stepHeading(
+              2,
+              'Code files',
+              <span className="flex items-center gap-1 text-xs text-subtle-foreground">
+                <HelpCircle className="size-3.5" />
+                Only the HTML file is required
               </span>
-              <span className="text-[11px] text-teal-400 flex items-center gap-1 font-semibold">
-                <HelpCircle className="size-3" />
-                HTML file is all that is required
-              </span>
+            )}
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              {fileSlot({
+                type: 'html',
+                title: 'HTML',
+                hint: 'Your page: markup, canvas and any inline code.',
+                accept: '.html,.htm',
+                required: true,
+                dot: 'bg-orange-400',
+                file: htmlFile,
+                clear: () => setHtmlFile(null),
+                inputRef: htmlInputRef,
+                setFile: setHtmlFile,
+              })}
+              {fileSlot({
+                type: 'css',
+                title: 'CSS',
+                hint: 'Styles, if they live in their own file.',
+                accept: '.css',
+                dot: 'bg-sky-400',
+                file: cssFile,
+                clear: () => setCssFile(null),
+                inputRef: cssInputRef,
+                setFile: setCssFile,
+              })}
+              {fileSlot({
+                type: 'js',
+                title: 'JavaScript',
+                hint: 'Game logic, if it lives in its own file.',
+                accept: '.js,.javascript',
+                dot: 'bg-yellow-300',
+                file: jsFile,
+                clear: () => setJsFile(null),
+                inputRef: jsInputRef,
+                setFile: setJsFile,
+              })}
             </div>
+          </section>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* SLOT 1: HTML (REQUIRED) */}
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleFileDrop(e, 'html')}
-                className={`relative flex flex-col justify-between rounded-2xl border-2 border-dashed p-4 transition ${
-                  htmlFile
-                    ? 'border-teal-500/40 bg-teal-500/[0.04]'
-                    : 'border-teal-500/25 bg-teal-500/[0.02] hover:border-teal-400'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="rounded-md bg-teal-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-teal-400">
-                      Step 1 • Required
-                    </span>
-                    <FileCode className="size-4 text-teal-400" />
-                  </div>
-                  <h4 className="font-bold text-white text-sm">HTML File (.html)</h4>
-                  <p className="text-[11px] text-zinc-400 mt-0.5">
-                    Main structure, canvas, and layout.
-                  </p>
-                </div>
-
-                <div className="mt-4">
-                  {htmlFile ? (
-                    <div className="rounded-xl border border-teal-500/25 bg-teal-500/8 p-2.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 truncate text-xs font-semibold text-teal-300">
-                          <CheckCircle2 className="size-4 shrink-0" />
-                          <span className="truncate">{htmlFile.name}</span>
-                        </div>
-                        <span className="text-[10px] text-teal-400/80">{htmlFile.size}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setHtmlFile(null)}
-                        className="mt-1 text-[10px] text-zinc-400 hover:text-rose-400 underline transition"
-                      >
-                        Remove file
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => htmlInputRef.current?.click()}
-                      className="w-full flex items-center justify-center gap-2 rounded-full bg-teal-500/10 border border-teal-500/25 py-2.5 text-xs font-bold text-teal-300 hover:bg-teal-500/20 transition"
-                    >
-                      <Upload className="size-3.5" />
-                      <span>Choose .html file</span>
-                    </button>
-                  )}
-                  <input
-                    ref={htmlInputRef}
-                    type="file"
-                    accept=".html,.htm"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) readFileContent(e.target.files[0], setHtmlFile);
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* SLOT 2: CSS (OPTIONAL) */}
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleFileDrop(e, 'css')}
-                className={`relative flex flex-col justify-between rounded-2xl border-2 border-dashed p-4 transition ${
-                  cssFile
-                    ? 'border-teal-500/40 bg-teal-500/[0.04]'
-                    : 'border-white/[0.1] bg-white/[0.02] hover:border-teal-400/50'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="rounded-md bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold uppercase text-zinc-300">
-                      Step 2 • Optional
-                    </span>
-                    <Palette className="size-4 text-teal-400" />
-                  </div>
-                  <h4 className="font-bold text-white text-sm">CSS Stylesheet (.css)</h4>
-                  <p className="text-[11px] text-zinc-400 mt-0.5">
-                    Colors, styles, or leave empty if in HTML.
-                  </p>
-                </div>
-
-                <div className="mt-4">
-                  {cssFile ? (
-                    <div className="rounded-xl border border-teal-500/25 bg-teal-500/8 p-2.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 truncate text-xs font-semibold text-teal-300">
-                          <CheckCircle2 className="size-4 shrink-0" />
-                          <span className="truncate">{cssFile.name}</span>
-                        </div>
-                        <span className="text-[10px] text-teal-400/80">{cssFile.size}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setCssFile(null)}
-                        className="mt-1 text-[10px] text-zinc-400 hover:text-rose-400 underline transition"
-                      >
-                        Remove file
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => cssInputRef.current?.click()}
-                      className="w-full flex items-center justify-center gap-2 rounded-full bg-white/[0.04] border border-white/[0.08] py-2.5 text-xs font-bold text-zinc-300 hover:bg-white/[0.08] transition"
-                    >
-                      <Upload className="size-3.5" />
-                      <span>Choose .css file</span>
-                    </button>
-                  )}
-                  <input
-                    ref={cssInputRef}
-                    type="file"
-                    accept=".css"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) readFileContent(e.target.files[0], setCssFile);
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* SLOT 3: JS (OPTIONAL) */}
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleFileDrop(e, 'js')}
-                className={`relative flex flex-col justify-between rounded-2xl border-2 border-dashed p-4 transition ${
-                  jsFile
-                    ? 'border-teal-500/40 bg-teal-500/[0.04]'
-                    : 'border-white/[0.1] bg-white/[0.02] hover:border-teal-400/50'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="rounded-md bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold uppercase text-zinc-300">
-                      Step 3 • Optional
-                    </span>
-                    <FileText className="size-4 text-teal-400" />
-                  </div>
-                  <h4 className="font-bold text-white text-sm">JavaScript Logic (.js)</h4>
-                  <p className="text-[11px] text-zinc-400 mt-0.5">
-                    Game script, or leave empty if in HTML.
-                  </p>
-                </div>
-
-                <div className="mt-4">
-                  {jsFile ? (
-                    <div className="rounded-xl border border-teal-500/25 bg-teal-500/8 p-2.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 truncate text-xs font-semibold text-teal-300">
-                          <CheckCircle2 className="size-4 shrink-0" />
-                          <span className="truncate">{jsFile.name}</span>
-                        </div>
-                        <span className="text-[10px] text-teal-400/80">{jsFile.size}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setJsFile(null)}
-                        className="mt-1 text-[10px] text-zinc-400 hover:text-rose-400 underline transition"
-                      >
-                        Remove file
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => jsInputRef.current?.click()}
-                      className="w-full flex items-center justify-center gap-2 rounded-full bg-white/[0.04] border border-white/[0.08] py-2.5 text-xs font-bold text-zinc-300 hover:bg-white/[0.08] transition"
-                    >
-                      <Upload className="size-3.5" />
-                      <span>Choose .js file</span>
-                    </button>
-                  )}
-                  <input
-                    ref={jsInputRef}
-                    type="file"
-                    accept=".js,.javascript"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) readFileContent(e.target.files[0], setJsFile);
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 3. Live Test Sandbox Preview */}
-          {htmlFile && (
-            <div className="rounded-xl border border-teal-400/15 bg-background p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-teal-300">
-                    Live Sandbox Test Window
-                  </span>
-                  <span className="rounded-lg bg-teal-400/10 px-2 py-0.5 text-[10px] text-teal-400 font-semibold">
-                    Test Play Before Publishing
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPreviewMode(!previewMode)}
-                  className="flex items-center gap-1.5 text-xs font-bold text-teal-400 hover:underline"
-                >
+          {/* 3. Test play */}
+          <section>
+            {stepHeading(
+              3,
+              'Test play',
+              htmlFile ? (
+                <button type="button" onClick={() => setPreviewMode(!previewMode)} className="btn btn-secondary btn-sm">
                   <Eye className="size-3.5" />
-                  <span>{previewMode ? 'Hide Test Window' : 'Test Play Now 🕹️'}</span>
+                  <span>{previewMode ? 'Hide preview' : 'Play preview'}</span>
                 </button>
+              ) : null
+            )}
+            {!htmlFile ? (
+              <p className="rounded-2xl border border-dashed border-border px-4 py-6 text-center text-sm text-subtle-foreground">
+                Add an HTML file to try your game here before publishing.
+              </p>
+            ) : previewMode ? (
+              <div className="overflow-hidden rounded-2xl border border-border bg-black">
+                <iframe
+                  title="Game preview"
+                  sandbox="allow-scripts allow-modals allow-pointer-lock"
+                  srcDoc={bundledSource}
+                  className="aspect-video max-h-[60vh] w-full border-0"
+                />
               </div>
-
-              {previewMode && (
-                <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-black">
-                  <iframe
-                    title="Live Test Sandbox"
-                    sandbox="allow-scripts allow-modals allow-pointer-lock"
-                    srcDoc={bundledSource}
-                    className="w-full h-80 border-0"
-                  />
-                </div>
-              )}
-            </div>
-          )}
+            ) : (
+              <button
+                type="button"
+                onClick={() => setPreviewMode(true)}
+                className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-surface-sunken/60 px-4 py-8 text-sm text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
+              >
+                <span className="flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                  <GiJoystick className="size-5" />
+                </span>
+                Play your game in the same sandbox players will use
+              </button>
+            )}
+          </section>
         </div>
 
-        {/* Modal Footer Controls */}
-        <div className="flex items-center justify-between border-t border-white/[0.06] bg-surface px-4 sm:px-6 py-3.5 sm:py-4 gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg px-3.5 sm:px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white transition"
-          >
+        {/* Footer */}
+        <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-3.5 sm:px-6">
+          <button type="button" onClick={onClose} className="btn btn-ghost">
             Cancel
           </button>
-
-          <button
-            type="button"
-            disabled={!htmlFile || isSubmitting}
-            onClick={handlePublish}
-            className="flex items-center gap-2 rounded-lg bg-teal-400 px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-semibold text-zinc-950 shadow-lg transition transform active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? (
-              <>
-                <span className="animate-spin text-base">⚙️</span>
-                <span>Publishing to Arcade...</span>
-              </>
-            ) : (
-              <>
-                <GiSparkles className="size-4 shrink-0" />
-                <span className="hidden sm:inline">Publish Game to Community Arcade 🚀</span>
-                <span className="sm:hidden">Publish Game 🚀</span>
-              </>
-            )}
+          <button type="button" disabled={!htmlFile || isSubmitting} onClick={handlePublish} className="btn btn-brand btn-lg">
+            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Rocket className="size-4" />}
+            <span>{isSubmitting ? 'Publishing…' : 'Publish game'}</span>
           </button>
         </div>
       </div>

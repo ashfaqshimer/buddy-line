@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Mail, CheckCircle2, AlertCircle, Loader2, Sparkles } from 'lucide-react';
+import { X, Mail, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { updateCurrentUserEmailAction } from '@/app/user-actions';
 
 interface EmailModalProps {
@@ -50,103 +50,81 @@ export function EmailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md rounded-xl border border-white/[0.08] bg-surface p-6 shadow-2xl shadow-black/40">
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 rounded-xl p-2 text-zinc-400 hover:bg-white/5 hover:text-white transition"
-        >
-          <X className="size-4" />
+    <div className="scrim" onClick={() => !loading && onClose()}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="email-modal-title"
+        onClick={(e) => e.stopPropagation()}
+        className="panel max-w-md p-6"
+      >
+        <button onClick={onClose} className="icon-btn absolute right-3 top-3" aria-label="Close">
+          <X className="size-5" />
         </button>
 
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-teal-500/10 border border-teal-400/20 text-teal-400">
+        <div className="mb-5 flex items-center gap-3 pr-8">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary">
             <Mail className="size-5" />
-          </div>
+          </span>
           <div>
-            <h3 className="font-semibold text-white text-base">
-              {isPlaceholder ? 'Link Your Email Address' : 'Update Email Address'}
+            <h3 id="email-modal-title" className="font-display text-lg font-bold text-foreground">
+              {isPlaceholder ? 'Link an email' : 'Update your email'}
             </h3>
-            <p className="text-xs text-zinc-400">
+            <p className="text-sm text-muted-foreground">
               {isPlaceholder
-                ? 'Replace your placeholder player ID with your real email.'
-                : 'Manage your connected email account.'}
+                ? 'Add a real email so you can sign in with it.'
+                : 'Change the email you sign in with.'}
             </p>
           </div>
         </div>
 
         {currentEmail && (
-          <div className="mb-4 rounded-xl border border-white/[0.06] bg-background p-3 text-xs">
-            <span className="text-zinc-400">Current ID: </span>
-            <span className="font-mono text-zinc-200">{currentEmail}</span>
-            {isPlaceholder && (
-              <span className="ml-2 rounded-md bg-amber-400/10 text-amber-300 border border-amber-400/15 px-1.5 py-0.5 text-[9px] font-bold">
-                Auto-Generated
-              </span>
-            )}
+          <div className="mb-5 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface-sunken px-3.5 py-3 text-sm">
+            <span className="text-subtle-foreground">Current</span>
+            <span className="min-w-0 truncate font-mono text-[13px] text-foreground">{currentEmail}</span>
+            {isPlaceholder && <span className="tag tag-admin">Auto-generated</span>}
           </div>
         )}
 
         {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/8 p-3 text-xs text-rose-300">
-            <AlertCircle className="size-4 shrink-0 text-rose-400" />
+          <div className="alert alert-error mb-4">
+            <AlertCircle className="mt-px size-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl border border-teal-500/20 bg-teal-500/8 p-3 text-xs text-teal-300">
-            <CheckCircle2 className="size-4 shrink-0 text-teal-400" />
-            <span>Email updated successfully!</span>
+          <div className="alert alert-success mb-4">
+            <CheckCircle2 className="mt-px size-4 shrink-0" />
+            <span>Email updated.</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-1.5">
-              New Email Address
-            </label>
+            <label className="field-label" htmlFor="new-email">New email</label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-3 size-4 text-zinc-400" />
+              <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-subtle-foreground" />
               <input
+                id="new-email"
                 type="email"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="e.g. you@example.com"
+                placeholder="you@example.com"
+                autoComplete="email"
                 required
-                className="w-full rounded-xl border border-white/[0.08] bg-background py-2.5 pl-10 pr-4 text-base sm:text-sm text-white placeholder-zinc-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="field pl-10"
               />
             </div>
-            <p className="mt-1.5 text-[10px] text-zinc-400 leading-relaxed">
-              You can use this email address to sign into your account and receive updates.
-            </p>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] transition"
-            >
+          <div className="flex items-center justify-end gap-2">
+            <button type="button" onClick={onClose} disabled={loading} className="btn btn-secondary">
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={loading || !newEmail.trim()}
-              className="flex items-center gap-2 rounded-lg bg-teal-400 px-4 py-2 text-xs font-bold text-zinc-950 transition active:scale-95 disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="size-3.5 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="size-3.5" />
-                  <span>Save Email</span>
-                </>
-              )}
+            <button type="submit" disabled={loading || !newEmail.trim()} className="btn btn-primary">
+              {loading && <Loader2 className="size-4 animate-spin" />}
+              <span>{loading ? 'Saving…' : 'Save email'}</span>
             </button>
           </div>
         </form>

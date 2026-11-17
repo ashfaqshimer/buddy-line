@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Sparkles,
   Trash2,
 } from 'lucide-react';
 import { useUploadThing } from '@/lib/uploadthing';
@@ -160,67 +159,48 @@ function AvatarModalBody({
     }
   };
 
-  const tabClass = (active: boolean) =>
-    `flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition ${
-      active ? 'bg-teal-400/15 text-teal-300 border border-teal-400/25' : 'text-zinc-400 hover:text-white border border-transparent'
-    }`;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
-      onClick={() => !busy && onClose()}
-    >
+    <div className="scrim" onClick={() => !busy && onClose()}>
       <div
-        className="relative w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-white/[0.08] bg-surface p-6 shadow-2xl shadow-black/40"
+        className="panel max-h-[calc(100dvh-2rem)] max-w-md overflow-y-auto p-6"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="avatar-modal-title"
       >
-        <button
-          onClick={onClose}
-          disabled={busy}
-          className="absolute right-4 top-4 rounded-xl p-2 text-zinc-400 hover:bg-white/5 hover:text-white transition"
-          aria-label="Close"
-        >
-          <X className="size-4" />
+        <button onClick={onClose} disabled={busy} className="icon-btn absolute right-3 top-3" aria-label="Close">
+          <X className="size-5" />
         </button>
 
-        <div className="flex items-center gap-3 mb-5">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-teal-500/10 border border-teal-400/20 text-teal-400">
-            <Smile className="size-5" />
-          </div>
-          <div>
-            <h3 id="avatar-modal-title" className="font-semibold text-white text-base">
-              Change Avatar
-            </h3>
-            <p className="text-xs text-zinc-400">Pick an icon or upload your own picture.</p>
-          </div>
-        </div>
+        <h3 id="avatar-modal-title" className="font-display text-lg font-bold text-foreground">
+          Change avatar
+        </h3>
+        <p className="mt-1 text-sm text-muted-foreground">Pick an icon or upload your own picture.</p>
 
         {/* Preview */}
-        <div className="flex justify-center mb-5">
-          <UserAvatar
-            avatar={previewAvatar || DEFAULT_AVATAR}
-            name={displayName}
-            className="size-24 rounded-xl bg-teal-400 text-5xl font-semibold text-white ring-2 ring-teal-400/30"
-          />
+        <div className="my-6 flex justify-center">
+          <div className="rounded-full bg-[image:var(--brand-gradient)] p-[3px] shadow-[0_12px_40px_-12px_rgba(129,140,248,0.8)]">
+            <UserAvatar
+              avatar={previewAvatar || DEFAULT_AVATAR}
+              name={displayName}
+              className="size-24 rounded-full bg-surface-raised text-5xl font-semibold text-foreground ring-4 ring-surface"
+            />
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 rounded-xl bg-background p-1 mb-4">
-          <button type="button" onClick={() => setTab('icons')} className={tabClass(tab === 'icons')} disabled={busy}>
-            <Smile className="size-3.5" />
+        <div className="segmented mb-4" role="tablist" aria-label="Avatar type">
+          <button type="button" role="tab" aria-selected={tab === 'icons'} onClick={() => setTab('icons')} disabled={busy}>
+            <Smile className="size-4" />
             Icons
           </button>
-          <button type="button" onClick={() => setTab('upload')} className={tabClass(tab === 'upload')} disabled={busy}>
-            <ImagePlus className="size-3.5" />
-            Upload Image
+          <button type="button" role="tab" aria-selected={tab === 'upload'} onClick={() => setTab('upload')} disabled={busy}>
+            <ImagePlus className="size-4" />
+            Upload image
           </button>
         </div>
 
         {tab === 'icons' ? (
-          <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 mb-4">
+          <div className="mb-5 grid grid-cols-6 gap-2 sm:grid-cols-8">
             {PRESET_AVATARS.map((icon) => {
               const active = (selectedIcon || currentAvatar) === icon;
               return (
@@ -231,10 +211,8 @@ function AvatarModalBody({
                   disabled={busy}
                   aria-label={`Use ${icon} as avatar`}
                   aria-pressed={active}
-                  className={`aspect-square flex items-center justify-center rounded-xl text-xl transition active:scale-90 ${
-                    active
-                      ? 'bg-teal-400/20 ring-2 ring-teal-400'
-                      : 'bg-background hover:bg-white/[0.06]'
+                  className={`flex aspect-square items-center justify-center rounded-xl text-xl transition active:scale-90 ${
+                    active ? 'bg-social/20 ring-2 ring-social' : 'bg-surface-sunken ring-1 ring-border hover:ring-border-strong'
                   }`}
                 >
                   {icon}
@@ -243,7 +221,7 @@ function AvatarModalBody({
             })}
           </div>
         ) : (
-          <div className="mb-4">
+          <div className="mb-5">
             <input
               ref={fileInputRef}
               type="file"
@@ -267,28 +245,21 @@ function AvatarModalBody({
               onKeyDown={(e) => {
                 if ((e.key === 'Enter' || e.key === ' ') && !busy) fileInputRef.current?.click();
               }}
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/[0.1] bg-background px-4 py-6 text-center cursor-pointer hover:border-teal-400/40 transition"
+              className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border-strong bg-surface-sunken px-4 py-8 text-center transition hover:border-primary/50 hover:bg-primary/[0.04]"
             >
-              {processing ? (
-                <Loader2 className="size-6 text-teal-400 animate-spin" />
-              ) : (
-                <Upload className="size-6 text-teal-400" />
-              )}
-              <div className="text-xs font-bold text-white">
-                {pendingFile ? 'Choose a different image' : 'Click or drop an image here'}
+              <span className="flex size-10 items-center justify-center rounded-full bg-primary/12 text-primary">
+                {processing ? <Loader2 className="size-5 animate-spin" /> : <Upload className="size-5" />}
+              </span>
+              <div className="text-sm font-semibold text-foreground">
+                {pendingFile ? 'Choose a different image' : 'Click or drop an image'}
               </div>
-              <div className="text-[10px] text-zinc-400">
+              <div className="text-xs text-subtle-foreground">
                 PNG, JPG, WEBP or GIF up to 10MB. We&apos;ll crop it to a square.
               </div>
             </div>
             {pendingFile && (
-              <button
-                type="button"
-                onClick={clearPendingFile}
-                disabled={busy}
-                className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-zinc-400 hover:text-rose-300 transition"
-              >
-                <Trash2 className="size-3" />
+              <button type="button" onClick={clearPendingFile} disabled={busy} className="btn btn-ghost btn-sm mt-2 hover:!text-rose-300">
+                <Trash2 className="size-3.5" />
                 Discard selected image
               </button>
             )}
@@ -296,45 +267,26 @@ function AvatarModalBody({
         )}
 
         {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/8 p-3 text-xs text-rose-300">
-            <AlertCircle className="size-4 shrink-0 text-rose-400" />
+          <div className="alert alert-error mb-4">
+            <AlertCircle className="mt-px size-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl border border-teal-500/20 bg-teal-500/8 p-3 text-xs text-teal-300">
-            <CheckCircle2 className="size-4 shrink-0 text-teal-400" />
-            <span>Avatar updated!</span>
+          <div className="alert alert-success mb-4">
+            <CheckCircle2 className="mt-px size-4 shrink-0" />
+            <span>Avatar updated.</span>
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-3 pt-1">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={busy}
-            className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] transition"
-          >
+        <div className="flex items-center justify-end gap-2">
+          <button type="button" onClick={onClose} disabled={busy} className="btn btn-secondary">
             Cancel
           </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={busy || !hasChange || success}
-            className="flex items-center gap-2 rounded-lg bg-teal-400 px-4 py-2 text-xs font-bold text-zinc-950 transition active:scale-95 disabled:opacity-50"
-          >
-            {saving || isUploading ? (
-              <>
-                <Loader2 className="size-3.5 animate-spin" />
-                <span>{isUploading ? 'Uploading...' : 'Saving...'}</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="size-3.5" />
-                <span>Save Avatar</span>
-              </>
-            )}
+          <button type="button" onClick={handleSave} disabled={busy || !hasChange || success} className="btn btn-primary">
+            {(saving || isUploading) && <Loader2 className="size-4 animate-spin" />}
+            <span>{isUploading ? 'Uploading…' : saving ? 'Saving…' : 'Save avatar'}</span>
           </button>
         </div>
       </div>

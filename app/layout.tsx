@@ -1,22 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Plus_Jakarta_Sans, Unbounded } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Body / UI face: friendly geometric sans.
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
 });
 
+// Codes, counts and other tabular bits.
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
-// Display face for headings and typographic game covers (width axis drives condensed/wide).
-const archivo = Archivo({
-  variable: "--font-archivo",
+// Display face for headings and typographic game covers.
+const unbounded = Unbounded({
+  variable: "--font-unbounded",
   subsets: ["latin"],
-  axes: ["wdth"],
 });
 
 export const viewport: Viewport = {
@@ -24,7 +25,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
-  themeColor: "#0d0d0f",
+  themeColor: "#090a14",
 };
 
 export const metadata: Metadata = {
@@ -44,9 +45,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${archivo.variable} h-full dark antialiased`}
+      className={`${jakarta.variable} ${geistMono.variable} ${unbounded.variable} h-full dark antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground">{children}</body>
+      <body className="min-h-full flex flex-col text-foreground">{children}</body>
     </html>
   );
 }

@@ -3,19 +3,23 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Search,
-  Upload,
   Play,
   Plus,
   Trash2,
   AlertTriangle,
   Loader2,
-  Share2,
+  Link2,
   Check,
   LayoutGrid,
   List,
   X,
+  Flame,
+  FileCode2,
+  Gamepad2,
+  ShieldCheck,
 } from 'lucide-react';
 import { GameRecord } from '@/lib/games-db';
+import { getCoverTone } from '@/lib/game-colors';
 import { UserAvatar } from './user-avatar';
 import { GameCover } from './game-cover';
 import { getGames, deleteGameAction } from '@/app/game-actions';
@@ -34,6 +38,8 @@ interface ArcadeViewProps {
   onGamesLoaded?: (count: number) => void;
   onOpenChat?: (targetPlayerIdOrUsername?: string) => void;
 }
+
+const playsLabel = (count: number) => `${count.toLocaleString()} ${count === 1 ? 'play' : 'plays'}`;
 
 export function ArcadeView({
   filter = 'all',
@@ -132,6 +138,8 @@ export function ArcadeView({
     (session?.user as { username?: string; email?: string } | undefined)?.email?.toLowerCase() === 'root@buddyline.local' ||
     (session?.user as { username?: string; email?: string } | undefined)?.email?.toLowerCase() === 'root@buddyline.com';
   const isAdmin = authIsAdmin || currentUserRole === 'admin' || currentUserRole === 'root' || Boolean(isDirectRoot);
+  const displayName =
+    (session?.user as { username?: string; name?: string } | undefined)?.username || session?.user?.name;
 
   const canDeleteGame = (game: GameRecord) => {
     if (!session?.user) return false;
@@ -198,342 +206,428 @@ export function ArcadeView({
   }, [games, activeFilter, searchQuery, session?.user]);
 
   const filterTabs: { id: ArcadeFilterType; label: string }[] = [
-    { id: 'all', label: 'All' },
-    { id: 'popular', label: 'Popular' },
+    { id: 'all', label: 'All games' },
+    { id: 'popular', label: 'Most played' },
     { id: 'newest', label: 'Newest' },
     { id: 'my-games', label: 'My uploads' },
   ];
 
-  const playsLabel = (count: number) => `${count} ${count === 1 ? 'play' : 'plays'}`;
+  const stats = [
+    { value: games.length, label: games.length === 1 ? 'game' : 'games' },
+    { value: totalPlays, label: totalPlays === 1 ? 'play' : 'plays' },
+    { value: totalCreators, label: totalCreators === 1 ? 'creator' : 'creators' },
+  ];
+
+  const spotlightTone = spotlightGame ? getCoverTone(spotlightGame.id) : null;
+
+  /** Small "made by" button that opens a chat with the game's creator. */
+  const creatorButton = (game: GameRecord, avatarSize = 'size-6 text-xs') => (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpenChat?.(game.authorId || game.authorUsername);
+      }}
+      title={`Message ${game.authorUsername}`}
+      className="group/creator inline-flex min-w-0 items-center gap-2 rounded-full text-left transition"
+    >
+      <UserAvatar
+        inline
+        avatar={game.authorAvatar}
+        name={game.authorUsername}
+        className={`${avatarSize} rounded-full bg-surface-raised ring-1 ring-border`}
+      />
+      <span className="truncate text-[13px] font-medium text-muted-foreground transition group-hover/creator:text-social">
+        {game.authorUsername}
+      </span>
+    </button>
+  );
 
   return (
-    <div className="space-y-14 sm:space-y-20 animate-in fade-in duration-300">
-      {/* 1. Hero: headline + most-played game */}
-      <section className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-10 lg:gap-14 items-end pt-4 sm:pt-10">
-        <div className="min-w-0">
-          <p className="mb-5 font-mono text-[11px] uppercase tracking-[0.14em] text-subtle-foreground">
-            Community web arcade
+    <div className="space-y-12 sm:space-y-16">
+      {/* 1. Intro */}
+      <section className="anim-rise flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 max-w-3xl">
+          <p className="eyebrow">
+            {displayName ? `Welcome back, ${displayName}` : 'The community web arcade'}
           </p>
-          <h1 className="display-wide text-balance text-[40px] sm:text-[56px] lg:text-[64px] font-extrabold leading-[0.95] text-foreground">
-            Code it. Play it. Share it.
+          <h1 className="font-display mt-3 text-balance text-[32px] font-extrabold leading-[1.08] text-foreground sm:text-5xl lg:text-[56px]">
+            Play games made by <span className="text-gradient">your buddies</span>.
           </h1>
-          <p className="mt-5 max-w-[42ch] text-[15px] leading-relaxed text-muted-foreground">
-            Upload a game written in HTML, CSS and JavaScript. Anyone can play it in the browser, with nothing to install.
+          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted-foreground sm:text-base">
+            Browser games built with HTML, CSS and JavaScript by people in the community. Nothing to install.
+            Made one yourself? Upload it and anyone can play.
           </p>
-
-          <div className="mt-7 flex flex-wrap items-center gap-3">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
             <button
-              onClick={handleUploadClick}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-teal-300 active:scale-[0.98]"
+              onClick={() => document.getElementById('arcade-main-content')?.scrollIntoView({ behavior: 'smooth' })}
+              className="btn btn-primary btn-lg"
             >
-              <Upload className="size-4" />
-              <span>Upload a game</span>
+              <Gamepad2 className="size-[18px]" />
+              <span>Browse games</span>
+            </button>
+            <button onClick={handleUploadClick} className="btn btn-secondary btn-lg">
+              <Plus className="size-[18px]" />
+              <span>Upload yours</span>
             </button>
           </div>
-
-          <dl className="mt-10 flex flex-wrap gap-x-8 gap-y-3 border-t border-border pt-5 font-mono text-xs text-muted-foreground tabular-nums">
-            <div className="flex items-baseline gap-2">
-              <dd className="text-base font-medium text-foreground">{games.length}</dd>
-              <dt>{games.length === 1 ? 'game' : 'games'}</dt>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <dd className="text-base font-medium text-foreground">{totalPlays}</dd>
-              <dt>{totalPlays === 1 ? 'play' : 'plays'}</dt>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <dd className="text-base font-medium text-foreground">{totalCreators}</dd>
-              <dt>{totalCreators === 1 ? 'creator' : 'creators'}</dt>
-            </div>
-          </dl>
         </div>
 
-        {spotlightGame ? (
-          <div className="min-w-0 space-y-4">
+        <dl className="grid shrink-0 grid-cols-3 gap-2 sm:gap-3">
+          {stats.map((s) => (
+            <div key={s.label} className="card min-w-[92px] px-4 py-3 sm:min-w-[112px] sm:px-5 sm:py-4">
+              <dd className="font-display text-xl font-bold tabular-nums text-foreground sm:text-2xl">
+                {loading ? '–' : s.value.toLocaleString()}
+              </dd>
+              <dt className="mt-0.5 text-xs font-medium text-muted-foreground">{s.label}</dt>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      {/* 2. Featured: most-played game */}
+      {loading ? (
+        <div className="h-[420px] animate-pulse rounded-[28px] border border-border bg-surface sm:h-[380px]" aria-label="Loading featured game" />
+      ) : spotlightGame && spotlightTone ? (
+        <section
+          aria-label="Most played game"
+          className="anim-rise relative overflow-hidden rounded-[28px] border border-border"
+          style={{
+            background: `radial-gradient(90% 140% at 100% 0%, ${spotlightTone.hi}66, transparent 60%), linear-gradient(135deg, ${spotlightTone.base} 0%, var(--surface) 70%)`,
+          }}
+        >
+          <div className="grid items-center gap-6 p-3 sm:p-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10 lg:p-8">
+            <div className="order-2 min-w-0 px-2 pb-3 sm:px-2 lg:order-1 lg:pb-0">
+              <span className="tag bg-white/10 text-foreground backdrop-blur">
+                <Flame className="size-3.5 text-orange-300" />
+                Most played
+              </span>
+              <h2 className="font-display mt-4 text-balance text-[28px] font-extrabold leading-[1.08] text-foreground sm:text-4xl lg:text-[44px]">
+                {spotlightGame.title}
+              </h2>
+              {spotlightGame.description && (
+                <p className="mt-3 line-clamp-3 max-w-md text-[15px] leading-relaxed text-muted-foreground">
+                  {spotlightGame.description}
+                </p>
+              )}
+              <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+                {creatorButton(spotlightGame, 'size-7 text-sm')}
+                <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground tabular-nums">
+                  <Play className="size-3 fill-current" />
+                  {playsLabel(spotlightGame.playCount)}
+                </span>
+              </div>
+              <div className="mt-6 flex flex-wrap items-center gap-2.5">
+                <button onClick={() => setActiveGame(spotlightGame)} className="btn btn-primary btn-lg">
+                  <Play className="size-4 fill-current" />
+                  <span>Play now</span>
+                </button>
+                <button
+                  onClick={(e) => handleShare(spotlightGame, e)}
+                  className="btn btn-secondary btn-lg"
+                  aria-label={`Copy link to ${spotlightGame.title}`}
+                >
+                  {copiedGameId === spotlightGame.id ? <Check className="size-4 text-primary" /> : <Link2 className="size-4" />}
+                  <span>{copiedGameId === spotlightGame.id ? 'Link copied' : 'Copy link'}</span>
+                </button>
+              </div>
+            </div>
+
             <button
               onClick={() => setActiveGame(spotlightGame)}
               aria-label={`Play ${spotlightGame.title}`}
-              className="group block w-full rounded-lg text-left"
+              className="group order-1 block w-full rounded-2xl lg:order-2"
             >
               <GameCover
                 game={spotlightGame}
-                label="Most played"
                 size="lg"
-                className="transition-transform duration-200 group-hover:-translate-y-0.5"
-              />
-            </button>
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <h2 className="truncate text-base font-semibold text-foreground">{spotlightGame.title}</h2>
-                <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
-                  {spotlightGame.authorUsername} · {playsLabel(spotlightGame.playCount)}
-                </p>
-              </div>
-              <button
-                onClick={() => setActiveGame(spotlightGame)}
-                className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-teal-300 active:scale-[0.98]"
+                className="rounded-2xl shadow-[0_30px_60px_-25px_rgba(0,0,0,0.8)] transition-transform duration-300 group-hover:scale-[1.015]"
               >
-                <Play className="size-3.5 fill-current" />
-                <span>Play</span>
-              </button>
-            </div>
+                <span className="absolute inset-0 flex items-center justify-center bg-black/25 opacity-0 transition duration-200 group-hover:opacity-100">
+                  <span className="flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_40px_rgba(56,189,248,0.6)]">
+                    <Play className="ml-1 size-7 fill-current" />
+                  </span>
+                </span>
+              </GameCover>
+            </button>
           </div>
-        ) : (
-          !loading && (
-            <div className="flex aspect-video w-full flex-col items-center justify-center rounded-lg border border-dashed border-border-strong p-6 text-center">
-              <p className="text-sm font-medium text-foreground">No games yet</p>
-              <p className="mt-1 text-sm text-muted-foreground">Upload the first one and it will show up here.</p>
-            </div>
-          )
-        )}
-      </section>
+        </section>
+      ) : (
+        <section className="flex flex-col items-center justify-center rounded-[28px] border border-dashed border-border-strong px-6 py-16 text-center">
+          <span className="text-4xl" aria-hidden>🕹️</span>
+          <h2 className="font-display mt-4 text-xl font-bold text-foreground">The arcade is empty</h2>
+          <p className="mt-2 max-w-sm text-sm text-muted-foreground">Upload the first game and it will be featured right here.</p>
+          <button onClick={handleUploadClick} className="btn btn-brand mt-6">
+            <Plus className="size-4" />
+            <span>Upload a game</span>
+          </button>
+        </section>
+      )}
 
-      {/* 2. Catalog */}
-      <section id="arcade-main-content" className="scroll-mt-24 space-y-8">
-        <div className="flex flex-col-reverse gap-3 border-b border-border sm:flex-row sm:items-end sm:justify-between">
-          <div role="tablist" aria-label="Filter games" className="-mb-px flex gap-6 overflow-x-auto no-scrollbar">
-            {filterTabs.map((tab) => {
-              const isActive = activeFilter === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => {
-                    if (tab.id === 'my-games' && !session?.user) {
-                      setIsAuthOpen(true);
-                    } else {
-                      setFilter(tab.id);
-                    }
-                  }}
-                  className={`flex items-baseline gap-1.5 whitespace-nowrap border-b-2 py-3 text-sm transition ${
-                    isActive
-                      ? 'border-foreground font-medium text-foreground'
-                      : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <span>{tab.label}</span>
-                  {tab.id === 'all' && (
-                    <span className="font-mono text-[11px] text-subtle-foreground tabular-nums">{games.length}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+      {/* 3. Catalog */}
+      <section id="arcade-main-content" className="scroll-mt-24">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="font-display flex items-baseline gap-2.5 text-2xl font-bold text-foreground">
+            Arcade
+            {!loading && <span className="font-sans text-sm font-medium text-subtle-foreground tabular-nums">{games.length}</span>}
+          </h2>
 
-          <div className="flex items-center gap-2 pt-1 sm:pb-2.5 sm:pt-0">
-            <div className="relative w-full sm:w-64">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle-foreground" />
+          <div className="flex items-center gap-2">
+            <div className="relative w-full sm:w-72">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-subtle-foreground" />
               <input
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search games or creators"
                 aria-label="Search games or creators"
-                className="h-10 sm:h-9 w-full rounded-lg border border-border bg-surface-sunken pl-9 pr-8 text-base sm:text-sm text-foreground placeholder:text-subtle-foreground transition focus:border-border-strong focus:outline-none"
+                className="field !rounded-full pl-10 pr-9"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
                   aria-label="Clear search"
-                  className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded text-subtle-foreground hover:text-foreground"
+                  className="absolute right-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-subtle-foreground hover:bg-white/10 hover:text-foreground"
                 >
                   <X className="size-3.5" />
                 </button>
               )}
             </div>
 
-            <div className="hidden sm:flex items-center rounded-lg border border-border p-0.5">
-              <button
-                onClick={() => setViewMode('grid')}
-                title="Grid view"
-                aria-pressed={viewMode === 'grid'}
-                className={`flex size-8 items-center justify-center rounded-md transition ${
-                  viewMode === 'grid' ? 'bg-white/[0.08] text-foreground' : 'text-subtle-foreground hover:text-foreground'
-                }`}
-              >
+            <div className="segmented hidden shrink-0 sm:flex" role="group" aria-label="Layout">
+              <button onClick={() => setViewMode('grid')} title="Grid view" aria-label="Grid view" aria-pressed={viewMode === 'grid'} className="!px-2.5">
                 <LayoutGrid className="size-4" />
               </button>
-              <button
-                onClick={() => setViewMode('list')}
-                title="List view"
-                aria-pressed={viewMode === 'list'}
-                className={`flex size-8 items-center justify-center rounded-md transition ${
-                  viewMode === 'list' ? 'bg-white/[0.08] text-foreground' : 'text-subtle-foreground hover:text-foreground'
-                }`}
-              >
+              <button onClick={() => setViewMode('list')} title="List view" aria-label="List view" aria-pressed={viewMode === 'list'} className="!px-2.5">
                 <List className="size-4" />
               </button>
             </div>
           </div>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3" aria-label="Loading games">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="animate-pulse space-y-3">
-                <div className="aspect-video w-full rounded-lg bg-surface" />
-                <div className="h-4 w-2/3 rounded bg-surface" />
-                <div className="h-3 w-1/3 rounded bg-surface" />
-              </div>
-            ))}
-          </div>
-        ) : activeFilter === 'my-games' && isPending ? (
-          <div className="flex items-center justify-center gap-3 py-20 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            <span>Checking your session…</span>
-          </div>
-        ) : activeFilter === 'my-games' && !session?.user ? (
-          <div className="rounded-lg border border-dashed border-border-strong px-6 py-16 text-center">
-            <h3 className="text-base font-semibold text-foreground">Sign in to see your uploads</h3>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-              Games you upload are listed here so you can play, share or remove them.
-            </p>
+        <div role="tablist" aria-label="Filter games" className="no-scrollbar -mx-4 mt-5 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          {filterTabs.map((tab) => (
             <button
-              onClick={() => setIsAuthOpen(true)}
-              className="mt-5 inline-flex items-center gap-2 rounded-lg border border-border-strong px-4 py-2 text-sm font-medium text-foreground transition hover:bg-white/[0.05]"
+              key={tab.id}
+              role="tab"
+              aria-selected={activeFilter === tab.id}
+              onClick={() => {
+                if (tab.id === 'my-games' && !session?.user) {
+                  setIsAuthOpen(true);
+                } else {
+                  setFilter(tab.id);
+                }
+              }}
+              className="chip"
             >
-              Sign in
+              {tab.label}
             </button>
-          </div>
-        ) : filteredGames.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border-strong px-6 py-16 text-center">
-            <h3 className="text-base font-semibold text-foreground">No games found</h3>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-              {searchQuery
-                ? `Nothing matches "${searchQuery}". Try another title or creator.`
-                : activeFilter === 'my-games'
-                ? "You haven't uploaded a game yet."
-                : 'No one has uploaded a game yet.'}
-            </p>
-            {!searchQuery && (
-              <button
-                onClick={handleUploadClick}
-                className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-teal-300"
-              >
-                <Plus className="size-4" />
-                <span>Upload a game</span>
-              </button>
-            )}
-          </div>
-        ) : viewMode === 'grid' ? (
-          /* GRID VIEW */
-          <div className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredGames.map((game) => (
-              <article key={game.id} className="group min-w-0">
-                <div className="relative">
-                  <button
-                    onClick={() => setActiveGame(game)}
-                    aria-label={`Play ${game.title}`}
-                    className="block w-full rounded-lg"
-                  >
-                    <GameCover game={game} className="transition-transform duration-200 group-hover:-translate-y-0.5">
-                      <span className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition duration-200 group-hover:opacity-100">
-                        <span className="flex size-12 scale-90 items-center justify-center rounded-full bg-primary text-primary-foreground transition duration-200 group-hover:scale-100">
-                          <Play className="ml-0.5 size-5 fill-current" />
-                        </span>
-                      </span>
-                    </GameCover>
-                  </button>
+          ))}
+        </div>
 
-                  {/* Cover actions: always visible on touch, on hover/focus otherwise */}
-                  <div className="absolute right-2.5 top-2.5 flex gap-1.5 transition sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
-                    <button
-                      onClick={(e) => handleShare(game, e)}
-                      title="Copy game link"
-                      aria-label={`Copy link to ${game.title}`}
-                      className="flex size-8 items-center justify-center rounded-md bg-black/60 text-white/85 backdrop-blur-sm transition hover:bg-black/80 hover:text-white"
-                    >
-                      {copiedGameId === game.id ? <Check className="size-3.5 text-teal-300" /> : <Share2 className="size-3.5" />}
-                    </button>
-                    {canDeleteGame(game) && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteError(null);
-                          setGameToDelete(game);
-                        }}
-                        title={
-                          isAdmin && game.authorId !== session?.user?.id
-                            ? 'Delete game (admin)'
-                            : 'Delete your game'
-                        }
-                        aria-label={`Delete ${game.title}`}
-                        className="flex size-8 items-center justify-center rounded-md bg-black/60 text-white/85 backdrop-blur-sm transition hover:bg-rose-600 hover:text-white"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
-                    )}
+        <div className="mt-6">
+          {loading ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4" aria-label="Loading games">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="animate-pulse rounded-[20px] border border-border bg-surface p-2">
+                  <div className="aspect-video w-full rounded-xl bg-surface-raised" />
+                  <div className="space-y-2 px-2 pb-2 pt-3">
+                    <div className="h-4 w-2/3 rounded-full bg-surface-raised" />
+                    <div className="h-3 w-1/3 rounded-full bg-surface-raised" />
                   </div>
                 </div>
+              ))}
+            </div>
+          ) : activeFilter === 'my-games' && isPending ? (
+            <div className="flex items-center justify-center gap-3 py-20 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              <span>Checking your session…</span>
+            </div>
+          ) : activeFilter === 'my-games' && !session?.user ? (
+            <div className="rounded-[24px] border border-dashed border-border-strong px-6 py-16 text-center">
+              <h3 className="font-display text-lg font-bold text-foreground">Sign in to see your uploads</h3>
+              <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+                Games you upload are listed here so you can play, share or remove them.
+              </p>
+              <button onClick={() => setIsAuthOpen(true)} className="btn btn-secondary mt-6">
+                Sign in
+              </button>
+            </div>
+          ) : filteredGames.length === 0 ? (
+            <div className="rounded-[24px] border border-dashed border-border-strong px-6 py-16 text-center">
+              <span className="text-3xl" aria-hidden>{searchQuery ? '🔍' : '🎮'}</span>
+              <h3 className="font-display mt-3 text-lg font-bold text-foreground">No games found</h3>
+              <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+                {searchQuery
+                  ? `Nothing matches "${searchQuery}". Try another title or creator.`
+                  : activeFilter === 'my-games'
+                  ? "You haven't uploaded a game yet."
+                  : 'No one has uploaded a game yet.'}
+              </p>
+              {searchQuery ? (
+                <button onClick={() => setSearchQuery('')} className="btn btn-secondary mt-6">
+                  Clear search
+                </button>
+              ) : (
+                <button onClick={handleUploadClick} className="btn btn-brand mt-6">
+                  <Plus className="size-4" />
+                  <span>Upload a game</span>
+                </button>
+              )}
+            </div>
+          ) : viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+              {filteredGames.map((game, index) => (
+                <article
+                  key={game.id}
+                  className="game-card anim-rise group min-w-0"
+                  style={{ '--glow': getCoverTone(game.id).glow, animationDelay: `${Math.min(index, 12) * 35}ms` } as React.CSSProperties}
+                >
+                  <div className="relative">
+                    <button onClick={() => setActiveGame(game)} aria-label={`Play ${game.title}`} className="block w-full rounded-xl">
+                      <GameCover game={game}>
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition duration-200 group-hover:opacity-100">
+                          <span className="flex size-12 scale-90 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_30px_rgba(56,189,248,0.6)] transition duration-200 group-hover:scale-100">
+                            <Play className="ml-0.5 size-5 fill-current" />
+                          </span>
+                        </span>
+                      </GameCover>
+                    </button>
 
-                <div className="mt-3.5 min-w-0">
-                  <h3 className="truncate text-[15px] font-semibold text-foreground">
-                    <button onClick={() => setActiveGame(game)} className="text-left underline-offset-4 hover:underline">
+                    {/* Cover actions: always visible on touch, on hover/focus otherwise */}
+                    <div className="absolute right-2 top-2 flex gap-1.5 transition sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+                      <button
+                        onClick={(e) => handleShare(game, e)}
+                        title="Copy game link"
+                        aria-label={`Copy link to ${game.title}`}
+                        className="flex size-8 items-center justify-center rounded-full bg-black/55 text-white/90 backdrop-blur-sm transition hover:bg-black/80 hover:text-white"
+                      >
+                        {copiedGameId === game.id ? <Check className="size-3.5 text-primary" /> : <Link2 className="size-3.5" />}
+                      </button>
+                      {canDeleteGame(game) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteError(null);
+                            setGameToDelete(game);
+                          }}
+                          title={isAdmin && game.authorId !== session?.user?.id ? 'Delete game (admin)' : 'Delete your game'}
+                          aria-label={`Delete ${game.title}`}
+                          className="flex size-8 items-center justify-center rounded-full bg-black/55 text-white/90 backdrop-blur-sm transition hover:bg-rose-600 hover:text-white"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="px-2 pb-1.5 pt-3">
+                    <h3 className="truncate text-[15px] font-bold text-foreground">
+                      <button onClick={() => setActiveGame(game)} className="max-w-full truncate text-left">
+                        {game.title}
+                      </button>
+                    </h3>
+                    {game.description && (
+                      <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{game.description}</p>
+                    )}
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      {creatorButton(game)}
+                      <span className="inline-flex shrink-0 items-center gap-1 text-xs text-subtle-foreground tabular-nums" title={playsLabel(game.playCount)}>
+                        <Play className="size-2.5 fill-current" />
+                        {game.playCount.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredGames.map((game) => (
+                <div
+                  key={game.id}
+                  className="group flex items-center gap-3 rounded-2xl border border-border bg-surface p-2 pr-3 transition hover:border-border-strong sm:gap-4"
+                >
+                  <button onClick={() => setActiveGame(game)} aria-label={`Play ${game.title}`} className="w-24 shrink-0 rounded-xl sm:w-32">
+                    <GameCover game={game} size="sm" className="rounded-xl" />
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <button onClick={() => setActiveGame(game)} className="block max-w-full truncate text-left text-sm font-bold text-foreground">
                       {game.title}
                     </button>
-                  </h3>
-                  <p className="mt-1 flex min-w-0 items-center gap-1.5 font-mono text-xs text-muted-foreground">
-                    <button
-                      onClick={() => onOpenChat?.(game.authorId || game.authorUsername)}
-                      title={`Message @${game.authorUsername}`}
-                      className="inline-flex min-w-0 items-center gap-1.5 transition hover:text-foreground"
-                    >
-                      <UserAvatar inline avatar={game.authorAvatar} name={game.authorUsername} className="size-4 rounded-full text-[10px]" />
-                      <span className="truncate">{game.authorUsername}</span>
-                    </button>
-                    <span aria-hidden className="text-subtle-foreground">·</span>
-                    <span className="shrink-0 tabular-nums">{playsLabel(game.playCount)}</span>
-                  </p>
-                  {game.description && (
-                    <p className="mt-2 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{game.description}</p>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          /* LIST VIEW */
-          <div className="divide-y divide-border border-y border-border">
-            {filteredGames.map((game) => (
-              <div key={game.id} className="group flex items-center gap-4 py-3">
-                <button
-                  onClick={() => setActiveGame(game)}
-                  aria-label={`Play ${game.title}`}
-                  className="w-24 shrink-0 rounded-md sm:w-28"
-                >
-                  <GameCover game={game} size="sm" className="rounded-md" />
-                </button>
-                <div className="min-w-0 flex-1">
-                  <button
-                    onClick={() => setActiveGame(game)}
-                    className="block max-w-full truncate text-left text-sm font-semibold text-foreground underline-offset-4 hover:underline"
-                  >
-                    {game.title}
+                    <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{game.description}</p>
+                    <div className="mt-1.5 md:hidden">{creatorButton(game, 'size-5 text-[10px]')}</div>
+                  </div>
+                  <div className="hidden w-40 shrink-0 md:block">{creatorButton(game)}</div>
+                  <span className="hidden w-24 shrink-0 text-right text-xs text-subtle-foreground tabular-nums sm:block">
+                    {playsLabel(game.playCount)}
+                  </span>
+                  <button onClick={() => setActiveGame(game)} className="btn btn-primary btn-sm shrink-0" aria-label={`Play ${game.title}`}>
+                    <Play className="size-3 fill-current" />
+                    <span className="hidden sm:inline">Play</span>
                   </button>
-                  <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{game.description}</p>
                 </div>
-                <button
-                  onClick={() => onOpenChat?.(game.authorId || game.authorUsername)}
-                  title={`Message @${game.authorUsername}`}
-                  className="hidden w-36 shrink-0 items-center gap-1.5 truncate font-mono text-xs text-muted-foreground transition hover:text-foreground md:flex"
-                >
-                  <UserAvatar inline avatar={game.authorAvatar} name={game.authorUsername} className="size-4 rounded-full text-[10px]" />
-                  <span className="truncate">{game.authorUsername}</span>
-                </button>
-                <span className="hidden w-20 shrink-0 text-right font-mono text-xs text-muted-foreground tabular-nums sm:block">
-                  {playsLabel(game.playCount)}
-                </span>
-                <button
-                  onClick={() => setActiveGame(game)}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs font-medium text-foreground transition hover:border-primary hover:bg-primary hover:text-primary-foreground"
-                >
-                  <Play className="size-3 fill-current" />
-                  <span>Play</span>
-                </button>
-              </div>
-            ))}
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* 4. Creator call-to-action */}
+      <section
+        className="relative overflow-hidden rounded-[28px] border border-border p-6 sm:p-10"
+        style={{
+          background:
+            'radial-gradient(70% 120% at 0% 100%, rgba(56,189,248,0.16), transparent 60%), radial-gradient(70% 120% at 100% 0%, rgba(168,85,247,0.2), transparent 60%), var(--surface)',
+        }}
+      >
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:gap-12">
+          <div>
+            <p className="eyebrow">For creators</p>
+            <h2 className="font-display mt-3 text-balance text-2xl font-extrabold leading-tight text-foreground sm:text-[34px]">
+              Made a game? Put it in the arcade.
+            </h2>
+            <p className="mt-3 max-w-md text-[15px] leading-relaxed text-muted-foreground">
+              Upload your files, test-play them right in the uploader, and publish. Your buddies can play it straight away.
+            </p>
+            <button onClick={handleUploadClick} className="btn btn-brand btn-lg mt-6">
+              <Plus className="size-[18px] stroke-[2.5]" />
+              <span>Upload a game</span>
+            </button>
           </div>
-        )}
+
+          <ul className="grid gap-3">
+            {[
+              {
+                icon: FileCode2,
+                title: 'Plain HTML, CSS and JavaScript',
+                body: 'A single HTML file is enough. No build step and no server needed.',
+                tint: 'text-sky-300 bg-sky-400/10',
+              },
+              {
+                icon: Gamepad2,
+                title: 'Playable on phones',
+                body: 'Touch players get an on-screen gamepad that sends arrow keys, Space, Enter and Shift.',
+                tint: 'text-violet-300 bg-violet-400/10',
+              },
+              {
+                icon: ShieldCheck,
+                title: 'Sandboxed for everyone',
+                body: 'Every game runs in an isolated frame, away from players’ accounts.',
+                tint: 'text-emerald-300 bg-emerald-400/10',
+              },
+            ].map(({ icon: Icon, title, body, tint }) => (
+              <li key={title} className="flex gap-4 rounded-2xl border border-border bg-background/40 p-4">
+                <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${tint}`}>
+                  <Icon className="size-5" />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">{title}</h3>
+                  <p className="mt-0.5 text-[13px] leading-relaxed text-muted-foreground">{body}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       {/* Game Player Modal */}
@@ -552,25 +646,21 @@ export function ArcadeView({
 
       {/* Delete Confirmation Modal */}
       {gameToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div role="alertdialog" aria-labelledby="delete-game-title" className="relative w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-2xl shadow-black/50">
-            <div className="flex items-start gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400">
-                <AlertTriangle className="size-4" />
+        <div className="scrim z-[60]">
+          <div role="alertdialog" aria-labelledby="delete-game-title" className="panel max-w-md p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-rose-500/12 text-rose-400">
+                <AlertTriangle className="size-5" />
               </div>
               <div className="min-w-0">
-                <h3 id="delete-game-title" className="text-base font-semibold text-foreground">Delete this game?</h3>
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  <span className="font-medium text-foreground">{gameToDelete.title}</span> will be removed from the arcade for everyone. This can&apos;t be undone.
+                <h3 id="delete-game-title" className="font-display text-lg font-bold text-foreground">Delete this game?</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  <span className="font-semibold text-foreground">{gameToDelete.title}</span> will be removed from the arcade for everyone. This can&apos;t be undone.
                 </p>
               </div>
             </div>
 
-            {deleteError && (
-              <div className="mt-4 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-300">
-                {deleteError}
-              </div>
-            )}
+            {deleteError && <div className="alert alert-error mt-4">{deleteError}</div>}
 
             <div className="mt-6 flex items-center justify-end gap-2">
               <button
@@ -581,33 +671,19 @@ export function ArcadeView({
                   }
                 }}
                 disabled={isDeleting}
-                className="rounded-lg border border-border-strong px-4 py-2 text-sm font-medium text-foreground transition hover:bg-white/[0.05] disabled:opacity-50"
+                className="btn btn-secondary"
               >
                 Cancel
               </button>
-              <button
-                onClick={confirmDeleteGame}
-                disabled={isDeleting}
-                className="flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500 active:scale-[0.98] disabled:opacity-50"
-              >
-                {isDeleting ? (
-                  <>
-                    <Loader2 className="size-3.5 animate-spin" />
-                    <span>Deleting…</span>
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="size-3.5" />
-                    <span>Delete game</span>
-                  </>
-                )}
+              <button onClick={confirmDeleteGame} disabled={isDeleting} className="btn btn-danger">
+                {isDeleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                <span>{isDeleting ? 'Deleting…' : 'Delete game'}</span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Game Creator Studio Modal */}
       <GameUploaderModal
         isOpen={isUploaderOpen}
         onClose={() => setIsUploaderOpen(false)}
@@ -617,7 +693,6 @@ export function ArcadeView({
         }
       />
 
-      {/* Auth Modal */}
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}

@@ -43,7 +43,7 @@ Scripts read `.env` themselves. They rely on Node built-ins `node:sqlite` and TS
 
 ## Styling
 
-"Gallery" dark theme: neutral surfaces, hairline borders, typographic game covers, teal `#2dd4bf` for primary actions only. Read `docs/STYLING.md` before UI work. Tokens live in `app/globals.css` (Tailwind v4 `@theme`) and `lib/tokens.ts`; game covers come from `components/game-cover.tsx`; shadcn-style primitives are in `components/ui`. Use `cn()` from `lib/utils.ts` for class merging. The app is mobile-responsive (100dvh layout, bottom nav, bottom-sheet chat, 16px+ input font sizes to avoid iOS zoom) — keep new UI working at phone widths.
+"Night Arcade" dark theme taken from the logo: indigo-night surfaces, cyan `#38bdf8` for play/primary actions, violet `#a78bfa` for social features (friends, chat), the cyan→violet logo gradient for upload/brand moments only. Unbounded (display) + Plus Jakarta Sans (body). Read `docs/STYLING.md` before UI work. Tokens and component classes (`btn`, `field`, `scrim`/`panel`, `chip`, `segmented`, `tag`, …) live in `app/globals.css` (Tailwind v4 `@theme` + `@layer components`) and are mirrored in `lib/tokens.ts`; game covers come from `components/game-cover.tsx`; shadcn-style primitives are in `components/ui`. Use `cn()` from `lib/utils.ts` for class merging. The app is mobile-responsive (100dvh layout, bottom nav, bottom-sheet chat, 16px+ input font sizes to avoid iOS zoom) — keep new UI working at phone widths.
 
 ## Neon
 

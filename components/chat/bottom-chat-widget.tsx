@@ -9,12 +9,11 @@ import {
   Check,
   CheckCheck,
   Search,
-  MessageSquare,
+  MessageCircle,
   AlertCircle,
   Loader2,
   ChevronLeft,
   ChevronDown,
-  ChevronUp,
   Maximize2,
   Minimize2,
   MoreHorizontal,
@@ -661,18 +660,11 @@ export function BottomChatWidget({
 
   const roleBadge = (role?: string | null) =>
     role === 'admin' || role === 'root' ? (
-      <span className="shrink-0 rounded border border-amber-400/30 px-1 py-px font-mono text-[10px] uppercase text-amber-300">
-        {role}
-      </span>
+      <span className="tag tag-admin shrink-0 capitalize">{role}</span>
     ) : null;
 
-  const outlineButton =
-    'inline-flex items-center justify-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-white/[0.05] disabled:opacity-50';
-  const primaryButton =
-    'inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:bg-teal-300 disabled:opacity-50';
-  const sectionLabel = 'mb-2 block font-mono text-[11px] uppercase tracking-[0.1em] text-subtle-foreground';
-  const iconButton =
-    'flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-white/[0.06] hover:text-foreground';
+  const sectionLabel = 'mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-subtle-foreground';
+  const avatarClass = 'shrink-0 rounded-full bg-surface-raised font-semibold text-foreground';
 
   return (
     <>
@@ -680,7 +672,7 @@ export function BottomChatWidget({
       {isOpen && (
         <div
           onClick={() => onToggle(false)}
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 sm:hidden"
+          className="anim-fade fixed inset-0 z-40 bg-black/60 backdrop-blur-sm sm:hidden"
           aria-hidden="true"
         />
       )}
@@ -688,12 +680,12 @@ export function BottomChatWidget({
       <div
         className={
           isOpen
-            ? 'fixed inset-x-0 bottom-0 z-50 sm:inset-x-auto sm:bottom-4 sm:right-6'
-            : 'fixed bottom-0 right-3 z-40 sm:right-6'
+            ? 'fixed inset-x-0 bottom-0 z-50 sm:inset-x-auto sm:bottom-5 sm:right-6'
+            : 'fixed bottom-5 right-6 z-40'
         }
       >
         {!isOpen ? (
-          /* Collapsed bar (desktop only; the mobile bottom nav has its own chat button) */
+          /* Collapsed pill (desktop only; the mobile bottom nav has its own chat button) */
           <button
             onClick={() => {
               if (!isLoggedIn) {
@@ -703,60 +695,59 @@ export function BottomChatWidget({
                 loadFriendsData();
               }
             }}
-            className="hidden items-center gap-2.5 rounded-t-lg border-x border-t border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-surface-raised sm:flex"
-            title="Open messages"
+            className="glass hidden h-12 items-center gap-2.5 rounded-full border border-border-strong pl-3 pr-4 text-sm font-semibold text-foreground shadow-[0_16px_40px_-12px_rgba(0,0,0,0.8)] transition hover:border-social/50 sm:flex"
+            title="Open friends and messages"
           >
-            <MessageSquare className="size-4 text-muted-foreground" />
+            <span className="flex size-7 items-center justify-center rounded-full bg-social/20 text-social">
+              <MessageCircle className="size-4" />
+            </span>
             <span>Messages</span>
             {collapsedBadgeCount > 0 && (
-              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground tabular-nums">
-                {collapsedBadgeCount > 9 ? '9+' : collapsedBadgeCount}
-              </span>
+              <span className="count-badge">{collapsedBadgeCount > 9 ? '9+' : collapsedBadgeCount}</span>
             )}
-            <ChevronUp className="size-3.5 text-subtle-foreground" />
           </button>
         ) : (
           /* Open window: bottom sheet on phones, floating panel on desktop */
           <div
             role="dialog"
-            aria-label="Messages"
+            aria-label="Friends and messages"
             className={cn(
-              'flex flex-col overflow-hidden rounded-t-xl border-x border-t border-border bg-surface pb-[env(safe-area-inset-bottom,0px)] shadow-2xl shadow-black/60 sm:rounded-xl sm:border',
+              'anim-sheet sm:anim-pop relative flex flex-col overflow-hidden rounded-t-[24px] border-x border-t border-border-strong bg-surface pb-[env(safe-area-inset-bottom,0px)] shadow-[var(--shadow-float)] sm:rounded-[24px] sm:border',
               isExpanded
                 ? 'h-[88dvh] w-full sm:h-[88vh] sm:max-h-[720px] sm:w-[96vw] sm:max-w-3xl'
-                : 'h-[82dvh] max-h-[85dvh] w-full sm:h-[540px] sm:max-h-[82vh] sm:w-[380px] md:w-[400px]'
+                : 'h-[82dvh] max-h-[85dvh] w-full sm:h-[560px] sm:max-h-[82vh] sm:w-[380px] md:w-[400px]'
             )}
           >
             {/* Mobile drag handle */}
-            <div className="mx-auto my-1.5 h-1 w-10 shrink-0 rounded-full bg-white/20 sm:hidden" />
+            <div className="mx-auto mb-0.5 mt-2 h-1 w-10 shrink-0 rounded-full bg-white/20 sm:hidden" />
 
             {/* Title bar */}
-            <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border px-2 sm:px-3">
+            <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-2 sm:px-3">
               <div className="flex min-w-0 items-center gap-2">
                 {selectedFriend ? (
                   <>
-                    <button onClick={() => selectFriend(null)} className={iconButton} title="Back to friends" aria-label="Back to friends">
-                      <ChevronLeft className="size-4" />
+                    <button onClick={() => selectFriend(null)} className="icon-btn" title="Back to friends" aria-label="Back to friends">
+                      <ChevronLeft className="size-5" />
                     </button>
                     <UserAvatar
                       avatar={selectedFriend.avatar}
                       name={selectedFriend.username}
-                      className="size-7 shrink-0 rounded-full bg-surface-raised text-xs font-semibold text-foreground"
+                      className={cn(avatarClass, 'size-8 text-base')}
                     />
-                    <span className="truncate text-sm font-semibold text-foreground">{selectedFriend.username}</span>
+                    <span className="truncate text-sm font-bold text-foreground">{selectedFriend.username}</span>
                     {roleBadge(selectedFriend.role)}
                   </>
                 ) : (
-                  <h3 className="pl-2 text-sm font-semibold text-foreground">Messages</h3>
+                  <h3 className="font-display pl-2 text-base font-bold text-foreground">Friends</h3>
                 )}
               </div>
 
-              <div className="flex shrink-0 items-center gap-0.5">
+              <div className="flex shrink-0 items-center">
                 {selectedFriend && (
                   <div className="relative">
                     <button
                       onClick={() => setIsConversationMenuOpen((open) => !open)}
-                      className={iconButton}
+                      className="icon-btn"
                       title="Conversation options"
                       aria-label="Conversation options"
                       aria-expanded={isConversationMenuOpen}
@@ -766,13 +757,13 @@ export function BottomChatWidget({
                     {isConversationMenuOpen && (
                       <>
                         <div className="fixed inset-0 z-10" onClick={() => setIsConversationMenuOpen(false)} aria-hidden="true" />
-                        <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-border bg-surface p-1 shadow-2xl shadow-black/50">
+                        <div className="menu absolute right-0 top-full z-20 mt-1 w-48">
                           <button
                             onClick={() => {
                               setIsConversationMenuOpen(false);
                               setFriendToRemove(selectedFriend);
                             }}
-                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm text-rose-300 transition hover:bg-rose-500/10"
+                            className="menu-item !text-rose-300 hover:!bg-rose-500/10"
                           >
                             <UserMinus className="size-4" />
                             <span>Remove friend</span>
@@ -785,38 +776,40 @@ export function BottomChatWidget({
 
                 <button
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className={cn(iconButton, 'hidden sm:flex')}
+                  className="icon-btn hidden sm:inline-flex"
                   title={isExpanded ? 'Make smaller' : 'Make larger'}
                   aria-label={isExpanded ? 'Make smaller' : 'Make larger'}
                 >
-                  {isExpanded ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
+                  {isExpanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
                 </button>
 
-                <button onClick={() => onToggle(false)} className={iconButton} title="Close" aria-label="Close messages">
-                  <X className="size-4" />
+                <button onClick={() => onToggle(false)} className="icon-btn" title="Close" aria-label="Close messages">
+                  <X className="size-5" />
                 </button>
               </div>
             </div>
 
             {!isLoggedIn ? (
               /* Signed out */
-              <div className="flex flex-1 flex-col items-center justify-center bg-background p-6 text-center">
-                <MessageSquare className="mb-3 size-6 text-subtle-foreground" />
-                <h4 className="text-sm font-semibold text-foreground">Sign in to send messages</h4>
-                <p className="mb-5 mt-1 max-w-xs text-sm text-muted-foreground">
-                  Add other players as friends and chat with them privately.
+              <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+                <span className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-social/15 text-social">
+                  <MessageCircle className="size-6" />
+                </span>
+                <h4 className="font-display text-base font-bold text-foreground">Sign in to chat</h4>
+                <p className="mb-5 mt-1.5 max-w-xs text-sm text-muted-foreground">
+                  Add other players as friends and message them privately.
                 </p>
-                <button onClick={() => setIsAuthModalOpen(true)} className={primaryButton}>
+                <button onClick={() => setIsAuthModalOpen(true)} className="btn btn-social">
                   Sign in
                 </button>
               </div>
             ) : selectedFriend ? (
               /* ── Conversation ─────────────────────────────────────────── */
-              <div className="flex flex-1 flex-col overflow-hidden bg-background">
+              <div className="flex flex-1 flex-col overflow-hidden">
                 <div
                   ref={scrollContainerRef}
                   onScroll={handleMessagesScroll}
-                  className="flex-1 overflow-y-auto px-3 pb-3 sm:px-4"
+                  className="flex-1 overflow-y-auto bg-background/50 px-3 pb-3 sm:px-4"
                 >
                   {loadingConversation && messages.length === 0 ? (
                     <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -827,7 +820,7 @@ export function BottomChatWidget({
                     <div className="flex h-full flex-col items-center justify-center p-4 text-center">
                       <AlertCircle className="mb-2 size-5 text-rose-400" />
                       <p className="text-sm text-rose-300">{conversationError}</p>
-                      <button onClick={() => loadConversation(selectedFriend.id)} className={cn(outlineButton, 'mt-4')}>
+                      <button onClick={() => loadConversation(selectedFriend.id)} className="btn btn-secondary btn-sm mt-4">
                         Try again
                       </button>
                     </div>
@@ -836,9 +829,9 @@ export function BottomChatWidget({
                       <UserAvatar
                         avatar={selectedFriend.avatar}
                         name={selectedFriend.username}
-                        className="mb-3 size-14 rounded-full bg-surface-raised text-2xl font-semibold text-foreground"
+                        className={cn(avatarClass, 'mb-3 size-16 text-3xl ring-4 ring-social/25')}
                       />
-                      <h4 className="text-sm font-semibold text-foreground">Start a conversation with {selectedFriend.username}</h4>
+                      <h4 className="text-sm font-bold text-foreground">Say hi to {selectedFriend.username}</h4>
                       <p className="mb-4 mt-1 max-w-xs text-sm text-muted-foreground">
                         Only the two of you can see these messages.
                       </p>
@@ -847,7 +840,7 @@ export function BottomChatWidget({
                           <button
                             key={quick}
                             onClick={() => fillQuickReply(quick)}
-                            className="rounded-full border border-border-strong px-3 py-1 text-xs text-foreground transition hover:bg-white/[0.05]"
+                            className="rounded-full border border-border-strong px-3 py-1.5 text-xs font-medium text-foreground transition hover:border-social/50 hover:bg-social/10"
                           >
                             {quick}
                           </button>
@@ -856,7 +849,7 @@ export function BottomChatWidget({
                     </div>
                   ) : (
                     <>
-                      <p className="pt-4 text-center font-mono text-[10px] text-subtle-foreground">
+                      <p className="pt-4 text-center text-[11px] text-subtle-foreground">
                         Only you and {selectedFriend.username} can see these messages.
                       </p>
 
@@ -873,33 +866,31 @@ export function BottomChatWidget({
                         return (
                           <React.Fragment key={msg.id}>
                             {startsDay && (
-                              <div className="flex items-center gap-3 pb-1 pt-5" role="separator">
-                                <span className="h-px flex-1 bg-border" />
-                                <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-subtle-foreground">
+                              <div className="flex justify-center pb-1 pt-5" role="separator">
+                                <span className="rounded-full bg-surface-raised px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
                                   {formatDayLabel(msg.createdAt)}
                                 </span>
-                                <span className="h-px flex-1 bg-border" />
                               </div>
                             )}
 
                             {msg.id === firstUnreadId && (
                               <div className="flex items-center gap-3 pb-1 pt-4" role="separator">
-                                <span className="h-px flex-1 bg-primary/40" />
-                                <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-primary">New</span>
-                                <span className="h-px flex-1 bg-primary/40" />
+                                <span className="h-px flex-1 bg-social/40" />
+                                <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-social">New</span>
+                                <span className="h-px flex-1 bg-social/40" />
                               </div>
                             )}
 
                             <div className={cn('flex flex-col', isMine ? 'items-end' : 'items-start', joinsPrev ? 'mt-0.5' : 'mt-3')}>
                               <div
                                 className={cn(
-                                  'max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-relaxed',
-                                  isMine ? 'bg-zinc-100 text-zinc-950' : 'bg-surface-raised text-foreground',
+                                  'max-w-[80%] rounded-[20px] px-3.5 py-2 text-sm leading-relaxed',
+                                  isMine ? 'bg-social font-medium text-social-foreground' : 'bg-surface-raised text-foreground',
                                   isMine
                                     ? cn(joinsPrev && 'rounded-tr-md', joinsNext && 'rounded-br-md')
                                     : cn(joinsPrev && 'rounded-tl-md', joinsNext && 'rounded-bl-md'),
                                   isPending && !isFailed && 'opacity-70',
-                                  isFailed && 'opacity-80 ring-1 ring-rose-500/70'
+                                  isFailed && 'opacity-80 ring-2 ring-rose-500/70'
                                 )}
                               >
                                 <p className="whitespace-pre-wrap break-words">{msg.content}</p>
@@ -912,7 +903,7 @@ export function BottomChatWidget({
                                   <button
                                     onClick={() => handleRetryMessage(msg)}
                                     disabled={sendingMessage}
-                                    className="font-medium underline underline-offset-2 hover:text-rose-200 disabled:opacity-50"
+                                    className="font-semibold underline underline-offset-2 hover:text-rose-200 disabled:opacity-50"
                                   >
                                     Retry
                                   </button>
@@ -925,13 +916,13 @@ export function BottomChatWidget({
                                 </div>
                               ) : (
                                 !joinsNext && (
-                                  <div className="mt-1 flex items-center gap-1 px-1 font-mono text-[10px] text-subtle-foreground tabular-nums">
+                                  <div className="mt-1 flex items-center gap-1 px-1.5 text-[11px] text-subtle-foreground tabular-nums">
                                     <span>{isPending ? 'Sending…' : formatTime(msg.createdAt)}</span>
                                     {isMine && !isPending &&
                                       (msg.isRead ? (
-                                        <CheckCheck className="size-3 text-primary" aria-label="Read" />
+                                        <CheckCheck className="size-3.5 text-social" aria-label="Read" />
                                       ) : (
-                                        <Check className="size-3" aria-label="Delivered" />
+                                        <Check className="size-3.5" aria-label="Delivered" />
                                       ))}
                                   </div>
                                 )
@@ -946,7 +937,7 @@ export function BottomChatWidget({
                 </div>
 
                 {conversationError && messages.length > 0 && (
-                  <div className="shrink-0 border-t border-border bg-surface px-3 py-1.5 text-center text-[11px] text-muted-foreground">
+                  <div className="shrink-0 border-t border-border px-3 py-1.5 text-center text-[11px] text-muted-foreground">
                     Couldn&apos;t refresh messages. Trying again…
                   </div>
                 )}
@@ -959,16 +950,16 @@ export function BottomChatWidget({
                         setHasNewBelow(false);
                         scrollToBottom(true);
                       }}
-                      className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-border-strong bg-surface-raised px-3 py-1 text-xs font-medium text-foreground shadow-lg shadow-black/40 transition hover:bg-surface"
+                      className="btn btn-social btn-sm absolute bottom-3 left-1/2 -translate-x-1/2 shadow-lg"
                     >
                       <span>New messages</span>
-                      <ChevronDown className="size-3" />
+                      <ChevronDown className="size-3.5" />
                     </button>
                   </div>
                 )}
 
                 {/* Composer */}
-                <form onSubmit={handleSendMessage} className="flex shrink-0 items-end gap-2 border-t border-border bg-surface p-2.5">
+                <form onSubmit={handleSendMessage} className="flex shrink-0 items-end gap-2 border-t border-border p-2.5">
                   <textarea
                     ref={inputRef}
                     rows={1}
@@ -986,12 +977,12 @@ export function BottomChatWidget({
                     placeholder={`Message ${selectedFriend.username}`}
                     aria-label={`Message ${selectedFriend.username}`}
                     maxLength={2000}
-                    className="max-h-[120px] min-h-10 flex-1 resize-none rounded-lg border border-border bg-surface-sunken px-3 py-2 text-base leading-snug text-foreground placeholder:text-subtle-foreground transition focus:border-border-strong focus:outline-none sm:text-sm"
+                    className="field max-h-[120px] min-h-11 flex-1 resize-none !rounded-[22px] !px-4 leading-snug focus:!border-social/60 focus:!shadow-[0_0_0_3px_rgba(167,139,250,0.18)]"
                   />
                   <button
                     type="submit"
                     disabled={!inputMessage.trim() || sendingMessage}
-                    className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition hover:bg-teal-300 active:scale-95 disabled:opacity-40"
+                    className="btn btn-social size-11 shrink-0 !p-0"
                     aria-label="Send message"
                     title="Send (Enter). Shift+Enter for a new line"
                   >
@@ -1002,29 +993,15 @@ export function BottomChatWidget({
             ) : (
               /* ── Friends / Requests / Add ─────────────────────────────── */
               <div className="flex flex-1 flex-col overflow-hidden">
-                <div role="tablist" aria-label="Messages sections" className="flex shrink-0 gap-5 border-b border-border px-4">
-                  {tabs.map((tab) => {
-                    const isActive = activeTab === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        role="tab"
-                        aria-selected={isActive}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={cn(
-                          '-mb-px flex items-baseline gap-1.5 border-b-2 py-2.5 text-sm transition',
-                          isActive
-                            ? 'border-foreground font-medium text-foreground'
-                            : 'border-transparent text-muted-foreground hover:text-foreground'
-                        )}
-                      >
+                <div className="shrink-0 px-3 pt-3">
+                  <div role="tablist" aria-label="Friends sections" className="segmented">
+                    {tabs.map((tab) => (
+                      <button key={tab.id} role="tab" aria-selected={activeTab === tab.id} onClick={() => setActiveTab(tab.id)}>
                         <span>{tab.label}</span>
-                        {tab.count > 0 && (
-                          <span className="font-mono text-[11px] text-primary tabular-nums">{tab.count}</span>
-                        )}
+                        {tab.count > 0 && <span className="count-badge">{tab.count}</span>}
                       </button>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
 
                 {/* Friends */}
@@ -1033,37 +1010,38 @@ export function BottomChatWidget({
                     {friends.length > 0 && (
                       <div className="shrink-0 px-3 pt-3">
                         <div className="relative">
-                          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-subtle-foreground" />
+                          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-subtle-foreground" />
                           <input
                             type="search"
                             value={friendsFilter}
                             onChange={(e) => setFriendsFilter(e.target.value)}
                             placeholder="Search friends"
                             aria-label="Search friends"
-                            className="h-9 w-full rounded-lg border border-border bg-surface-sunken pl-8 pr-3 text-base text-foreground placeholder:text-subtle-foreground transition focus:border-border-strong focus:outline-none sm:text-sm"
+                            className="field !min-h-10 !rounded-full !py-2 pl-10"
                           />
                         </div>
                       </div>
                     )}
 
-                    <div className="flex-1 overflow-y-auto p-1.5 sm:p-2">
+                    <div className="flex-1 overflow-y-auto p-2">
                       {loadingFriends && friends.length === 0 ? (
                         <div className="flex h-36 items-center justify-center gap-2 text-sm text-muted-foreground">
                           <Loader2 className="size-4 animate-spin" />
                           <span>Loading friends…</span>
                         </div>
                       ) : filteredFriends.length === 0 ? (
-                        <div className="flex h-48 flex-col items-center justify-center p-4 text-center">
-                          <h5 className="text-sm font-semibold text-foreground">
+                        <div className="flex h-56 flex-col items-center justify-center p-4 text-center">
+                          <span className="mb-3 text-3xl" aria-hidden>{friends.length === 0 ? '👋' : '🔍'}</span>
+                          <h5 className="text-sm font-bold text-foreground">
                             {friends.length === 0 ? 'No friends yet' : 'No matches'}
                           </h5>
-                          <p className="mb-4 mt-1 max-w-[220px] text-sm text-muted-foreground">
+                          <p className="mb-4 mt-1 max-w-[240px] text-sm text-muted-foreground">
                             {friends.length === 0
                               ? 'Add players by username, or message a creator from their game.'
                               : `No friend matches "${friendsFilter}".`}
                           </p>
                           {friends.length === 0 && (
-                            <button onClick={() => setActiveTab('add')} className={outlineButton}>
+                            <button onClick={() => setActiveTab('add')} className="btn btn-social btn-sm">
                               <UserPlus className="size-3.5" />
                               <span>Add a friend</span>
                             </button>
@@ -1076,23 +1054,26 @@ export function BottomChatWidget({
                             <button
                               key={friend.id}
                               onClick={() => handleSelectFriend(friend)}
-                              className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-left transition hover:bg-white/[0.04]"
+                              className={cn(
+                                'flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition hover:bg-white/[0.04]',
+                                hasUnread && 'bg-social/[0.06]'
+                              )}
                             >
                               <UserAvatar
                                 avatar={friend.avatar}
                                 name={friend.username}
-                                className="size-9 shrink-0 rounded-full bg-surface-raised text-sm font-semibold text-foreground"
+                                className={cn(avatarClass, 'size-11 text-xl')}
                               />
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-baseline justify-between gap-2">
-                                  <span className={cn('truncate text-sm text-foreground', hasUnread ? 'font-semibold' : 'font-medium')}>
+                                  <span className={cn('truncate text-sm text-foreground', hasUnread ? 'font-bold' : 'font-semibold')}>
                                     {friend.username}
                                   </span>
                                   {friend.lastMessage && (
                                     <span
                                       className={cn(
-                                        'shrink-0 font-mono text-[11px] tabular-nums',
-                                        hasUnread ? 'text-primary' : 'text-subtle-foreground'
+                                        'shrink-0 text-[11px] tabular-nums',
+                                        hasUnread ? 'font-semibold text-social' : 'text-subtle-foreground'
                                       )}
                                     >
                                       {formatListTime(friend.lastMessage.createdAt)}
@@ -1108,10 +1089,9 @@ export function BottomChatWidget({
                                       : 'No messages yet'}
                                   </p>
                                   {hasUnread && (
-                                    <span
-                                      className="size-2 shrink-0 rounded-full bg-primary"
-                                      aria-label={`${friend.unreadCount} unread`}
-                                    />
+                                    <span className="count-badge" aria-label={`${friend.unreadCount} unread`}>
+                                      {friend.unreadCount > 9 ? '9+' : friend.unreadCount}
+                                    </span>
                                   )}
                                 </div>
                               </div>
@@ -1131,25 +1111,26 @@ export function BottomChatWidget({
                       {incomingRequests.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No friend requests right now.</p>
                       ) : (
-                        <div className="divide-y divide-border">
+                        <div className="space-y-1">
                           {incomingRequests.map((req) => (
-                            <div key={req.friendshipId} className="flex items-center gap-3 py-2.5">
-                              <UserAvatar
-                                avatar={req.avatar}
-                                name={req.username}
-                                className="size-8 shrink-0 rounded-full bg-surface-raised text-xs font-semibold text-foreground"
-                              />
+                            <div key={req.friendshipId} className="flex items-center gap-3 rounded-2xl bg-social/[0.06] p-2.5">
+                              <UserAvatar avatar={req.avatar} name={req.username} className={cn(avatarClass, 'size-10 text-lg')} />
                               <div className="min-w-0 flex-1">
-                                <div className="truncate text-sm font-medium text-foreground">{req.username}</div>
+                                <div className="truncate text-sm font-semibold text-foreground">{req.username}</div>
                                 {req.name && req.name !== req.username && (
                                   <div className="truncate text-xs text-muted-foreground">{req.name}</div>
                                 )}
                               </div>
-                              <button onClick={() => handleRespondRequest(req.friendshipId, 'accept')} className={primaryButton}>
+                              <button onClick={() => handleRespondRequest(req.friendshipId, 'accept')} className="btn btn-social btn-sm">
                                 Accept
                               </button>
-                              <button onClick={() => handleRespondRequest(req.friendshipId, 'decline')} className={outlineButton}>
-                                Decline
+                              <button
+                                onClick={() => handleRespondRequest(req.friendshipId, 'decline')}
+                                className="icon-btn size-8"
+                                title="Decline"
+                                aria-label={`Decline request from ${req.username}`}
+                              >
+                                <X className="size-4" />
                               </button>
                             </div>
                           ))}
@@ -1162,20 +1143,13 @@ export function BottomChatWidget({
                       {outgoingRequests.length === 0 ? (
                         <p className="text-sm text-muted-foreground">You have no pending requests.</p>
                       ) : (
-                        <div className="divide-y divide-border">
+                        <div className="space-y-1">
                           {outgoingRequests.map((req) => (
-                            <div key={req.friendshipId} className="flex items-center gap-3 py-2.5">
-                              <UserAvatar
-                                avatar={req.avatar}
-                                name={req.username}
-                                className="size-8 shrink-0 rounded-full bg-surface-raised text-xs font-semibold text-foreground"
-                              />
-                              <span className="min-w-0 flex-1 truncate text-sm text-foreground">{req.username}</span>
-                              <span className="font-mono text-[11px] text-subtle-foreground">Pending</span>
-                              <button
-                                onClick={() => handleCancelOutgoing(req.userId)}
-                                className="rounded-md px-2 py-1 text-xs text-muted-foreground transition hover:bg-rose-500/10 hover:text-rose-300"
-                              >
+                            <div key={req.friendshipId} className="flex items-center gap-3 rounded-2xl p-2.5">
+                              <UserAvatar avatar={req.avatar} name={req.username} className={cn(avatarClass, 'size-9 text-base')} />
+                              <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{req.username}</span>
+                              <span className="tag tag-muted">Pending</span>
+                              <button onClick={() => handleCancelOutgoing(req.userId)} className="btn btn-ghost btn-sm hover:!text-rose-300">
                                 Cancel
                               </button>
                             </div>
@@ -1191,15 +1165,15 @@ export function BottomChatWidget({
                   <div className="flex-1 space-y-6 overflow-y-auto p-4">
                     {/* Player opened from "message creator" */}
                     {targetPlayer && (
-                      <div className="rounded-lg border border-border-strong bg-surface-raised p-3">
+                      <div className="rounded-2xl border border-social/30 bg-social/[0.07] p-3.5">
                         <div className="flex items-center gap-3">
                           <UserAvatar
                             avatar={targetPlayer.image}
                             name={targetPlayer.username}
-                            className="size-10 shrink-0 rounded-full bg-surface text-base font-semibold text-foreground"
+                            className={cn(avatarClass, 'size-12 text-2xl')}
                           />
                           <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-semibold text-foreground">{targetPlayer.username}</div>
+                            <div className="truncate text-sm font-bold text-foreground">{targetPlayer.username}</div>
                             <div className="text-xs text-muted-foreground">
                               {targetPlayer.relationship === 'friend'
                                 ? "You're friends."
@@ -1210,28 +1184,19 @@ export function BottomChatWidget({
                                     : 'Add them as a friend to start chatting.'}
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setTargetPlayer(null)}
-                            className={iconButton}
-                            aria-label="Dismiss"
-                          >
-                            <X className="size-3.5" />
+                          <button type="button" onClick={() => setTargetPlayer(null)} className="icon-btn size-8" aria-label="Dismiss">
+                            <X className="size-4" />
                           </button>
                         </div>
 
                         <div className="mt-3">
                           {targetPlayer.relationship === 'friend' ? (
-                            <button type="button" onClick={handleMessageTargetPlayer} className={cn(primaryButton, 'w-full py-2')}>
-                              <MessageSquare className="size-3.5" />
+                            <button type="button" onClick={handleMessageTargetPlayer} className="btn btn-social w-full">
+                              <MessageCircle className="size-4" />
                               <span>Send a message</span>
                             </button>
                           ) : targetPlayer.relationship === 'pending_outgoing' ? (
-                            <button
-                              type="button"
-                              onClick={() => handleCancelOutgoing(targetPlayer.id)}
-                              className={cn(outlineButton, 'w-full py-2')}
-                            >
+                            <button type="button" onClick={() => handleCancelOutgoing(targetPlayer.id)} className="btn btn-secondary w-full">
                               Cancel request
                             </button>
                           ) : (
@@ -1239,14 +1204,14 @@ export function BottomChatWidget({
                               type="button"
                               onClick={() => handleAddFriend(targetPlayer.id)}
                               disabled={addFriendStatus.type === 'loading'}
-                              className={cn(primaryButton, 'w-full py-2')}
+                              className="btn btn-social w-full"
                             >
                               {addFriendStatus.type === 'loading' ? (
-                                <Loader2 className="size-3.5 animate-spin" />
+                                <Loader2 className="size-4 animate-spin" />
                               ) : targetPlayer.relationship === 'pending_incoming' ? (
-                                <Check className="size-3.5" />
+                                <Check className="size-4" />
                               ) : (
-                                <UserPlus className="size-3.5" />
+                                <UserPlus className="size-4" />
                               )}
                               <span>{targetPlayer.relationship === 'pending_incoming' ? 'Accept request' : 'Add friend'}</span>
                             </button>
@@ -1274,19 +1239,19 @@ export function BottomChatWidget({
                           onChange={(e) => setAddFriendInput(e.target.value)}
                           placeholder="e.g. PixelMaster"
                           autoComplete="off"
-                          className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-surface-sunken px-3 text-base text-foreground placeholder:text-subtle-foreground transition focus:border-border-strong focus:outline-none sm:text-sm"
+                          className="field !min-h-10 min-w-0 flex-1 !rounded-full !py-2"
                         />
                         <button
                           type="submit"
                           disabled={!addFriendInput.trim() || addFriendStatus.type === 'loading'}
-                          className={cn(primaryButton, 'h-9')}
+                          className="btn btn-social shrink-0"
                         >
-                          {addFriendStatus.type === 'loading' ? <Loader2 className="size-3.5 animate-spin" /> : <UserPlus className="size-3.5" />}
-                          <span>Send request</span>
+                          {addFriendStatus.type === 'loading' ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
+                          <span>Add</span>
                         </button>
                       </form>
                       {addFriendStatus.type === 'success' && (
-                        <p className="mt-2 text-xs text-teal-300">{addFriendStatus.message}</p>
+                        <p className="mt-2 text-xs text-emerald-300">{addFriendStatus.message}</p>
                       )}
                       {addFriendStatus.type === 'error' && (
                         <p className="mt-2 text-xs text-rose-300">{addFriendStatus.message}</p>
@@ -1299,22 +1264,18 @@ export function BottomChatWidget({
                       {suggestedPlayers.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No other players yet.</p>
                       ) : (
-                        <div className="divide-y divide-border">
+                        <div className="space-y-1">
                           {suggestedPlayers.map((player) => (
-                            <div key={player.id} className="flex items-center gap-3 py-2.5">
-                              <UserAvatar
-                                avatar={player.image}
-                                name={player.username}
-                                className="size-8 shrink-0 rounded-full bg-surface-raised text-xs font-semibold text-foreground"
-                              />
-                              <span className="min-w-0 flex-1 truncate text-sm text-foreground">{player.username}</span>
+                            <div key={player.id} className="flex items-center gap-3 rounded-2xl p-2 transition hover:bg-white/[0.03]">
+                              <UserAvatar avatar={player.image} name={player.username} className={cn(avatarClass, 'size-9 text-base')} />
+                              <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{player.username}</span>
                               {player.relationship === 'friend' ? (
-                                <span className="font-mono text-[11px] text-subtle-foreground">Friend</span>
+                                <span className="tag tag-social">Friend</span>
                               ) : player.relationship === 'pending_outgoing' ? (
-                                <span className="font-mono text-[11px] text-subtle-foreground">Requested</span>
+                                <span className="tag tag-muted">Requested</span>
                               ) : (
-                                <button onClick={() => handleAddFriend(player.id)} className={outlineButton}>
-                                  <UserPlus className="size-3" />
+                                <button onClick={() => handleAddFriend(player.id)} className="btn btn-secondary btn-sm">
+                                  <UserPlus className="size-3.5" />
                                   <span>{player.relationship === 'pending_incoming' ? 'Accept' : 'Add'}</span>
                                 </button>
                               )}
@@ -1333,27 +1294,19 @@ export function BottomChatWidget({
 
       {/* Remove friend confirmation */}
       {friendToRemove && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in duration-150">
-          <div role="alertdialog" aria-labelledby="remove-friend-title" className="w-full max-w-sm rounded-xl border border-border bg-surface p-5 shadow-2xl shadow-black/50">
-            <h4 id="remove-friend-title" className="text-base font-semibold text-foreground">
+        <div className="scrim z-[60]">
+          <div role="alertdialog" aria-labelledby="remove-friend-title" className="panel max-w-sm p-6">
+            <h4 id="remove-friend-title" className="font-display text-lg font-bold text-foreground">
               Remove {friendToRemove.username}?
             </h4>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1.5 text-sm text-muted-foreground">
               You&apos;ll need to send a new friend request to message each other again.
             </p>
-            <div className="mt-5 flex items-center justify-end gap-2">
-              <button
-                onClick={() => setFriendToRemove(null)}
-                disabled={isRemovingFriend}
-                className="rounded-lg border border-border-strong px-3.5 py-2 text-sm font-medium text-foreground transition hover:bg-white/[0.05] disabled:opacity-50"
-              >
+            <div className="mt-6 flex items-center justify-end gap-2">
+              <button onClick={() => setFriendToRemove(null)} disabled={isRemovingFriend} className="btn btn-secondary">
                 Cancel
               </button>
-              <button
-                onClick={handleConfirmRemoveFriend}
-                disabled={isRemovingFriend}
-                className="rounded-lg bg-rose-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:opacity-50"
-              >
+              <button onClick={handleConfirmRemoveFriend} disabled={isRemovingFriend} className="btn btn-danger">
                 {isRemovingFriend ? 'Removing…' : 'Remove friend'}
               </button>
             </div>

@@ -21,7 +21,6 @@ function BuddyLineAppContent() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatTargetFriendId, setChatTargetFriendId] = useState<string | null>(null);
   const [chatNotificationCount, setChatNotificationCount] = useState<number>(0);
-  const [totalGamesCount, setTotalGamesCount] = useState<number>(0);
   const { session } = useAuth();
 
   const userId = session?.user?.id;
@@ -65,22 +64,20 @@ function BuddyLineAppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-teal-400/30 selection:text-white">
+    <div className="flex min-h-screen flex-col text-foreground">
       {/* Top Navbar */}
       <Header
         onUploadClick={() => setIsUploaderOpen(true)}
         onOpenAdminManager={() => setIsAdminModalOpen(true)}
         onOpenChat={() => handleOpenChat()}
         chatNotificationCount={badgeCount}
-        totalGamesCount={totalGamesCount}
       />
 
       {/* Main Arcade Experience */}
-      <main className="flex-1 p-3.5 sm:p-6 lg:p-8 pb-24 sm:pb-8 max-w-7xl w-full mx-auto">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 sm:px-6 sm:pt-10 lg:px-8">
         <ArcadeView
           isUploaderOpen={isUploaderOpen}
           setIsUploaderOpen={setIsUploaderOpen}
-          onGamesLoaded={setTotalGamesCount}
           onOpenChat={handleOpenChat}
         />
       </main>

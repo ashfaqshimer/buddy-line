@@ -7,11 +7,11 @@ import {
   Minimize2,
   RotateCcw,
   Trash2,
-  Share2,
+  Link2,
   Check,
   Gamepad2,
+  ShieldCheck,
 } from 'lucide-react';
-import { GiJoystick } from 'react-icons/gi';
 import { GameRecord } from '@/lib/games-db';
 import { bundleGameSource } from '@/lib/game-bundler';
 import { recordGamePlay } from '@/app/game-actions';
@@ -166,106 +166,76 @@ export function GamePlayerModal({
     game.jsContent
   );
 
+  const hudButton =
+    'inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-2.5 text-[13px] font-semibold text-muted-foreground transition hover:bg-white/[0.08] hover:text-foreground sm:px-3';
+
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 flex flex-col w-screen h-[100dvh] max-w-full bg-surface-sunken animate-in fade-in duration-200 select-none overflow-hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Playing ${game.title}`}
+      className="anim-fade fixed inset-0 z-50 flex h-[100dvh] w-screen max-w-full select-none flex-col overflow-hidden bg-background"
     >
-      {/* Top Arcade HUD Bar */}
-      <div className="flex items-center justify-between border-b border-border bg-background px-3 sm:px-6 py-2 sm:py-2.5 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] shrink-0 z-10 gap-2">
-        {/* Left: Game Branding & Creator Info */}
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-          <GameCover game={game} size="sm" className="hidden sm:block w-16 shrink-0 rounded-md" />
-
+      {/* HUD */}
+      <div className="z-10 flex shrink-0 items-center justify-between gap-2 border-b border-border bg-background px-2 py-2 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] sm:px-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <button onClick={handleClose} className="icon-btn" title="Back to arcade (Esc)" aria-label="Close game">
+            <X className="size-5" />
+          </button>
+          <GameCover game={game} size="sm" className="hidden w-16 shrink-0 rounded-lg sm:block" />
           <div className="min-w-0">
-            <h3 className="font-semibold text-foreground text-sm sm:text-base truncate max-w-[140px] sm:max-w-none">
-              {game.title}
-            </h3>
-            <div className="flex items-center gap-1.5 font-mono text-[11px] sm:text-xs text-muted-foreground truncate">
+            <h3 className="font-display truncate text-sm font-bold text-foreground sm:text-[15px]">{game.title}</h3>
+            <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
               <UserAvatar inline avatar={game.authorAvatar} name={game.authorUsername} className="size-4 rounded-full text-[10px]" />
-              <span className="truncate max-w-[90px] sm:max-w-none">{game.authorUsername}</span>
+              <span className="truncate">{game.authorUsername}</span>
               <span aria-hidden className="text-subtle-foreground">·</span>
               <span className="shrink-0 tabular-nums">
-                {currentPlayCount} {currentPlayCount === 1 ? 'play' : 'plays'}
+                {currentPlayCount.toLocaleString()} {currentPlayCount === 1 ? 'play' : 'plays'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Right: HUD Control Actions */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          {/* Virtual Controls Toggle Button (Quick on-screen controls access) */}
+        <div className="flex shrink-0 items-center gap-0.5 rounded-full border border-border bg-surface p-1">
           <button
             onClick={() => setIsGamepadVisible(!isGamepadVisible)}
-            title="Toggle Mobile Touch Controls"
-            className={`flex items-center gap-1 rounded-full border px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition min-h-[38px] ${
-              isGamepadVisible
-                ? 'border-teal-400/40 bg-teal-400/15 text-teal-300'
-                : 'border-white/[0.08] bg-white/[0.04] text-zinc-400 hover:text-white'
-            }`}
+            title={isGamepadVisible ? 'Hide touch controls' : 'Show touch controls'}
+            aria-pressed={isGamepadVisible}
+            className={`${hudButton} ${isGamepadVisible ? '!bg-primary/15 !text-primary' : ''}`}
           >
-            <Gamepad2 className="size-3.5" />
-            <span className="hidden sm:inline">Touch Keys</span>
+            <Gamepad2 className="size-4" />
+            <span className="hidden md:inline">Touch controls</span>
           </button>
-
-          {/* Share Button */}
-          <button
-            onClick={handleShare}
-            title="Share Game"
-            className="flex items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] hover:text-white transition min-h-[38px]"
-          >
-            {copiedLink ? <Check className="size-3.5 text-teal-400" /> : <Share2 className="size-3.5" />}
-            <span className="hidden sm:inline">{copiedLink ? 'Copied!' : 'Share'}</span>
+          <button onClick={handleShare} title="Copy game link" className={hudButton}>
+            {copiedLink ? <Check className="size-4 text-primary" /> : <Link2 className="size-4" />}
+            <span className="hidden md:inline">{copiedLink ? 'Copied' : 'Share'}</span>
           </button>
-
-          {/* Restart Button */}
-          <button
-            onClick={() => setReloadKey((k) => k + 1)}
-            title="Restart Game"
-            className="flex items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] hover:text-white transition min-h-[38px]"
-          >
-            <RotateCcw className="size-3.5" />
-            <span className="hidden sm:inline">Restart</span>
+          <button onClick={() => setReloadKey((k) => k + 1)} title="Restart game" className={hudButton}>
+            <RotateCcw className="size-4" />
+            <span className="hidden md:inline">Restart</span>
           </button>
-
-          {/* Fullscreen Button (if supported) */}
           {canFullscreen && (
-            <button
-              onClick={toggleFullscreen}
-              title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-              className="flex items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] hover:text-white transition min-h-[38px]"
-            >
-              {isFullscreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
-              <span className="hidden sm:inline">{isFullscreen ? 'Exit' : 'Fullscreen'}</span>
+            <button onClick={toggleFullscreen} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'} className={hudButton}>
+              {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+              <span className="hidden md:inline">{isFullscreen ? 'Exit' : 'Fullscreen'}</span>
             </button>
           )}
-
-          {/* Delete Button (Authorized Only) */}
           {canDelete && onDeleteRequest && (
             <button
               onClick={() => onDeleteRequest(game)}
-              title="Delete Game"
-              className="flex items-center justify-center gap-1.5 rounded-lg border border-rose-500/20 bg-rose-500/8 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500 hover:text-white transition min-h-[38px]"
+              title="Delete game"
+              className={`${hudButton} hover:!bg-rose-500/15 hover:!text-rose-300`}
             >
-              <Trash2 className="size-3.5" />
-              <span className="hidden sm:inline">Delete</span>
+              <Trash2 className="size-4" />
+              <span className="sr-only">Delete game</span>
             </button>
           )}
-
-          {/* Close Game Button */}
-          <button
-            onClick={handleClose}
-            title="Close Game (Esc)"
-            className="flex size-9 sm:size-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-zinc-400 hover:bg-rose-500/15 hover:text-rose-300 transition"
-          >
-            <X className="size-4" />
-          </button>
         </div>
       </div>
 
-      {/* Sandboxed Game Frame */}
-      <div className="flex-1 bg-black relative w-full h-full overflow-hidden flex items-center justify-center">
-
+      {/* Sandboxed game frame */}
+      <div className="relative flex h-full w-full flex-1 items-center justify-center overflow-hidden bg-black">
         <iframe
           ref={iframeRef}
           key={reloadKey}
@@ -273,10 +243,9 @@ export function GamePlayerModal({
           sandbox="allow-scripts allow-modals allow-pointer-lock"
           allow="autoplay; fullscreen; pointer-lock"
           srcDoc={bundledHtml}
-          className="w-full h-full border-0 absolute inset-0 bg-surface-sunken"
+          className="absolute inset-0 h-full w-full border-0 bg-black"
         />
 
-        {/* Mobile Virtual Gamepad Overlay */}
         <VirtualGamepad
           isVisible={isGamepadVisible}
           onToggleVisibility={() => setIsGamepadVisible(!isGamepadVisible)}
@@ -284,19 +253,16 @@ export function GamePlayerModal({
         />
       </div>
 
-      {/* Bottom Mini Controls Info Strip */}
-      <div className="flex items-center justify-between border-t border-white/[0.06] bg-surface px-4 py-1.5 text-[11px] text-zinc-400 shrink-0 pb-[calc(0.375rem+env(safe-area-inset-bottom,0px))]">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <span className="text-teal-400 font-bold flex items-center gap-1 shrink-0">
-            <GiJoystick className="size-3.5" />
-            <span>Controls:</span>
-          </span>
-          <span className="truncate max-w-sm sm:max-w-xl">{game.description}</span>
+      {/* How to play */}
+      <div className="flex shrink-0 items-center justify-between gap-4 border-t border-border bg-background px-4 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] text-xs">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="tag tag-play shrink-0">How to play</span>
+          <span className="truncate text-muted-foreground">{game.description || 'No instructions from the creator.'}</span>
         </div>
-        <div className="hidden sm:flex items-center gap-3 text-zinc-500 shrink-0">
-          <span>Press <kbd className="rounded bg-white/[0.08] px-1 py-0.5 text-[10px] text-zinc-300">Esc</kbd> to exit</span>
-          <span>•</span>
-          <span className="text-teal-400/90 font-medium">Safe Sandboxed Iframe</span>
+        <div className="hidden shrink-0 items-center gap-2 text-subtle-foreground sm:flex">
+          <span><span className="kbd">Esc</span> to exit</span>
+          <span aria-hidden>·</span>
+          <span className="inline-flex items-center gap-1"><ShieldCheck className="size-3.5" /> Sandboxed</span>
         </div>
       </div>
     </div>
