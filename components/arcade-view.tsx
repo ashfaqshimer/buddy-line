@@ -5,26 +5,19 @@ import {
   Search,
   Upload,
   Play,
-  Clock,
   Plus,
   Trash2,
   AlertTriangle,
   Loader2,
-  User,
   Share2,
   Check,
   LayoutGrid,
   List,
+  X,
 } from 'lucide-react';
-import {
-  GiJoystick,
-  GiGameConsole,
-} from 'react-icons/gi';
-import {
-  IoFlame,
-} from 'react-icons/io5';
 import { GameRecord } from '@/lib/games-db';
 import { UserAvatar } from './user-avatar';
+import { GameCover } from './game-cover';
 import { getGames, deleteGameAction } from '@/app/game-actions';
 import { GamePlayerModal } from './game-player-modal';
 import { GameUploaderModal } from './game-uploader-modal';
@@ -204,494 +197,344 @@ export function ArcadeView({
       });
   }, [games, activeFilter, searchQuery, session?.user]);
 
+  const filterTabs: { id: ArcadeFilterType; label: string }[] = [
+    { id: 'all', label: 'All' },
+    { id: 'popular', label: 'Popular' },
+    { id: 'newest', label: 'Newest' },
+    { id: 'my-games', label: 'My uploads' },
+  ];
+
+  const playsLabel = (count: number) => `${count} ${count === 1 ? 'play' : 'plays'}`;
+
   return (
-    <div className="space-y-10 animate-in fade-in duration-300">
-      {/* 1. Cinematic Hero Section — Dark Neumorphic with Teal Accent */}
-      <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1c2028] p-4 sm:p-8 lg:p-10 shadow-[6px_6px_16px_rgba(0,0,0,0.45),-4px_-4px_12px_rgba(255,255,255,0.02)]">
-        {/* Glow Spheres */}
-        <div className="absolute -right-16 -top-16 size-80 rounded-full bg-teal-500/8 blur-3xl pointer-events-none" />
-        <div className="absolute right-1/3 -bottom-16 size-80 rounded-full bg-teal-400/5 blur-3xl pointer-events-none" />
+    <div className="space-y-14 sm:space-y-20 animate-in fade-in duration-300">
+      {/* 1. Hero: headline + most-played game */}
+      <section className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-10 lg:gap-14 items-end pt-4 sm:pt-10">
+        <div className="min-w-0">
+          <p className="mb-5 font-mono text-[11px] uppercase tracking-[0.14em] text-subtle-foreground">
+            Community web arcade
+          </p>
+          <h1 className="display-wide text-balance text-[40px] sm:text-[56px] lg:text-[64px] font-extrabold leading-[0.95] text-foreground">
+            Code it. Play it. Share it.
+          </h1>
+          <p className="mt-5 max-w-[42ch] text-[15px] leading-relaxed text-muted-foreground">
+            Upload a game written in HTML, CSS and JavaScript. Anyone can play it in the browser, with nothing to install.
+          </p>
 
-        <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
-          {/* Left Column: Heading & Value Prop */}
-          <div className="lg:col-span-7 space-y-3.5 sm:space-y-4">
-            <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-teal-400/20 bg-teal-400/6 px-3 py-1 text-[10px] sm:text-[11px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] text-teal-300">
-              <GiJoystick className="size-3.5 sm:size-4 text-teal-400 shrink-0" />
-              <span>THE OPEN WEB ARCADE COMMUNITY</span>
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleUploadClick}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-teal-300 active:scale-[0.98]"
+            >
+              <Upload className="size-4" />
+              <span>Upload a game</span>
+            </button>
+          </div>
+
+          <dl className="mt-10 flex flex-wrap gap-x-8 gap-y-3 border-t border-border pt-5 font-mono text-xs text-muted-foreground tabular-nums">
+            <div className="flex items-baseline gap-2">
+              <dd className="text-base font-medium text-foreground">{games.length}</dd>
+              <dt>{games.length === 1 ? 'game' : 'games'}</dt>
             </div>
+            <div className="flex items-baseline gap-2">
+              <dd className="text-base font-medium text-foreground">{totalPlays}</dd>
+              <dt>{totalPlays === 1 ? 'play' : 'plays'}</dt>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <dd className="text-base font-medium text-foreground">{totalCreators}</dd>
+              <dt>{totalCreators === 1 ? 'creator' : 'creators'}</dt>
+            </div>
+          </dl>
+        </div>
 
-            <h1 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-[1.15] sm:leading-[1.1]">
-              Code It. Play It. <br />
-              <span className="bg-gradient-to-r from-teal-400 to-teal-300 bg-clip-text text-transparent">
-                Share With Everyone.
-              </span>
-            </h1>
-
-            <p className="text-xs sm:text-base text-slate-300 max-w-xl leading-relaxed">
-              Anyone can upload custom HTML5, CSS, and JavaScript games and let players around the globe jump right into the action with zero install or setup required.
-            </p>
-
-            {/* Hero CTAs */}
-            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        {spotlightGame ? (
+          <div className="min-w-0 space-y-4">
+            <button
+              onClick={() => setActiveGame(spotlightGame)}
+              aria-label={`Play ${spotlightGame.title}`}
+              className="group block w-full rounded-lg text-left"
+            >
+              <GameCover
+                game={spotlightGame}
+                label="Most played"
+                size="lg"
+                className="transition-transform duration-200 group-hover:-translate-y-0.5"
+              />
+            </button>
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="truncate text-base font-semibold text-foreground">{spotlightGame.title}</h2>
+                <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
+                  {spotlightGame.authorUsername} · {playsLabel(spotlightGame.playCount)}
+                </p>
+              </div>
               <button
-                onClick={handleUploadClick}
-                className="group flex items-center justify-center gap-2.5 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-5 sm:px-6 py-3 sm:py-3.5 text-xs sm:text-sm font-black text-slate-950 shadow-[0_0_25px_rgba(45,212,191,0.25)] hover:shadow-[0_0_35px_rgba(45,212,191,0.45)] transition-all transform active:scale-95"
+                onClick={() => setActiveGame(spotlightGame)}
+                className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-teal-300 active:scale-[0.98]"
               >
-                <Upload className="size-4 transition-transform group-hover:-translate-y-0.5" />
-                <span>Upload Your Game</span>
+                <Play className="size-3.5 fill-current" />
+                <span>Play</span>
               </button>
+            </div>
+          </div>
+        ) : (
+          !loading && (
+            <div className="flex aspect-video w-full flex-col items-center justify-center rounded-lg border border-dashed border-border-strong p-6 text-center">
+              <p className="text-sm font-medium text-foreground">No games yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">Upload the first one and it will show up here.</p>
+            </div>
+          )
+        )}
+      </section>
 
-              {spotlightGame && (
+      {/* 2. Catalog */}
+      <section id="arcade-main-content" className="scroll-mt-24 space-y-8">
+        <div className="flex flex-col-reverse gap-3 border-b border-border sm:flex-row sm:items-end sm:justify-between">
+          <div role="tablist" aria-label="Filter games" className="-mb-px flex gap-6 overflow-x-auto no-scrollbar">
+            {filterTabs.map((tab) => {
+              const isActive = activeFilter === tab.id;
+              return (
                 <button
-                  onClick={() => setActiveGame(spotlightGame)}
-                  className="flex items-center justify-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] px-4 sm:px-5 py-3 sm:py-3.5 text-xs sm:text-sm font-black text-white transition active:scale-95 truncate"
+                  key={tab.id}
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => {
+                    if (tab.id === 'my-games' && !session?.user) {
+                      setIsAuthOpen(true);
+                    } else {
+                      setFilter(tab.id);
+                    }
+                  }}
+                  className={`flex items-baseline gap-1.5 whitespace-nowrap border-b-2 py-3 text-sm transition ${
+                    isActive
+                      ? 'border-foreground font-medium text-foreground'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
                 >
-                  <Play className="size-3.5 sm:size-4 fill-teal-400 text-teal-400 shrink-0" />
-                  <span className="truncate">Play Top Pick: {spotlightGame.title}</span>
+                  <span>{tab.label}</span>
+                  {tab.id === 'all' && (
+                    <span className="font-mono text-[11px] text-subtle-foreground tabular-nums">{games.length}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2 pt-1 sm:pb-2.5 sm:pt-0">
+            <div className="relative w-full sm:w-64">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle-foreground" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search games or creators"
+                aria-label="Search games or creators"
+                className="h-10 sm:h-9 w-full rounded-lg border border-border bg-surface-sunken pl-9 pr-8 text-base sm:text-sm text-foreground placeholder:text-subtle-foreground transition focus:border-border-strong focus:outline-none"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded text-subtle-foreground hover:text-foreground"
+                >
+                  <X className="size-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Community Live Stats Strip */}
-            <div className="pt-4 sm:pt-6 border-t border-white/[0.06] grid grid-cols-3 gap-2 sm:gap-4 text-center sm:text-left">
-              <div>
-                <div className="text-lg sm:text-2xl font-black text-white">{games.length}</div>
-                <div className="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
-                  Arcade Games
-                </div>
-              </div>
-              <div>
-                <div className="text-lg sm:text-2xl font-black text-teal-400">{totalPlays}</div>
-                <div className="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
-                  Total Plays
-                </div>
-              </div>
-              <div>
-                <div className="text-lg sm:text-2xl font-black text-teal-300">{totalCreators}</div>
-                <div className="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
-                  Game Creators
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Featured Spotlight Card */}
-          <div className="lg:col-span-5">
-            {spotlightGame ? (
-              <div className="relative rounded-2xl border border-teal-400/20 bg-[#22272f] p-4 sm:p-6 shadow-[6px_6px_16px_rgba(0,0,0,0.4),-3px_-3px_10px_rgba(255,255,255,0.02)] group hover:border-teal-400/40 transition-all duration-300">
-                {/* Spotlight Tag */}
-                <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/8 border border-amber-400/20 px-2.5 sm:px-3 py-1 text-[9px] sm:text-[10px] font-black uppercase text-amber-300 tracking-wider truncate">
-                    <IoFlame className="size-3.5 text-amber-400 fill-amber-400 shrink-0" />
-                    <span className="truncate">Featured Community Pick</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-teal-300 font-bold shrink-0">
-                    <GiGameConsole className="size-3.5 sm:size-4 text-teal-400" />
-                    <span>{spotlightGame.playCount} {spotlightGame.playCount === 1 ? 'Play' : 'Plays'}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3.5 sm:gap-4 mb-3 sm:mb-4">
-                  <div className="flex size-14 sm:size-16 items-center justify-center rounded-2xl bg-teal-500/8 border border-teal-400/20 text-3xl sm:text-4xl shadow-inner group-hover:scale-105 transition-transform overflow-hidden shrink-0">
-                    {spotlightGame.thumbnailUrl ? (
-                      <img
-                        src={spotlightGame.thumbnailUrl}
-                        alt={spotlightGame.title}
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      spotlightGame.icon || '🎮'
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-lg sm:text-xl font-black text-white group-hover:text-teal-300 transition-colors truncate">
-                      {spotlightGame.title}
-                    </h3>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1 truncate">
-                      <span>Created by</span>
-                      <span className="font-semibold text-slate-200 truncate inline-flex items-center gap-1">
-                        <UserAvatar inline avatar={spotlightGame.authorAvatar} name={spotlightGame.authorUsername} className="size-4 rounded-full" />
-                        {spotlightGame.authorUsername}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed mb-4 sm:mb-5">
-                  {spotlightGame.description}
-                </p>
-
-                <button
-                  onClick={() => setActiveGame(spotlightGame)}
-                  className="w-full flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 py-3 text-xs font-black text-slate-950 hover:shadow-[0_0_24px_rgba(45,212,191,0.35)] shadow-md shadow-teal-500/15 transition active:scale-98"
-                >
-                  <Play className="size-4 fill-current" />
-                  <span>LAUNCH GAME NOW</span>
-                </button>
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-white/[0.06] bg-[#22272f] p-6 sm:p-8 text-center shadow-[6px_6px_16px_rgba(0,0,0,0.4),-3px_-3px_10px_rgba(255,255,255,0.02)]">
-                <div className="text-3xl sm:text-4xl mb-2">🕹️</div>
-                <div className="text-sm font-bold text-white">Be The First Creator!</div>
-                <p className="text-xs text-slate-400 mt-1">
-                  Upload an HTML game to take the featured spotlight spot!
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Catalog Heading */}
-      <div id="arcade-main-content" className="scroll-mt-20 flex items-center justify-between gap-3 sm:gap-4 border-b border-white/[0.06] pb-3 sm:pb-4">
-        <h2 className="flex items-center gap-2 text-lg sm:text-xl font-black text-white">
-          <GiJoystick className="size-5 text-teal-400" />
-          <span>Games Catalog</span>
-          <span className="rounded-md bg-white/[0.06] px-2 py-0.5 text-xs font-bold text-slate-300">{games.length}</span>
-        </h2>
-
-        {/* View Mode Toggle (Shown on desktop/tablet) */}
-        {(
-          <div className="hidden sm:flex items-center gap-2 self-end sm:self-auto shrink-0">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">
-              Layout
-            </span>
-            <div className="flex items-center gap-1 rounded-full bg-[#1c2028] p-1 border border-white/[0.06]">
+            <div className="hidden sm:flex items-center rounded-lg border border-border p-0.5">
               <button
                 onClick={() => setViewMode('grid')}
-                title="Grid View"
-                className={`flex size-8 items-center justify-center rounded-full transition ${
-                  viewMode === 'grid'
-                    ? 'bg-teal-400/15 text-teal-300 border border-teal-400/20'
-                    : 'text-slate-400 hover:text-white'
+                title="Grid view"
+                aria-pressed={viewMode === 'grid'}
+                className={`flex size-8 items-center justify-center rounded-md transition ${
+                  viewMode === 'grid' ? 'bg-white/[0.08] text-foreground' : 'text-subtle-foreground hover:text-foreground'
                 }`}
               >
                 <LayoutGrid className="size-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                title="List View"
-                className={`flex size-8 items-center justify-center rounded-full transition ${
-                  viewMode === 'list'
-                    ? 'bg-teal-400/15 text-teal-300 border border-teal-400/20'
-                    : 'text-slate-400 hover:text-white'
+                title="List view"
+                aria-pressed={viewMode === 'list'}
+                className={`flex size-8 items-center justify-center rounded-md transition ${
+                  viewMode === 'list' ? 'bg-white/[0.08] text-foreground' : 'text-subtle-foreground hover:text-foreground'
                 }`}
               >
                 <List className="size-4" />
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* 3. GAMES CATALOG */}
-      {(
-        <div className="space-y-6">
-          {/* Search & Genre Filters */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 sm:gap-4">
-            {/* Search Input */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3.5 top-3 size-4 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search games, tags, or creators..."
-                className="w-full rounded-full border border-white/[0.08] bg-[#1c2028] py-2.5 pl-10 pr-9 text-base sm:text-sm text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 transition shadow-[inset_2px_2px_6px_rgba(0,0,0,0.3)]"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-2.5 size-5 flex items-center justify-center rounded-full text-xs text-slate-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 rounded-full bg-[#1c2028] p-1 border border-white/[0.06] overflow-x-auto max-w-full no-scrollbar">
-              <button
-                onClick={() => setFilter('all')}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap shrink-0 ${
-                  activeFilter === 'all'
-                    ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/15'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                All Games
-              </button>
-              <button
-                onClick={() => setFilter('popular')}
-                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap shrink-0 ${
-                  activeFilter === 'popular'
-                    ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/15'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <IoFlame className="size-3.5" />
-                <span>Popular</span>
-              </button>
-              <button
-                onClick={() => setFilter('newest')}
-                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap shrink-0 ${
-                  activeFilter === 'newest'
-                    ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/15'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Clock className="size-3" />
-                <span>Newest</span>
-              </button>
-              <button
-                onClick={() => {
-                  if (!session?.user) {
-                    setIsAuthOpen(true);
-                  } else {
-                    setFilter('my-games');
-                  }
-                }}
-                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition whitespace-nowrap shrink-0 ${
-                  activeFilter === 'my-games'
-                    ? 'bg-teal-400 text-slate-950 shadow-md shadow-teal-400/15'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <User className="size-3" />
-                <span>My Uploads</span>
-              </button>
-            </div>
+        {loading ? (
+          <div className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3" aria-label="Loading games">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="animate-pulse space-y-3">
+                <div className="aspect-video w-full rounded-lg bg-surface" />
+                <div className="h-4 w-2/3 rounded bg-surface" />
+                <div className="h-3 w-1/3 rounded bg-surface" />
+              </div>
+            ))}
           </div>
-
-          {/* Games Catalog Listing */}
-          {loading ? (
-            <div className="py-24 text-center">
-              <div className="inline-block animate-spin text-4xl mb-3">🕹️</div>
-              <div className="text-slate-300 text-sm font-bold">Connecting to Buddy Line Arcade...</div>
-              <div className="text-slate-500 text-xs mt-1">Loading community games catalog</div>
-            </div>
-          ) : activeFilter === 'my-games' && isPending ? (
-            <div className="rounded-2xl border border-white/[0.06] bg-[#1c2028] p-12 text-center shadow-[6px_6px_16px_rgba(0,0,0,0.4)] animate-pulse">
-              <div className="size-8 mx-auto rounded-full border-2 border-teal-400 border-t-transparent animate-spin mb-3" />
-              <div className="text-slate-300 text-sm font-bold">Verifying cadet session...</div>
-            </div>
-          ) : activeFilter === 'my-games' && !session?.user ? (
-            <div className="rounded-2xl border border-white/[0.06] bg-[#1c2028] p-12 text-center shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
-              <div className="text-4xl mb-3">👤</div>
-              <h3 className="text-lg font-bold text-white">Sign In to View Your Uploads</h3>
-              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                Sign in to manage and play the games you&apos;ve built and uploaded!
-              </p>
-              <button
-                onClick={() => setIsAuthOpen(true)}
-                className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal-400 px-5 py-2.5 text-xs font-bold text-slate-950 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition"
-              >
-                <span>Sign In / Join</span>
-              </button>
-            </div>
-          ) : filteredGames.length === 0 ? (
-            <div className="rounded-2xl border border-white/[0.06] bg-[#1c2028] p-12 text-center shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
-              <div className="text-4xl mb-3">🕹️</div>
-              <h3 className="text-lg font-bold text-white">No games found</h3>
-              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                {searchQuery
-                  ? `No games match "${searchQuery}". Try a different keyword or reset filters!`
-                  : activeFilter === 'my-games'
-                  ? "You haven't uploaded any games yet. Be a creator and share one now!"
-                  : 'Be the first cadet to upload a game to Buddy Line!'}
-              </p>
+        ) : activeFilter === 'my-games' && isPending ? (
+          <div className="flex items-center justify-center gap-3 py-20 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            <span>Checking your session…</span>
+          </div>
+        ) : activeFilter === 'my-games' && !session?.user ? (
+          <div className="rounded-lg border border-dashed border-border-strong px-6 py-16 text-center">
+            <h3 className="text-base font-semibold text-foreground">Sign in to see your uploads</h3>
+            <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+              Games you upload are listed here so you can play, share or remove them.
+            </p>
+            <button
+              onClick={() => setIsAuthOpen(true)}
+              className="mt-5 inline-flex items-center gap-2 rounded-lg border border-border-strong px-4 py-2 text-sm font-medium text-foreground transition hover:bg-white/[0.05]"
+            >
+              Sign in
+            </button>
+          </div>
+        ) : filteredGames.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border-strong px-6 py-16 text-center">
+            <h3 className="text-base font-semibold text-foreground">No games found</h3>
+            <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+              {searchQuery
+                ? `Nothing matches "${searchQuery}". Try another title or creator.`
+                : activeFilter === 'my-games'
+                ? "You haven't uploaded a game yet."
+                : 'No one has uploaded a game yet.'}
+            </p>
+            {!searchQuery && (
               <button
                 onClick={handleUploadClick}
-                className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-5 py-2.5 text-xs font-bold text-slate-950 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition"
+                className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-teal-300"
               >
-                <Plus className="size-3.5" />
-                <span>Upload A Game</span>
+                <Plus className="size-4" />
+                <span>Upload a game</span>
               </button>
-            </div>
-          ) : viewMode === 'grid' ? (
-            /* GRID VIEW */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredGames.map((game) => (
-                <div
-                  key={game.id}
-                  onClick={() => setActiveGame(game)}
-                  className="group relative flex flex-col justify-between rounded-2xl border border-white/[0.06] bg-[#1c2028] p-5 shadow-[6px_6px_16px_rgba(0,0,0,0.4),-3px_-3px_10px_rgba(255,255,255,0.02)] transition-all duration-300 hover:-translate-y-1.5 hover:border-teal-400/30 hover:shadow-[6px_6px_16px_rgba(0,0,0,0.4),0_0_24px_rgba(45,212,191,0.12)] overflow-hidden cursor-pointer"
-                >
-                  {/* Subtle Top Ambient Light */}
-                  <div className="absolute -top-16 -right-16 size-32 rounded-full bg-teal-400/6 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                  {/* Game Thumbnail Banner (if present) */}
-                  {game.thumbnailUrl && (
-                    <div className="relative w-[calc(100%+2.5rem)] h-36 -mx-5 -mt-5 mb-4 overflow-hidden rounded-t-2xl border-b border-white/[0.08] bg-black/40">
-                      <img
-                        src={game.thumbnailUrl}
-                        alt={game.title}
-                        className="size-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                  )}
-
-                  <div>
-                    {/* Top Row: Icon + Badges + Action Menu */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex size-14 items-center justify-center rounded-2xl bg-teal-500/8 border border-teal-400/15 text-3xl shadow-inner group-hover:scale-110 transition-transform overflow-hidden shrink-0">
-                        {game.thumbnailUrl && !game.icon ? (
-                          <img src={game.thumbnailUrl} alt={game.title} className="size-full object-cover" />
-                        ) : !game.thumbnailUrl && (game.icon?.startsWith('http://') || game.icon?.startsWith('https://')) ? (
-                          <img src={game.icon} alt={game.title} className="size-full object-cover" />
-                        ) : (
-                          game.icon || '🎮'
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        {/* Share link button */}
-                        <button
-                          onClick={(e) => handleShare(game, e)}
-                          title="Copy Game Link"
-                          className="flex size-8 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-white transition active:scale-95"
-                        >
-                          {copiedGameId === game.id ? (
-                            <Check className="size-3.5 text-teal-400" />
-                          ) : (
-                            <Share2 className="size-3.5" />
-                          )}
-                        </button>
-
-                        {/* Delete button (Owner or Admin) */}
-                        {canDeleteGame(game) && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteError(null);
-                              setGameToDelete(game);
-                            }}
-                            title={
-                              isAdmin && game.authorId !== session?.user?.id
-                                ? 'Delete Game (Admin Privileges)'
-                                : 'Delete Your Game'
-                            }
-                            className="flex size-8 items-center justify-center rounded-full border border-rose-500/15 bg-rose-500/6 text-rose-400 hover:bg-rose-500 hover:text-white transition active:scale-95"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        )}
-
-                        {/* Play Count Badge */}
-                        <div className="flex items-center gap-1.5 rounded-full border border-teal-400/15 bg-teal-400/6 px-2.5 py-1 text-[11px] font-bold text-teal-300">
-                          <GiGameConsole className="size-3.5 text-teal-400" />
-                          <span>{game.playCount}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Title & Description */}
-                    <h3 className="text-lg font-black text-white tracking-tight group-hover:text-teal-300 transition-colors line-clamp-1">
-                      {game.title}
-                    </h3>
-                    <p className="mt-1.5 text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                      {game.description}
-                    </p>
-                  </div>
-
-                  {/* Card Bottom: Creator + Play CTA */}
-                  <div className="mt-5 pt-4 border-t border-white/[0.06] flex items-center justify-between gap-3">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenChat?.(game.authorId || game.authorUsername);
-                      }}
-                      title={`Message @${game.authorUsername}`}
-                      className="flex items-center gap-2 min-w-0 group/creator text-left hover:opacity-90 transition"
-                    >
-                      <UserAvatar inline avatar={game.authorAvatar} name={game.authorUsername} className="size-6 rounded-lg text-base" />
-                      <div className="truncate">
-                        <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold flex items-center gap-1">
-                          <span>Creator</span>
-                          <span className="text-teal-400 opacity-0 group-hover/creator:opacity-100 transition-opacity text-[9px]">💬</span>
-                        </div>
-                        <div className="text-xs font-bold text-slate-200 group-hover/creator:text-teal-300 transition-colors truncate">
-                          {game.authorUsername}
-                        </div>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveGame(game);
-                      }}
-                      className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-4 py-2 text-xs font-black text-slate-950 shadow-md shadow-teal-500/15 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition active:scale-95 shrink-0"
-                    >
-                      <Play className="size-3.5 fill-current" />
-                      <span>PLAY</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            /* COMPACT LIST VIEW */
-            <div className="divide-y divide-white/[0.06] rounded-2xl border border-white/[0.06] bg-[#1c2028] overflow-hidden shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
-              {filteredGames.map((game) => (
-                <div
-                  key={game.id}
-                  onClick={() => setActiveGame(game)}
-                  className="flex items-center justify-between gap-4 p-4 hover:bg-white/[0.03] transition cursor-pointer"
-                >
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="flex size-11 items-center justify-center rounded-xl bg-white/[0.04] text-2xl shrink-0 overflow-hidden">
-                      {game.thumbnailUrl ? (
-                        <img src={game.thumbnailUrl} alt={game.title} className="size-full object-cover rounded-xl" />
-                      ) : (
-                        game.icon || '🎮'
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-black text-white hover:text-teal-300 truncate">
-                          {game.title}
-                        </h4>
-                        <span className="text-[10px] text-teal-300 bg-teal-400/6 px-2 py-0.5 rounded-full border border-teal-400/15 font-bold">
-                          {game.playCount} {game.playCount === 1 ? 'play' : 'plays'}
+            )}
+          </div>
+        ) : viewMode === 'grid' ? (
+          /* GRID VIEW */
+          <div className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredGames.map((game) => (
+              <article key={game.id} className="group min-w-0">
+                <div className="relative">
+                  <button
+                    onClick={() => setActiveGame(game)}
+                    aria-label={`Play ${game.title}`}
+                    className="block w-full rounded-lg"
+                  >
+                    <GameCover game={game} className="transition-transform duration-200 group-hover:-translate-y-0.5">
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition duration-200 group-hover:opacity-100">
+                        <span className="flex size-12 scale-90 items-center justify-center rounded-full bg-primary text-primary-foreground transition duration-200 group-hover:scale-100">
+                          <Play className="ml-0.5 size-5 fill-current" />
                         </span>
-                      </div>
-                      <p className="text-xs text-slate-400 truncate max-w-md mt-0.5">
-                        {game.description}
-                      </p>
-                    </div>
-                  </div>
+                      </span>
+                    </GameCover>
+                  </button>
 
-                  <div className="flex items-center gap-3 shrink-0">
+                  {/* Cover actions: always visible on touch, on hover/focus otherwise */}
+                  <div className="absolute right-2.5 top-2.5 flex gap-1.5 transition sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenChat?.(game.authorId || game.authorUsername);
-                      }}
-                      title={`Message @${game.authorUsername}`}
-                      className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 hover:text-teal-300 transition"
+                      onClick={(e) => handleShare(game, e)}
+                      title="Copy game link"
+                      aria-label={`Copy link to ${game.title}`}
+                      className="flex size-8 items-center justify-center rounded-md bg-black/60 text-white/85 backdrop-blur-sm transition hover:bg-black/80 hover:text-white"
                     >
-                      <UserAvatar inline avatar={game.authorAvatar} name={game.authorUsername} className="size-4 rounded-full" />
-                      <span className="font-semibold text-slate-200 hover:text-teal-300">{game.authorUsername}</span>
+                      {copiedGameId === game.id ? <Check className="size-3.5 text-teal-300" /> : <Share2 className="size-3.5" />}
                     </button>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveGame(game);
-                      }}
-                      className="flex items-center gap-1 rounded-full bg-teal-400/10 border border-teal-400/20 px-3.5 py-1.5 text-xs font-black text-teal-300 hover:bg-teal-400 hover:text-slate-950 transition"
-                    >
-                      <Play className="size-3 fill-current" />
-                      <span>Play</span>
-                    </button>
+                    {canDeleteGame(game) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteError(null);
+                          setGameToDelete(game);
+                        }}
+                        title={
+                          isAdmin && game.authorId !== session?.user?.id
+                            ? 'Delete game (admin)'
+                            : 'Delete your game'
+                        }
+                        aria-label={`Delete ${game.title}`}
+                        className="flex size-8 items-center justify-center rounded-md bg-black/60 text-white/85 backdrop-blur-sm transition hover:bg-rose-600 hover:text-white"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+
+                <div className="mt-3.5 min-w-0">
+                  <h3 className="truncate text-[15px] font-semibold text-foreground">
+                    <button onClick={() => setActiveGame(game)} className="text-left underline-offset-4 hover:underline">
+                      {game.title}
+                    </button>
+                  </h3>
+                  <p className="mt-1 flex min-w-0 items-center gap-1.5 font-mono text-xs text-muted-foreground">
+                    <button
+                      onClick={() => onOpenChat?.(game.authorId || game.authorUsername)}
+                      title={`Message @${game.authorUsername}`}
+                      className="inline-flex min-w-0 items-center gap-1.5 transition hover:text-foreground"
+                    >
+                      <UserAvatar inline avatar={game.authorAvatar} name={game.authorUsername} className="size-4 rounded-full text-[10px]" />
+                      <span className="truncate">{game.authorUsername}</span>
+                    </button>
+                    <span aria-hidden className="text-subtle-foreground">·</span>
+                    <span className="shrink-0 tabular-nums">{playsLabel(game.playCount)}</span>
+                  </p>
+                  {game.description && (
+                    <p className="mt-2 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{game.description}</p>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          /* LIST VIEW */
+          <div className="divide-y divide-border border-y border-border">
+            {filteredGames.map((game) => (
+              <div key={game.id} className="group flex items-center gap-4 py-3">
+                <button
+                  onClick={() => setActiveGame(game)}
+                  aria-label={`Play ${game.title}`}
+                  className="w-24 shrink-0 rounded-md sm:w-28"
+                >
+                  <GameCover game={game} size="sm" className="rounded-md" />
+                </button>
+                <div className="min-w-0 flex-1">
+                  <button
+                    onClick={() => setActiveGame(game)}
+                    className="block max-w-full truncate text-left text-sm font-semibold text-foreground underline-offset-4 hover:underline"
+                  >
+                    {game.title}
+                  </button>
+                  <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{game.description}</p>
+                </div>
+                <button
+                  onClick={() => onOpenChat?.(game.authorId || game.authorUsername)}
+                  title={`Message @${game.authorUsername}`}
+                  className="hidden w-36 shrink-0 items-center gap-1.5 truncate font-mono text-xs text-muted-foreground transition hover:text-foreground md:flex"
+                >
+                  <UserAvatar inline avatar={game.authorAvatar} name={game.authorUsername} className="size-4 rounded-full text-[10px]" />
+                  <span className="truncate">{game.authorUsername}</span>
+                </button>
+                <span className="hidden w-20 shrink-0 text-right font-mono text-xs text-muted-foreground tabular-nums sm:block">
+                  {playsLabel(game.playCount)}
+                </span>
+                <button
+                  onClick={() => setActiveGame(game)}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs font-medium text-foreground transition hover:border-primary hover:bg-primary hover:text-primary-foreground"
+                >
+                  <Play className="size-3 fill-current" />
+                  <span>Play</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Game Player Modal */}
       {activeGame && (
@@ -709,29 +552,27 @@ export function ArcadeView({
 
       {/* Delete Confirmation Modal */}
       {gameToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md rounded-2xl border border-rose-500/20 bg-[#1c2028] p-6 shadow-2xl shadow-black/40">
-            <div className="flex items-center gap-3 text-rose-400 mb-4">
-              <div className="flex size-10 items-center justify-center rounded-2xl bg-rose-500/8 border border-rose-500/15">
-                <AlertTriangle className="size-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div role="alertdialog" aria-labelledby="delete-game-title" className="relative w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-2xl shadow-black/50">
+            <div className="flex items-start gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400">
+                <AlertTriangle className="size-4" />
               </div>
-              <div>
-                <h3 className="font-black text-white text-base">Delete Game</h3>
-                <p className="text-xs text-rose-300/80">Permanent removal confirmation</p>
+              <div className="min-w-0">
+                <h3 id="delete-game-title" className="text-base font-semibold text-foreground">Delete this game?</h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  <span className="font-medium text-foreground">{gameToDelete.title}</span> will be removed from the arcade for everyone. This can&apos;t be undone.
+                </p>
               </div>
             </div>
 
-            <p className="text-sm text-slate-300 leading-relaxed">
-              Are you sure you want to delete <span className="font-bold text-white">&quot;{gameToDelete.title}&quot;</span>? This will permanently remove the game from the community arcade.
-            </p>
-
             {deleteError && (
-              <div className="mt-4 rounded-xl border border-rose-500/20 bg-rose-500/8 p-3 text-xs text-rose-300">
+              <div className="mt-4 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-300">
                 {deleteError}
               </div>
             )}
 
-            <div className="mt-6 flex items-center justify-end gap-3">
+            <div className="mt-6 flex items-center justify-end gap-2">
               <button
                 onClick={() => {
                   if (!isDeleting) {
@@ -740,24 +581,24 @@ export function ArcadeView({
                   }
                 }}
                 disabled={isDeleting}
-                className="rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.08] transition disabled:opacity-50"
+                className="rounded-lg border border-border-strong px-4 py-2 text-sm font-medium text-foreground transition hover:bg-white/[0.05] disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDeleteGame}
                 disabled={isDeleting}
-                className="flex items-center gap-2 rounded-full bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-500 shadow-lg shadow-rose-600/20 transition active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500 active:scale-[0.98] disabled:opacity-50"
               >
                 {isDeleting ? (
                   <>
                     <Loader2 className="size-3.5 animate-spin" />
-                    <span>Deleting...</span>
+                    <span>Deleting…</span>
                   </>
                 ) : (
                   <>
                     <Trash2 className="size-3.5" />
-                    <span>Yes, Delete Game</span>
+                    <span>Delete game</span>
                   </>
                 )}
               </button>

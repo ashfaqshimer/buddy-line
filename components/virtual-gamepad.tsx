@@ -67,7 +67,7 @@ export function VirtualGamepad({
     return (
       <button
         onClick={onToggleVisibility}
-        className="fixed bottom-12 right-4 z-40 flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-[#161a22]/90 backdrop-blur-md px-3 py-1.5 text-[11px] font-bold text-teal-300 shadow-xl"
+        className="fixed bottom-12 right-4 z-40 flex items-center gap-1.5 rounded-lg border border-teal-400/30 bg-surface/90 backdrop-blur-md px-3 py-1.5 text-[11px] font-bold text-teal-300 shadow-xl"
         title="Show On-screen Touch Controls"
       >
         <Eye className="size-3.5" />
@@ -82,7 +82,7 @@ export function VirtualGamepad({
       style={{ touchAction: 'none' }}
     >
       {/* LEFT: 4-Way D-Pad */}
-      <div className="pointer-events-auto flex flex-col items-center bg-black/40 backdrop-blur-md p-2 rounded-3xl border border-white/10 shadow-2xl">
+      <div className="pointer-events-auto flex flex-col items-center bg-black/40 backdrop-blur-md p-2 rounded-xl border border-white/10 shadow-2xl">
         {/* UP */}
         <button
           onTouchStart={(e) => handlePress('UP', e)}
@@ -91,7 +91,7 @@ export function VirtualGamepad({
           onMouseUp={(e) => handleRelease('UP', e)}
           className={`size-12 rounded-xl flex items-center justify-center transition active:scale-95 ${
             activeKeys.UP
-              ? 'bg-teal-400 text-slate-950 scale-95 shadow-[0_0_12px_#2dd4bf]'
+              ? 'bg-teal-400 text-zinc-950 scale-95'
               : 'bg-white/10 text-white hover:bg-white/15'
           }`}
           aria-label="Up Arrow"
@@ -109,7 +109,7 @@ export function VirtualGamepad({
             onMouseUp={(e) => handleRelease('LEFT', e)}
             className={`size-12 rounded-xl flex items-center justify-center transition active:scale-95 ${
               activeKeys.LEFT
-                ? 'bg-teal-400 text-slate-950 scale-95 shadow-[0_0_12px_#2dd4bf]'
+                ? 'bg-teal-400 text-zinc-950 scale-95'
                 : 'bg-white/10 text-white hover:bg-white/15'
             }`}
             aria-label="Left Arrow"
@@ -130,7 +130,7 @@ export function VirtualGamepad({
             onMouseUp={(e) => handleRelease('RIGHT', e)}
             className={`size-12 rounded-xl flex items-center justify-center transition active:scale-95 ${
               activeKeys.RIGHT
-                ? 'bg-teal-400 text-slate-950 scale-95 shadow-[0_0_12px_#2dd4bf]'
+                ? 'bg-teal-400 text-zinc-950 scale-95'
                 : 'bg-white/10 text-white hover:bg-white/15'
             }`}
             aria-label="Right Arrow"
@@ -147,7 +147,7 @@ export function VirtualGamepad({
           onMouseUp={(e) => handleRelease('DOWN', e)}
           className={`size-12 rounded-xl flex items-center justify-center transition active:scale-95 ${
             activeKeys.DOWN
-              ? 'bg-teal-400 text-slate-950 scale-95 shadow-[0_0_12px_#2dd4bf]'
+              ? 'bg-teal-400 text-zinc-950 scale-95'
               : 'bg-white/10 text-white hover:bg-white/15'
           }`}
           aria-label="Down Arrow"
@@ -157,14 +157,14 @@ export function VirtualGamepad({
       </div>
 
       {/* RIGHT: Action Buttons (SPACE / A / B) */}
-      <div className="pointer-events-auto flex flex-col items-end gap-2 bg-black/40 backdrop-blur-md p-2.5 rounded-3xl border border-white/10 shadow-2xl">
+      <div className="pointer-events-auto flex flex-col items-end gap-2 bg-black/40 backdrop-blur-md p-2.5 rounded-xl border border-white/10 shadow-2xl">
         <div className="flex items-center justify-between w-full pb-1 px-1 border-b border-white/10">
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+          <span className="text-[9px] font-semibold text-zinc-400 uppercase tracking-widest">
             ACTIONS
           </span>
           <button
             onClick={onToggleVisibility}
-            className="text-slate-400 hover:text-white p-0.5"
+            className="text-zinc-400 hover:text-white p-0.5"
             title="Hide On-screen Controls"
           >
             <EyeOff className="size-3.5" />
@@ -180,7 +180,7 @@ export function VirtualGamepad({
             onMouseUp={(e) => handleRelease('B', e)}
             className={`size-12 rounded-full font-black text-sm flex items-center justify-center transition active:scale-95 shadow-md ${
               activeKeys.B
-                ? 'bg-amber-400 text-slate-950 scale-95 shadow-[0_0_12px_#fbbf24]'
+                ? 'bg-amber-400 text-zinc-950 scale-95'
                 : 'bg-white/10 text-amber-300 border border-amber-400/30 hover:bg-white/15'
             }`}
           >
@@ -195,7 +195,7 @@ export function VirtualGamepad({
             onMouseUp={(e) => handleRelease('A', e)}
             className={`size-12 rounded-full font-black text-sm flex items-center justify-center transition active:scale-95 shadow-md ${
               activeKeys.A
-                ? 'bg-teal-400 text-slate-950 scale-95 shadow-[0_0_12px_#2dd4bf]'
+                ? 'bg-teal-400 text-zinc-950 scale-95'
                 : 'bg-white/10 text-teal-300 border border-teal-400/30 hover:bg-white/15'
             }`}
           >
@@ -211,7 +211,7 @@ export function VirtualGamepad({
           onMouseUp={(e) => handleRelease('SPACE', e)}
           className={`w-full py-2.5 px-4 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center transition active:scale-95 shadow-md ${
             activeKeys.SPACE
-              ? 'bg-teal-400 text-slate-950 scale-98 shadow-[0_0_14px_#2dd4bf]'
+              ? 'bg-teal-400 text-zinc-950 scale-98'
               : 'bg-gradient-to-r from-teal-500/20 to-teal-400/20 text-teal-300 border border-teal-400/40 hover:bg-teal-400/30'
           }`}
         >

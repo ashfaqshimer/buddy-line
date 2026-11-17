@@ -43,7 +43,7 @@ Scripts read `.env` themselves. They rely on Node built-ins `node:sqlite` and TS
 
 ## Styling
 
-Dark neumorphic design with teal `#2dd4bf` accent. Read `docs/STYLING.md` before UI work. Tokens live in `app/globals.css` (Tailwind v4 `@theme`, plus utility classes like `neu-card`) and `lib/tokens.ts`; shadcn-style primitives are in `components/ui`. Use `cn()` from `lib/utils.ts` for class merging. The app is mobile-responsive (100dvh layout, bottom nav, bottom-sheet chat, 16px+ input font sizes to avoid iOS zoom) — keep new UI working at phone widths.
+"Gallery" dark theme: neutral surfaces, hairline borders, typographic game covers, teal `#2dd4bf` for primary actions only. Read `docs/STYLING.md` before UI work. Tokens live in `app/globals.css` (Tailwind v4 `@theme`) and `lib/tokens.ts`; game covers come from `components/game-cover.tsx`; shadcn-style primitives are in `components/ui`. Use `cn()` from `lib/utils.ts` for class merging. The app is mobile-responsive (100dvh layout, bottom nav, bottom-sheet chat, 16px+ input font sizes to avoid iOS zoom) — keep new UI working at phone widths.
 
 ## Neon
 

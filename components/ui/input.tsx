@@ -3,11 +3,11 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 export const inputVariants = cva(
-  "w-full border border-white/[0.08] bg-[#151920] text-sm text-white placeholder-slate-500 shadow-[inset_2px_2px_6px_rgba(0,0,0,0.3)] transition-all focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:cursor-not-allowed disabled:opacity-50",
+  "w-full border border-white/[0.08] bg-background text-sm text-white placeholder-zinc-500 transition-all focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       shape: {
-        pill: "rounded-full px-4 py-2.5",
+        pill: "rounded-lg px-4 py-2.5",
         rounded: "rounded-xl px-3.5 py-2.5",
       },
     },

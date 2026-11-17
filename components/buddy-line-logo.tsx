@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { Zap } from 'lucide-react';
 
 export interface BuddyLineLogoProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
@@ -278,7 +277,7 @@ export function FistBumpIcon({ className = 'size-full' }: { className?: string }
 export function BuddyLineLogo({
   size = 'md',
   className = '',
-  showPing = true,
+  showPing = false,
   variant = 'badge',
   alt = 'Buddy Line Logo',
 }: BuddyLineLogoProps) {
@@ -293,13 +292,10 @@ export function BuddyLineLogo({
 
   return (
     <div
-      className={`relative inline-flex items-center justify-center shrink-0 rounded-full transition-all duration-300 group-hover:scale-105 select-none ${sizeMap.outer} ${className}`}
+      className={`relative inline-flex items-center justify-center shrink-0 rounded-full select-none ${sizeMap.outer} ${className}`}
     >
-      {/* Outer Neon Bloom / Ambient Glow */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-500/20 via-sky-400/10 to-purple-500/25 blur-md opacity-80 group-hover:opacity-100 group-hover:blur-lg transition-all duration-300 pointer-events-none" />
-
       {/* Main Circular Emblem */}
-      <div className="relative size-full rounded-full overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.6),0_0_12px_rgba(56,189,248,0.25)] group-hover:shadow-[0_4px_20px_rgba(0,0,0,0.8),0_0_20px_rgba(56,189,248,0.45)]">
+      <div className="relative size-full rounded-full overflow-hidden ring-1 ring-white/10">
         {variant === 'vector' ? (
           <FistBumpIcon className="size-full" />
         ) : (
@@ -308,74 +304,15 @@ export function BuddyLineLogo({
             alt={alt}
             width={sizeMap.px}
             height={sizeMap.px}
-            className="size-full object-cover transition-transform duration-300 group-hover:scale-102"
-            priority={size === 'md' || size === 'lg'}
+            className="size-full object-cover"
+            priority={size === 'sm' || size === 'md' || size === 'lg'}
           />
         )}
       </div>
 
-      {/* Live Arcade Online Status Ping Dot */}
       {showPing && (
-        <span className="absolute -bottom-0.5 -right-0.5 flex size-2.5 sm:size-3 pointer-events-none">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-          <span className="relative inline-flex rounded-full size-2.5 sm:size-3 bg-gradient-to-tr from-cyan-400 to-sky-300 shadow-[0_0_8px_#38bdf8]" />
-        </span>
+        <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background bg-primary pointer-events-none" />
       )}
-    </div>
-  );
-}
-
-/**
- * BuddyLineBrand - Full brand identity block (Logo + Wordmark + Pill + Subtitle)
- */
-export function BuddyLineBrand({
-  totalGamesCount,
-  onLogoClick,
-}: {
-  totalGamesCount?: number;
-  onLogoClick?: () => void;
-}) {
-  return (
-    <div
-      onClick={onLogoClick}
-      className={`flex items-center gap-3 text-left ${onLogoClick ? 'cursor-pointer group' : ''}`}
-    >
-      <BuddyLineLogo size="md" />
-
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          {/* Dual-Tone Typographic Wordmark */}
-          <div className="flex items-baseline font-black tracking-tight text-lg sm:text-xl leading-none">
-            <span className="text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] group-hover:text-cyan-200 transition-colors">
-              BUDDY
-            </span>
-            <span className="relative ml-1.5 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-purple-400 drop-shadow-[0_0_14px_rgba(56,189,248,0.35)] tracking-wide font-black">
-              LINE
-            </span>
-            <span className="inline-block size-1 sm:size-1.5 rounded-full bg-cyan-400 ml-1.5 shadow-[0_0_8px_#38bdf8] animate-pulse" />
-          </div>
-
-          {/* Arcade Badge Pill */}
-          <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 px-2 py-0.5 text-[9px] sm:text-[10px] font-black text-cyan-300 tracking-wider shrink-0 shadow-[0_0_10px_rgba(56,189,248,0.15)]">
-            <Zap className="size-2 text-cyan-400 fill-cyan-400" />
-            <span>ARCADE</span>
-          </span>
-        </div>
-
-        {/* Subtitle / Live Games Counter */}
-        <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-400 whitespace-nowrap mt-1">
-          <span className="font-medium text-slate-400">Community Web Arcade</span>
-          {totalGamesCount !== undefined && totalGamesCount > 0 && (
-            <>
-              <span className="size-1 rounded-full bg-slate-600" />
-              <span className="text-cyan-400 font-semibold flex items-center gap-1">
-                <span className="size-1.5 rounded-full bg-cyan-400 inline-block animate-pulse" />
-                {totalGamesCount} playable
-              </span>
-            </>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

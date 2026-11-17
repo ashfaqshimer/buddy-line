@@ -1,172 +1,68 @@
-# Buddy Line Design System & Styling Tokens
+# Buddy Line Design System ("Gallery")
 
-Buddy Line features a **dark neumorphic** visual theme inspired by modern gaming UI, combining soft dark charcoal surfaces, sunken inset controls, and radiant teal (`#2dd4bf`) glow accents.
+Buddy Line uses a restrained dark theme: neutral near-black surfaces, 1px hairline borders, small corner radii and no decorative glow. The games' covers are the main visual. Teal (`#2dd4bf`) is reserved for the primary action (play, upload) and focus rings.
 
 ---
 
-## 1. Palette & Design Tokens
+## 1. Color tokens
 
-### Color Tokens
+Defined in `app/globals.css` (`:root` + `@theme inline`) and mirrored in `lib/tokens.ts`.
 
-| Token | Value | Tailwind Variable / Class | Purpose |
+| Token | Value | Tailwind | Purpose |
 |---|---|---|---|
-| **Background** | `#151920` | `bg-background` / `var(--background)` | Deep charcoal canvas background |
-| **Surface** | `#1c2028` | `bg-surface` / `bg-card` | Standard card and modal body |
-| **Surface Raised** | `#22272f` | `bg-surface-raised` | Elevated cards, spotlight sections |
-| **Surface Sunken** | `#111419` | `bg-surface-sunken` | Inset backgrounds, canvas containers |
-| **Primary / Teal** | `#2dd4bf` | `bg-primary` / `text-primary` | Main call-to-action & brand accent |
-| **Border** | `rgba(255, 255, 255, 0.08)` | `border-border` | Subtle contrast borders |
-| **Border Teal** | `rgba(45, 212, 191, 0.25)` | `border-teal-400/25` | Active / focused borders |
+| Background | `#0d0d0f` | `bg-background` | Page canvas, header, player HUD |
+| Surface | `#141417` | `bg-surface` / `bg-card` | Modals, menus, panels |
+| Surface raised | `#1b1b1f` | `bg-surface-raised` | Avatars, nested panels |
+| Surface sunken | `#0a0a0c` | `bg-surface-sunken` | Inputs, iframe backdrop |
+| Foreground | `#ededf0` | `text-foreground` | Primary text |
+| Muted | `#9a9aa3` | `text-muted-foreground` | Secondary text, metadata |
+| Subtle | `#66666f` | `text-subtle-foreground` | Labels, placeholders |
+| Border | `rgba(255,255,255,.08)` | `border-border` | Default hairline |
+| Border strong | `rgba(255,255,255,.14)` | `border-border-strong` | Outline buttons, hover, dashed empty states |
+| Primary | `#2dd4bf` | `bg-primary` / `text-primary-foreground` | Play / upload / focus only |
 
-### Shadow & Neumorphism Tokens
+Neutral greys use Tailwind's `zinc` scale (not `slate`, which is blue-tinted). Semantic colours: `rose` for destructive actions, `amber` for admin/root markers.
 
-- **Raised Surface Shadow:**  
-  `6px 6px 16px rgba(0, 0, 0, 0.45), -4px -4px 12px rgba(255, 255, 255, 0.02)`
-- **Sunken Inset Shadow:**  
-  `inset 2px 2px 6px rgba(0, 0, 0, 0.4), inset -1px -1px 4px rgba(255, 255, 255, 0.01)`
-- **Teal Glow:**  
-  `0 0 24px rgba(45, 212, 191, 0.2)`
-- **Teal Glow Bold:**  
-  `0 0 35px rgba(45, 212, 191, 0.4)`
+## 2. Type
 
----
+- **Geist** (`font-sans`) for UI and body text.
+- **Geist Mono** (`font-mono`) for metadata, counts, labels (`tokens.label`, `tokens.meta`). Use `tabular-nums` for numbers.
+- **Archivo** (`font-display`, variable width) for headings and covers:
+  - `.display-wide` for headings (wide, tight tracking).
+  - `.display-condensed` for typographic game covers (condensed uppercase).
 
-## 2. Reusable Utility Classes (`app/globals.css`)
+Weights stay between 500 and 800. Avoid `font-black`, ALL-CAPS button labels and text below 11px. Buttons use sentence case ("Upload a game", "Play").
 
-You can directly apply these classes across JSX markup:
+## 3. Shape & elevation
 
-```html
-<!-- Neumorphic Card with Hover Glow -->
-<div class="neu-card neu-card-hover p-6">
-  <!-- Content -->
+- Radii: `rounded-md` (6px) small controls, `rounded-lg` (8px) buttons, inputs and covers, `rounded-xl` (12px) modals and menus. `rounded-full` is for avatars, dots and count badges only.
+- No glows, gradient buttons, gradient text or neumorphic shadows. Separate things with borders and spacing. Use `shadow-2xl shadow-black/50` only for floating layers (modals, dropdowns).
+- `backdrop-blur` only on sticky chrome (header, bottom nav) and overlay scrims.
+
+## 4. Game covers
+
+`components/game-cover.tsx` renders a 16:9 cover: the uploaded thumbnail if there is one, otherwise a typographic cover (the title in condensed caps) on a stable tone from `lib/game-colors.ts` (`getCoverTone(game.id)`). Use it anywhere a game is shown (grid, featured slot, list view, player HUD) instead of emoji tiles.
+
+## 5. Presets (`lib/tokens.ts`)
+
+```tsx
+import { tokens, tokenClass } from "@/lib/tokens";
+
+<div className={tokenClass("card", "p-6 space-y-4")}>
+  <p className={tokens.label}>Section</p>
+  <input className={tokens.input} placeholder="Search games" />
+  <button className={tokens.buttonTeal}>Upload a game</button>
+  <button className={tokens.buttonOutline}>Cancel</button>
 </div>
-
-<!-- Primary Teal Pill Button -->
-<button class="btn-teal px-6 py-2.5 text-xs">
-  Play Game
-</button>
-
-<!-- Secondary Teal Outline Pill -->
-<button class="btn-outline-teal px-4 py-2 text-xs">
-  Details
-</button>
 ```
 
-Available CSS classes:
-- `.neu-card` — Standard rounded neumorphic surface with subtle border and raised shadow.
-- `.neu-card-hover` — Adds smooth hover elevation, teal border transition, and subtle glow.
-- `.neu-raised` — Raised surface background and shadow.
-- `.neu-inset` — Sunken surface background with inset shadow (great for inputs, track pads).
-- `.btn-teal` — Vibrant teal gradient pill button with glow.
-- `.btn-outline-teal` — Transparent teal-bordered pill button.
-- `.glow-teal` / `.glow-teal-bold` — Standalone glow box-shadows.
+Keys: `card`, `cardRaised`, `cardInteractive`, `panel`, `modal`, `input`, `inputRounded`, `buttonTeal`, `buttonOutline`, `buttonMuted`, `buttonDestructive`, `badgeTeal`, `badgeAmber`, `badgeMuted`, `badgeDestructive`, `label`, `meta`.
 
----
+Shadcn-style primitives in `components/ui` (`Button`, `Card`, `Badge`, `Input`) follow the same rules. Use `cn()` from `lib/utils.ts` to merge classes.
 
-## 3. TypeScript Design Tokens (`lib/tokens.ts`)
+## 6. Guidelines
 
-For programmatic usage and centralized type-safe styling, import from `@/lib/tokens`:
-
-```tsx
-import { tokens, tokenClass, colors, shadows } from "@/lib/tokens";
-
-export function CustomPanel() {
-  return (
-    <div className={tokenClass("card", "p-6 space-y-4")}>
-      <h2 className="text-white font-bold">Panel Title</h2>
-      <input className={tokens.input} placeholder="Search..." />
-      <button className={tokens.buttonTeal}>Submit</button>
-    </div>
-  );
-}
-```
-
-Predefined preset keys in `tokens`:
-- `card` / `cardRaised` / `cardInteractive`
-- `panel` / `modal`
-- `input` / `inputRounded`
-- `buttonTeal` / `buttonOutline` / `buttonMuted` / `buttonDestructive`
-- `badgeTeal` / `badgeAmber` / `badgeMuted` / `badgeDestructive`
-- `glowTeal` / `glowTealBold`
-
----
-
-## 4. Reusable Shadcn-Style UI Components (`components/ui/`)
-
-Components built with `class-variance-authority` (`cva`) and Tailwind CSS v4 variables:
-
-### Button (`components/ui/button.tsx`)
-
-```tsx
-import { Button } from "@/components/ui/button";
-
-// Primary Teal Pill (Default)
-<Button>Launch Game</Button>
-
-// Outline Pill
-<Button variant="outline">Learn More</Button>
-
-// Secondary / Muted
-<Button variant="secondary">Cancel</Button>
-
-// Destructive
-<Button variant="destructive">Delete Game</Button>
-
-// Custom Shapes & Sizes
-<Button shape="rounded" size="sm">Small Rounded</Button>
-```
-
-### Card (`components/ui/card.tsx`)
-
-```tsx
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter
-} from "@/components/ui/card";
-
-<Card interactive>
-  <CardHeader>
-    <CardTitle>Game Title</CardTitle>
-    <CardDescription>Created by SpaceCadet</CardDescription>
-  </CardHeader>
-  <CardContent>
-    <p>Game details and preview...</p>
-  </CardContent>
-  <CardFooter>
-    <Button size="sm">Play</Button>
-  </CardFooter>
-</Card>
-```
-
-### Badge (`components/ui/badge.tsx`)
-
-```tsx
-import { Badge } from "@/components/ui/badge";
-
-<Badge variant="default">HTML5</Badge>
-<Badge variant="amber">Top Score</Badge>
-<Badge variant="solid">Featured</Badge>
-<Badge variant="secondary">Retro</Badge>
-```
-
-### Input (`components/ui/input.tsx`)
-
-```tsx
-import { Input } from "@/components/ui/input";
-
-<Input shape="pill" placeholder="Search games, tags, or creators..." />
-<Input shape="rounded" type="password" placeholder="Password" />
-```
-
----
-
-## 5. Guidelines for Future UI Additions
-
-1. **Always default to pill radius for primary CTA buttons** (`rounded-full` or `<Button shape="pill">`).
-2. **Use `#1c2028` for surfaces** and `#151920` for backgrounds or inset input slots.
-3. **Keep borders delicate** (`border-white/[0.06]` to `border-white/[0.08]`) rather than solid bright lines.
-4. **Accent with Teal (`#2dd4bf`)** for high-priority interactive elements, badges, and focal points.
+1. Use teal for at most one or two actions per view. Everything else is neutral.
+2. Prefer tokens (`bg-surface`, `text-muted-foreground`) over hex literals.
+3. Lay out content without boxes where possible: a game tile is a cover plus text, not a card.
+4. Keep phone widths working: 16px+ input font size, 44px touch targets, bottom nav clearance (`pb-24` on `main`).

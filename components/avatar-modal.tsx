@@ -162,7 +162,7 @@ function AvatarModalBody({
 
   const tabClass = (active: boolean) =>
     `flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition ${
-      active ? 'bg-teal-400/15 text-teal-300 border border-teal-400/25' : 'text-slate-400 hover:text-white border border-transparent'
+      active ? 'bg-teal-400/15 text-teal-300 border border-teal-400/25' : 'text-zinc-400 hover:text-white border border-transparent'
     }`;
 
   return (
@@ -171,7 +171,7 @@ function AvatarModalBody({
       onClick={() => !busy && onClose()}
     >
       <div
-        className="relative w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#1c2028] p-6 shadow-2xl shadow-black/40"
+        className="relative w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-white/[0.08] bg-surface p-6 shadow-2xl shadow-black/40"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -180,21 +180,21 @@ function AvatarModalBody({
         <button
           onClick={onClose}
           disabled={busy}
-          className="absolute right-4 top-4 rounded-xl p-2 text-slate-400 hover:bg-white/5 hover:text-white transition"
+          className="absolute right-4 top-4 rounded-xl p-2 text-zinc-400 hover:bg-white/5 hover:text-white transition"
           aria-label="Close"
         >
           <X className="size-4" />
         </button>
 
         <div className="flex items-center gap-3 mb-5">
-          <div className="flex size-10 items-center justify-center rounded-2xl bg-teal-500/10 border border-teal-400/20 text-teal-400">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-teal-500/10 border border-teal-400/20 text-teal-400">
             <Smile className="size-5" />
           </div>
           <div>
-            <h3 id="avatar-modal-title" className="font-black text-white text-base">
+            <h3 id="avatar-modal-title" className="font-semibold text-white text-base">
               Change Avatar
             </h3>
-            <p className="text-xs text-slate-400">Pick an icon or upload your own picture.</p>
+            <p className="text-xs text-zinc-400">Pick an icon or upload your own picture.</p>
           </div>
         </div>
 
@@ -203,12 +203,12 @@ function AvatarModalBody({
           <UserAvatar
             avatar={previewAvatar || DEFAULT_AVATAR}
             name={displayName}
-            className="size-24 rounded-3xl bg-gradient-to-br from-teal-400 to-teal-600 text-5xl font-black text-white shadow-[0_0_24px_rgba(45,212,191,0.25)] ring-2 ring-teal-400/30"
+            className="size-24 rounded-xl bg-teal-400 text-5xl font-semibold text-white ring-2 ring-teal-400/30"
           />
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 rounded-xl bg-[#151920] p-1 mb-4">
+        <div className="flex gap-1 rounded-xl bg-background p-1 mb-4">
           <button type="button" onClick={() => setTab('icons')} className={tabClass(tab === 'icons')} disabled={busy}>
             <Smile className="size-3.5" />
             Icons
@@ -233,8 +233,8 @@ function AvatarModalBody({
                   aria-pressed={active}
                   className={`aspect-square flex items-center justify-center rounded-xl text-xl transition active:scale-90 ${
                     active
-                      ? 'bg-teal-400/20 ring-2 ring-teal-400 shadow-[0_0_12px_rgba(45,212,191,0.3)]'
-                      : 'bg-[#151920] hover:bg-white/[0.06]'
+                      ? 'bg-teal-400/20 ring-2 ring-teal-400'
+                      : 'bg-background hover:bg-white/[0.06]'
                   }`}
                 >
                   {icon}
@@ -267,7 +267,7 @@ function AvatarModalBody({
               onKeyDown={(e) => {
                 if ((e.key === 'Enter' || e.key === ' ') && !busy) fileInputRef.current?.click();
               }}
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/[0.1] bg-[#151920] px-4 py-6 text-center cursor-pointer hover:border-teal-400/40 transition"
+              className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/[0.1] bg-background px-4 py-6 text-center cursor-pointer hover:border-teal-400/40 transition"
             >
               {processing ? (
                 <Loader2 className="size-6 text-teal-400 animate-spin" />
@@ -277,7 +277,7 @@ function AvatarModalBody({
               <div className="text-xs font-bold text-white">
                 {pendingFile ? 'Choose a different image' : 'Click or drop an image here'}
               </div>
-              <div className="text-[10px] text-slate-400">
+              <div className="text-[10px] text-zinc-400">
                 PNG, JPG, WEBP or GIF up to 10MB. We&apos;ll crop it to a square.
               </div>
             </div>
@@ -286,7 +286,7 @@ function AvatarModalBody({
                 type="button"
                 onClick={clearPendingFile}
                 disabled={busy}
-                className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-rose-300 transition"
+                className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-zinc-400 hover:text-rose-300 transition"
               >
                 <Trash2 className="size-3" />
                 Discard selected image
@@ -314,7 +314,7 @@ function AvatarModalBody({
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.08] transition"
+            className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-white/[0.08] transition"
           >
             Cancel
           </button>
@@ -322,7 +322,7 @@ function AvatarModalBody({
             type="button"
             onClick={handleSave}
             disabled={busy || !hasChange || success}
-            className="flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 px-4 py-2 text-xs font-bold text-slate-950 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-teal-400 px-4 py-2 text-xs font-bold text-zinc-950 transition active:scale-95 disabled:opacity-50"
           >
             {saving || isUploading ? (
               <>

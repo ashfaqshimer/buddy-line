@@ -65,7 +65,7 @@ function BuddyLineAppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#151920] text-[#e8eaed] flex flex-col selection:bg-teal-400/30 selection:text-white">
+    <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-teal-400/30 selection:text-white">
       {/* Top Navbar */}
       <Header
         onUploadClick={() => setIsUploaderOpen(true)}
